@@ -44,10 +44,7 @@ public class FloatBallMenuClient {
 
     public void onCreate() {
         init();
-        if (mTermuxActivity != null && !mTermuxActivity.isFinishing() && !mTermuxActivity.isDestroyed()) {
-    mFloatballManager.show();
-}
-      //  mFloatballManager.show();
+        mFloatballManager.show();
         //5 set float ball click handler
         if (mFloatballManager.getMenuItemSize() == 0) {
             toast(mTermuxActivity.getString(R.string.add_menu_item));
@@ -71,10 +68,7 @@ public class FloatBallMenuClient {
 
     public void onAttachedToWindow() {
         try {
-                  if (mTermuxActivity != null && !mTermuxActivity.isFinishing() && !mTermuxActivity.isDestroyed()) {
-    mFloatballManager.show();
-}
-//mFloatballManager.show
+            mFloatballManager.show();
             mFloatballManager.onFloatBallClick();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -285,7 +279,7 @@ public class FloatBallMenuClient {
 
     private void setFloatBallVisible(boolean visible) {
         if (visible) {
-// mFloatballManager.show();
+//            mFloatballManager.show();
             mAppNotOnFront = false;
         } else {
 //            mFloatballManager.hide();

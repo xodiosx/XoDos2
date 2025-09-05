@@ -1,11 +1,5 @@
 package com.termux.app;
 
-import static android.content.pm.PackageManager.FEATURE_TELEVISION;
-import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
-import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
-
-
-
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -207,24 +201,10 @@ public final class TermuxService extends Service implements AppShell.AppShellCli
     }
 
     /** Make service run in foreground mode. */
- /** Make service run in foreground mode. */
-private void runStartForeground() {
-    setupNotificationChannel();
-    
-    // Add foreground service type for Android 14+
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        int foregroundServiceType;
-        if (getPackageManager().hasSystemFeature(FEATURE_TELEVISION)) {
-            foregroundServiceType = FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
-        } else {
-            foregroundServiceType = FOREGROUND_SERVICE_TYPE_DATA_SYNC;
-        }
-        startForeground(TermuxConstants.TERMUX_APP_NOTIFICATION_ID, buildNotification(), foregroundServiceType);
-    } else {
+    private void runStartForeground() {
+        setupNotificationChannel();
         startForeground(TermuxConstants.TERMUX_APP_NOTIFICATION_ID, buildNotification());
     }
-}
-
 
     /** Make service leave foreground mode. */
     private void runStopForeground() {
@@ -807,17 +787,9 @@ private void runStartForeground() {
 
         // Set pending intent to be launched when notification is clicked
         Intent notificationIntent = TermuxActivity.newInstance(this);
-        
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
-// Before:
-//PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
-// After:
-int flags = PendingIntent.FLAG_IMMUTABLE;
-if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-    flags = 0;
-}
-PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, flags);
         // Set notification text
         int sessionCount = getTermuxSessionsSize();
         int taskCount = mShellManager.mTermuxTasks.size();
@@ -836,13 +808,12 @@ PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationInt
         int priority = (wakeLockHeld) ? Notification.PRIORITY_HIGH : Notification.PRIORITY_LOW;
 
 
-        //
-    // Build the notification
-    Notification.Builder builder =  NotificationUtils.geNotificationBuilder(this,
-        TermuxConstants.TERMUX_APP_NOTIFICATION_CHANNEL_ID, priority,
-        "XoDos", notificationText, null, // Changed the notification name here
-        contentIntent, null, NotificationUtils.NOTIFICATION_MODE_SILENT);
-    if (builder == null)  return null;
+        // Build the notification
+        Notification.Builder builder =  NotificationUtils.geNotificationBuilder(this,
+            TermuxConstants.TERMUX_APP_NOTIFICATION_CHANNEL_ID, priority,
+            TermuxConstants.TERMUX_APP_NAME, notificationText, null,
+            contentIntent, null, NotificationUtils.NOTIFICATION_MODE_SILENT);
+        if (builder == null)  return null;
 
         // No need to show a timestamp:
         builder.setShowWhen(false);
@@ -859,21 +830,16 @@ PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationInt
 
         // Set Exit button action
         Intent exitIntent = new Intent(this, TermuxService.class).setAction(TERMUX_SERVICE.ACTION_STOP_SERVICE);
-  //      builder.addAction(android.R.drawable.ic_delete, res.getString(R.string.notification_action_exit), PendingIntent.getService(this, 0, exitIntent, 0));
+        builder.addAction(android.R.drawable.ic_delete, res.getString(R.string.notification_action_exit), PendingIntent.getService(this, 0, exitIntent, 0));
 
-// After:
-builder.addAction(android.R.drawable.ic_delete, res.getString(R.string.notification_action_exit), 
-    PendingIntent.getService(this, 0, exitIntent, flags));
+
         // Set Wakelock button actions
         String newWakeAction = wakeLockHeld ? TERMUX_SERVICE.ACTION_WAKE_UNLOCK : TERMUX_SERVICE.ACTION_WAKE_LOCK;
         Intent toggleWakeLockIntent = new Intent(this, TermuxService.class).setAction(newWakeAction);
         String actionTitle = res.getString(wakeLockHeld ? R.string.notification_action_wake_unlock : R.string.notification_action_wake_lock);
         int actionIcon = wakeLockHeld ? android.R.drawable.ic_lock_idle_lock : android.R.drawable.ic_lock_lock;
-//        builder.addAction(actionIcon, actionTitle, PendingIntent.getService(this, 0, toggleWakeLockIntent, 0));
+        builder.addAction(actionIcon, actionTitle, PendingIntent.getService(this, 0, toggleWakeLockIntent, 0));
 
-// After:
-builder.addAction(actionIcon, actionTitle, 
-    PendingIntent.getService(this, 0, toggleWakeLockIntent, flags));
 
         return builder.build();
     }

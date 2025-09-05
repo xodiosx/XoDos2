@@ -396,24 +396,11 @@ lorieView.setOnCapturedPointerListener((v, e) -> mInputHandler.handleTouchEvent(
             LorieView.sendWindowChange(screenWidth, screenHeight, framerate, name);
         });
 
-   /*     registerReceiver(receiver, new IntentFilter(ACTION_START) {{
+        registerReceiver(receiver, new IntentFilter(ACTION_START) {{
             addAction(ACTION_PREFERENCES_CHANGED);
             addAction(ACTION_STOP);
             addAction(ACTION_CUSTOM);
         }}, SDK_INT >= VERSION_CODES.TIRAMISU ? RECEIVER_EXPORTED : 0);
-*/
-
-IntentFilter filter = new IntentFilter(ACTION_START);
-filter.addAction(ACTION_PREFERENCES_CHANGED);
-filter.addAction(ACTION_STOP);
-filter.addAction(ACTION_CUSTOM);
-
-if (SDK_INT >= VERSION_CODES.TIRAMISU) {
-    registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
-} else {
-    registerReceiver(receiver, filter);
-}
-
 
         inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 
