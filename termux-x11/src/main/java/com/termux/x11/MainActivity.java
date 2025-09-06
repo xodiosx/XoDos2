@@ -144,27 +144,47 @@ private void checkConnectedControllers() {
     int[] deviceIds = InputDevice.getDeviceIds();
     for (int id : deviceIds) {
         InputDevice device = InputDevice.getDevice(id);
-        if ((device.getSources() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) {
-            String msg = "Controller:🎮" + device.getName() + " (ID:" + id + ")";
+        if ((device.getSources() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
+            && !isIgnoredDevice(device)) {
+            
+            String msg = "Controller:🎮 " + device.getName() + " (ID:" + id + ")";
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
             Log.d("ControllerDebug", msg);
         }
     }
-}   
+}
+
+
+ /// check fingerprint sensors that acts like gamepad
+ private boolean isIgnoredDevice(InputDevice device) {
+    if (device == null) return true;
+
+    String name = device.getName().toLowerCase();
+
+    // Ignore fingerprint or virtual devices that masquerade as gamepads
+    return name.contains("uinput-fpc") ||
+           name.contains("fingerprint") ||
+           name.contains("fpc1020") ||   // common FPC models
+           name.contains("goodix")   ||  // Goodix sensors
+           device.isVirtual();          // Ignore system-generated virtual inputs
+}
     
-    private boolean isGamepadConnected() {
+       
+             private boolean isGamepadConnected() {
     int[] deviceIds = InputDevice.getDeviceIds();
     for (int id : deviceIds) {
         InputDevice device = InputDevice.getDevice(id);
+        if (device == null) continue;
+        if (isIgnoredDevice(device)) continue;
+
         if ((device.getSources() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
             (device.getSources() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
-          //  runOnUiThread(() -> Toast.makeText(this, "Gamepad connected: ", Toast.LENGTH_SHORT).show());
-            return true; // A physical gamepad is connected
+            return true;
         }
     }
-    return false; // No gamepad found
+    return false;
 }
-
+    
 public boolean isWineRunning() {
     try {
         // Use pgrep for more reliable process detection
@@ -302,7 +322,7 @@ if (e.getDevice() == null) {
 
     
                 
-                if (isGamepadConnected()) {
+                if (!isIgnoredDevice(dev) && isGamepadConnected()) {
     InputDevice device = e.getDevice();
     
 //Toast.makeText(this,"Handled Key: " + KeyEvent.keyCodeToString(e.getKeyCode()),Toast.LENGTH_SHORT).show();
@@ -358,7 +378,7 @@ lorieView.setOnCapturedPointerListener((v, e) -> mInputHandler.handleTouchEvent(
         lorieView.setOnHoverListener((v, e) -> mInputHandler.handleTouchEvent(lorieParent, lorieView, e));
         
     lorieView.setOnGenericMotionListener((v, e) -> {
-    if (isGamepadConnected() && (e.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+    if (!isIgnoredDevice(e.getDevice()) && isGamepadConnected() && (e.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
         // Send to Wine if running
         if (isWineRunning()) {
             winHandler.onGenericMotionEvent(e);
