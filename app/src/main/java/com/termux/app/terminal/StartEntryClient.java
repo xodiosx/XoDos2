@@ -24,6 +24,16 @@ import static com.termux.shared.termux.TermuxConstants.TERMUX_FILES_DIR_PATH;
 import java.util.HashMap;
 import java.util.Map;
 
+// Add these imports at the top of StartEntryClient.java
+import android.content.Intent;
+// Add these imports with your other imports
+import android.content.Intent;
+import android.os.Build;
+import android.util.Log;
+import com.termux.app.DesktopAnchorService;
+
+
+
 
 import android.app.ProgressDialog;
 import java.io.BufferedReader;
@@ -123,6 +133,35 @@ private View mConfigPopupContent;
     private LinearLayout mHelpButton;
 
     //// helper ////////
+    // Add these methods inside the StartEntryClient class:
+
+private void startDesktopAnchorService() {
+    try {
+        Intent anchorIntent = new Intent(mTermuxActivity, DesktopAnchorService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mTermuxActivity.startForegroundService(anchorIntent);
+        } else {
+            mTermuxActivity.startService(anchorIntent);
+        }
+        Log.d("StartEntryClient", "Desktop anchor service started");
+    } catch (Exception e) {
+        Log.e("StartEntryClient", "Failed to start desktop anchor service: " + e.getMessage());
+    }
+}
+
+private void stopDesktopAnchorService() {
+    try {
+        Intent anchorIntent = new Intent(mTermuxActivity, DesktopAnchorService.class);
+        mTermuxActivity.stopService(anchorIntent);
+        Log.d("StartEntryClient", "Desktop anchor service stopped");
+    } catch (Exception e) {
+        Log.e("StartEntryClient", "Failed to stop desktop anchor service: " + e.getMessage());
+    }
+}
+// Add this method to StartEntryClient class:
+public void stopDesktopAnchor() {
+    stopDesktopAnchorService();
+}
 // Add this method any
 private void showRestoreProgressDialog() {
     mRestoreProgressDialog = new ProgressDialog(mTermuxActivity);
@@ -1080,7 +1119,10 @@ LinearLayout xodosBtn = createToolboxButton("xodos", mTermuxActivity.getString(R
 xodosBtn.setOnClickListener(v -> {
     // Immediate feedback
     showBlockingView();
+    
     mToolboxPopup.dismiss();
+    // Start the anchor service BEFORE launching desktop
+    startDesktopAnchorService();
         mTermuxTerminalSessionActivityClient.getCurrentStoredSessionOrLast().write("/data/data/com.termux/files/usr/bin/xodos\n");
         // Start configuration wizard
     // Delay before showing wizard
@@ -1104,6 +1146,8 @@ prootBtn.setOnClickListener(v -> {
             showBlockingView();
             mTermuxTerminalSessionActivityClient.getCurrentStoredSessionOrLast().write(command);
             mToolboxPopup.dismiss();
+                // Start the anchor service BEFORE launching desktop
+    startDesktopAnchorService();
             mHandler.postDelayed(() -> hideBlockingView(), 3000);
         })
         .setNegativeButton("Cancel", null)
