@@ -1114,29 +1114,6 @@ private void addSystemButtons() {
      
 
 // Xodos Button
-/
-
-// Proot Button
-LinearLayout prootBtn = createToolboxButton("proot", mTermuxActivity.getString(R.string.toolbox_proot));
-prootBtn.setOnClickListener(v -> {
-    new AlertDialog.Builder(mTermuxActivity)
-        .setTitle("Proot Options")
-        .setItems(new CharSequence[]{"With Root", "Without Root"}, (dialog, which) -> {
-            String command = (which == 0) 
-                ? "/data/data/com.termux/files/usr/bin/xodxd\n" 
-                : "/data/data/com.termux/files/usr/bin/xodxdu\n";
-            showBlockingView();
-            mTermuxTerminalSessionActivityClient.getCurrentStoredSessionOrLast().write(command);
-            mToolboxPopup.dismiss();
-                // Start the anchor service BEFORE launching desktop
-    startDesktopAnchorService();
-            mHandler.postDelayed(() -> hideBlockingView(), 3000);
-        })
-        .setNegativeButton("Cancel", null)
-        .show();
-});
-mToolboxGrid.addView(prootBtn);
-
 // Xodos Button
 LinearLayout xodosBtn = createToolboxButton("xodos", mTermuxActivity.getString(R.string.toolbox_xodos));
 xodosBtn.setOnClickListener(v -> {
@@ -1174,7 +1151,31 @@ xodosBtn.setOnClickListener(v -> {
 mToolboxGrid.addView(xodosBtn);
 
 
-// Kali  Button
+// Proot Button
+LinearLayout prootBtn = createToolboxButton("proot", mTermuxActivity.getString(R.string.toolbox_proot));
+prootBtn.setOnClickListener(v -> {
+    new AlertDialog.Builder(mTermuxActivity)
+        .setTitle("Proot Options")
+        .setItems(new CharSequence[]{"With Root", "Without Root"}, (dialog, which) -> {
+            String command = (which == 0) 
+                ? "/data/data/com.termux/files/usr/bin/xodxd\n" 
+                : "/data/data/com.termux/files/usr/bin/xodxdu\n";
+            showBlockingView();
+            mTermuxTerminalSessionActivityClient.getCurrentStoredSessionOrLast().write(command);
+            mToolboxPopup.dismiss();
+                // Start the anchor service BEFORE launching desktop
+    startDesktopAnchorService();
+            mHandler.postDelayed(() -> hideBlockingView(), 3000);
+        })
+        .setNegativeButton("Cancel", null)
+        .show();
+});
+mToolboxGrid.addView(prootBtn);
+
+
+
+
+// Kali Button
 LinearLayout kaliBtn = createToolboxButton("kali", mTermuxActivity.getString(R.string.toolbox_kali));
 kaliBtn.setOnClickListener(v -> {
     new AlertDialog.Builder(mTermuxActivity)
