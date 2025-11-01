@@ -1114,25 +1114,7 @@ private void addSystemButtons() {
      
 
 // Xodos Button
-// Modified XoDos button with wizard launch
-LinearLayout xodosBtn = createToolboxButton("xodos", mTermuxActivity.getString(R.string.toolbox_xodos));
-xodosBtn.setOnClickListener(v -> {
-    // Immediate feedback
-    showBlockingView();
-    
-    mToolboxPopup.dismiss();
-    // Start the anchor service BEFORE launching desktop
-    startDesktopAnchorService();
-        mTermuxTerminalSessionActivityClient.getCurrentStoredSessionOrLast().write("/data/data/com.termux/files/usr/bin/xodos\n");
-        // Start configuration wizard
-    // Delay before showing wizard
-    mHandler.postDelayed(() -> {
-        hideBlockingView();
-
-       // new XoDosWizard(mTermuxActivity).start();
-    }, 3000); // 2-second delay
-});
-mToolboxGrid.addView(xodosBtn);
+/
 
 // Proot Button
 LinearLayout prootBtn = createToolboxButton("proot", mTermuxActivity.getString(R.string.toolbox_proot));
@@ -1155,10 +1137,44 @@ prootBtn.setOnClickListener(v -> {
 });
 mToolboxGrid.addView(prootBtn);
 
+// Xodos Button
+LinearLayout xodosBtn = createToolboxButton("xodos", mTermuxActivity.getString(R.string.toolbox_xodos));
+xodosBtn.setOnClickListener(v -> {
+    // Immediate feedback
+    showBlockingView();
+
+    // Close popup
+    mToolboxPopup.dismiss();
+
+    // 🔹 Start persistent anchor service before launching desktop
+    try {
+        Intent serviceIntent = new Intent(mTermuxActivity, DesktopAnchorService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mTermuxActivity.startForegroundService(serviceIntent);
+        } else {
+            mTermuxActivity.startService(serviceIntent);
+        }
+    } catch (Exception e) {
+        Toast.makeText(mTermuxActivity, "Failed to start desktop anchor service", Toast.LENGTH_SHORT).show();
+        e.printStackTrace();
+    }
+
+    // 🔹 Launch XFCE desktop (your original xodos script)
+    mTermuxTerminalSessionActivityClient
+        .getCurrentStoredSessionOrLast()
+        .write("/data/data/com.termux/files/usr/bin/xodos\n");
+
+    // 🔹 Optional small delay before removing blocking overlay
+    mHandler.postDelayed(() -> {
+        hideBlockingView();
+        // Optionally start the configuration wizard
+        // new XoDosWizard(mTermuxActivity).start();
+    }, 3000);
+});
+mToolboxGrid.addView(xodosBtn);
 
 
-
-// Kali Button
+// Kali  Button
 LinearLayout kaliBtn = createToolboxButton("kali", mTermuxActivity.getString(R.string.toolbox_kali));
 kaliBtn.setOnClickListener(v -> {
     new AlertDialog.Builder(mTermuxActivity)
