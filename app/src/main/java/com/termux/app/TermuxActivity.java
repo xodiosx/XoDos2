@@ -1608,19 +1608,24 @@ String commandPrefix = new File(getFilesDir(), "home/storage").exists() ?
         return mMainContentView;
     }
 private void stopXserver(){
-        final AlertDialog.Builder b = new AlertDialog.Builder(this );
-        b.setIcon(android.R.drawable.ic_dialog_alert);
-        b.setMessage(R.string.stop_desktop_title);
-        b.setPositiveButton(android.R.string.yes, (dialog, id) -> {
-            dialog.dismiss();
-            openPreference(false);
-            handler.postDelayed(() -> {
-                mLorieViewConnected = false;
-//
+    final AlertDialog.Builder b = new AlertDialog.Builder(this);
+    b.setIcon(android.R.drawable.ic_dialog_alert);
+    b.setMessage(R.string.stop_desktop_title);
+    b.setPositiveButton(android.R.string.yes, (dialog, id) -> {
+        dialog.dismiss();
+        openPreference(false);
+        handler.postDelayed(() -> {
+            mLorieViewConnected = false;
 
-        new Thread(() -> {
+            // Stop the anchor service FIRST
+            if (mStartEntryClient != null) {
+                // We'll need to expose the stop method - add this to StartEntryClient:
+                // public void stopDesktopAnchor() { stopDesktopAnchorService(); }
+                mStartEntryClient.stopDesktopAnchor();
+            }
+
+            new Thread(() -> {
                 try {
-                    // Execute commands directly using Runtime
                     String[] commands = {
                         "/data/data/com.termux/files/usr/bin/box64 /data/data/com.termux/files/usr/opt/wine/bin/wineserver -k",
                         "/data/data/com.termux/files/usr/glibc/bin/box64 /data/data/com.termux/files/usr/glibc/bin/wineserver -k",
@@ -1637,12 +1642,12 @@ private void stopXserver(){
                 }
             }).start();        
                                 
-                CommandUtils.exec(this, "stopserver", null);
-            }, 500);
-            mLorieViewConnected=false;
-        });
-        b.setNegativeButton(android.R.string.no, null);
-        b.show();
-    }
+            CommandUtils.exec(this, "stopserver", null);
+        }, 500);
+        mLorieViewConnected = false;
+    });
+    b.setNegativeButton(android.R.string.no, null);
+    b.show();
+}
 }
 
