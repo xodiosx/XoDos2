@@ -1,26 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-### ------------------------------------------------------------
-### SETTINGS
-### ------------------------------------------------------------
-
 ROOTFS=/tmp/rootfs
-UBUNTU_RELEASE=focal   # You can change to jammy if needed
+UBUNTU_RELEASE=focal
 MIRROR=http://ports.ubuntu.com/
-
-### ------------------------------------------------------------
-### CLEAN WORK DIR
-### ------------------------------------------------------------
-
-rm -rf "$ROOTFS"
-mkdir -p "$ROOTFS"
 
 echo "[1] Bootstrapping Ubuntu $UBUNTU_RELEASE (arm64)..."
 
-### ------------------------------------------------------------
-### DEBOOTSTRAP ROOTFS (Ubuntu arm64)
-### ------------------------------------------------------------
+rm -rf "$ROOTFS"
+mkdir -p "$ROOTFS"
 
 sudo debootstrap \
     --arch=arm64 \
@@ -29,79 +17,58 @@ sudo debootstrap \
     "$ROOTFS" \
     "$MIRROR"
 
-echo "[2] Installing required packages inside rootfs..."
-
-### ------------------------------------------------------------
-### PREPARE CHROOT ENVIRONMENT
-### ------------------------------------------------------------
+echo "[2] Preparing chroot environment…"
 
 sudo cp /usr/bin/qemu-aarch64-static "$ROOTFS/usr/bin/"
 sudo mount --bind /dev "$ROOTFS/dev"
 sudo mount --bind /sys "$ROOTFS/sys"
 sudo mount --bind /proc "$ROOTFS/proc"
 
-### ------------------------------------------------------------
-### INSTALL BASE SYSTEM INSIDE ROOTFS
-### ------------------------------------------------------------
+echo "[3] Fixing APT sources (enable universe, multiverse)…"
+
+# Replace sources.list inside rootfs BEFORE installing packages
+cat <<EOF | sudo tee "$ROOTFS/etc/apt/sources.list"
+deb $MIRROR $UBUNTU_RELEASE main universe multiverse restricted
+deb $MIRROR $UBUNTU_RELEASE-updates main universe multiverse restricted
+deb $MIRROR $UBUNTU_RELEASE-security main universe multiverse restricted
+EOF
+
+echo "[4] Installing packages inside rootfs…"
 
 cat <<'EOF' | sudo chroot "$ROOTFS" /bin/bash
 set -e
 
 apt update
 
-# Essential tools (ls, cd is built-in, tar, xz, gzip, sed, coreutils etc.)
+# Base required tools
 apt install -y \
-    coreutils \
-    bash \
-    tar \
-    xz-utils \
-    gzip \
-    sed \
-    wget \
-    curl \
-    file \
-    findutils \
-    util-linux \
-    diffutils \
-    grep \
-    procps
+  coreutils bash tar xz-utils gzip sed wget curl file \
+  findutils util-linux diffutils grep procps net-tools \
+  pciutils usbutils zip unzip git
 
-# XFCE4 desktop (without pulseaudio/alsa)
-apt install -y \
-    xfce4 \
-    xfce4-goodies \
-    lightdm-gtk-greeter \
-    xorg \
-    x11-xserver-utils \
-    dbus-x11
+# Install XFCE4 (now the repo is enabled → SUCCESS)
+apt install -y xfce4 xfce4-goodies
 
+# Install LightDM greeter (safe for Winlator)
+apt install -y lightdm-gtk-greeter lightdm
+
+# No audio dependencies (pulseaudio/alsa NOT installed)
+
+# Clean
 apt clean
 EOF
 
-echo "[3] Cleaning chroot…"
-
-### ------------------------------------------------------------
-### CLEAN UP BINDS
-### ------------------------------------------------------------
+echo "[5] Cleaning up chroot…"
 
 sudo umount "$ROOTFS/dev" || true
 sudo umount "$ROOTFS/sys" || true
 sudo umount "$ROOTFS/proc" || true
 
-### ------------------------------------------------------------
-### REMOVE qemu-aarch64-static
-### ------------------------------------------------------------
-
 sudo rm -f "$ROOTFS/usr/bin/qemu-aarch64-static"
 
-echo "[4] Packaging final rootfs as imagefs.txz..."
-
-### ------------------------------------------------------------
-### PACK INTO TXZ FOR WINLATOR
-### ------------------------------------------------------------
+echo "[6] Packaging imagefs.txz…"
 
 cd "$ROOTFS"
 sudo tar -I "xz -T$(nproc)" -cpf /tmp/imagefs.txz *
 
-echo "Done!"
-echo "Output: /tmp/imagefs.txz"
+echo "Build complete! Output: /tmp/imagefs.txz"
