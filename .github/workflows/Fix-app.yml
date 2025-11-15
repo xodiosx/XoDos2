@@ -25,10 +25,10 @@ jobs:
           tar
 
     - name: Make script executable
-      run: chmod +x scripts/build-bionic.sh
+      run: chmod +x scripts/build-rootfs-bionic.sh
 
     - name: Build bionic rootfs
-      run: sudo ./scripts/build-bionic.sh
+      run: sudo ./scripts/build-rootfs-bionic.sh
 
     - name: Upload as release asset
       #if: startsWith(github.ref, 'refs/tags/')
