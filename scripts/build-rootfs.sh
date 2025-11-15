@@ -1,102 +1,107 @@
 #!/usr/bin/env bash
 set -e
 
-ROOTFS=/data/data/com.winlator/files/rootfs
-ARCH=aarch64
-DEBIAN_RELEASE=bookworm
+### ------------------------------------------------------------
+### SETTINGS
+### ------------------------------------------------------------
 
-# -------------------------------
-#  Create base rootfs using debootstrap
-# -------------------------------
+ROOTFS=/tmp/rootfs
+UBUNTU_RELEASE=focal   # You can change to jammy if needed
+MIRROR=http://ports.ubuntu.com/
+
+### ------------------------------------------------------------
+### CLEAN WORK DIR
+### ------------------------------------------------------------
+
+rm -rf "$ROOTFS"
 mkdir -p "$ROOTFS"
 
-echo "[1] Bootstrapping Debian ($DEBIAN_RELEASE)..."
-debootstrap \
-  --arch=$ARCH \
-  --variant=minbase \
-  $DEBIAN_RELEASE \
-  "$ROOTFS" \
-  http://deb.debian.org/debian
+echo "[1] Bootstrapping Ubuntu $UBUNTU_RELEASE (arm64)..."
 
-# -------------------------------
-#  Configure APT inside rootfs
-# -------------------------------
-echo "deb http://deb.debian.org/debian $DEBIAN_RELEASE main contrib non-free non-free-firmware" \
-  > "$ROOTFS/etc/apt/sources.list"
+### ------------------------------------------------------------
+### DEBOOTSTRAP ROOTFS (Ubuntu arm64)
+### ------------------------------------------------------------
 
-chroot "$ROOTFS" apt update
+sudo debootstrap \
+    --arch=arm64 \
+    --variant=minbase \
+    "$UBUNTU_RELEASE" \
+    "$ROOTFS" \
+    "$MIRROR"
 
-# -------------------------------
-#  Install core packages (ls, cd, tar, gzip, etc)
-# -------------------------------
-chroot "$ROOTFS" apt install -y \
-  coreutils \
-  bash \
-  tar \
-  gzip \
-  xz-utils \
-  findutils \
-  util-linux \
-  sed \
-  grep \
-  wget \
-  ca-certificates \
-  file
+echo "[2] Installing required packages inside rootfs..."
 
-# -------------------------------
-#  Install XFCE4 (minimal, no PulseAudio or ALSA)
-# -------------------------------
-chroot "$ROOTFS" apt install -y \
-  xfce4 \
-  xfce4-terminal \
-  xfce4-session \
-  xfce4-panel \
-  xfdesktop4 \
-  thunar \
-  dbus-x11 \
-  lightdm-gtk-greeter \
-  gvfs \
-  mousepad
+### ------------------------------------------------------------
+### PREPARE CHROOT ENVIRONMENT
+### ------------------------------------------------------------
 
-# Remove sound deps forced by xfce (pulseaudio, alsa)
-#chroot "$ROOTFS" apt remove -y \
-  #pulseaudio* alsa* || true
+sudo cp /usr/bin/qemu-aarch64-static "$ROOTFS/usr/bin/"
+sudo mount --bind /dev "$ROOTFS/dev"
+sudo mount --bind /sys "$ROOTFS/sys"
+sudo mount --bind /proc "$ROOTFS/proc"
 
-# -------------------------------
-#  Patch ELF files for Winlator
-# -------------------------------
-echo "[3] Running patchelf pass..."
-LD_RPATH="$ROOTFS/lib"
-LD_FILE="$ROOTFS/lib/ld-linux-aarch64.so.1"
+### ------------------------------------------------------------
+### INSTALL BASE SYSTEM INSIDE ROOTFS
+### ------------------------------------------------------------
 
-patch_single() {
-    echo "Patching: $1"
-    patchelf --set-rpath "$LD_RPATH" --set-interpreter "$LD_FILE" "$1" 2>/dev/null || true
-}
+cat <<'EOF' | sudo chroot "$ROOTFS" /bin/bash
+set -e
 
-export -f patch_single LD_RPATH LD_FILE
+apt update
 
-find "$ROOTFS" -type f -exec file {} \; \
- | grep ELF \
- | cut -d: -f1 \
- | xargs -I {} bash -c 'patch_single "$@"' _ {}
+# Essential tools (ls, cd is built-in, tar, xz, gzip, sed, coreutils etc.)
+apt install -y \
+    coreutils \
+    bash \
+    tar \
+    xz-utils \
+    gzip \
+    sed \
+    wget \
+    curl \
+    file \
+    findutils \
+    util-linux \
+    diffutils \
+    grep \
+    procps
 
-# -------------------------------
-#  Create _version_.txt
-# -------------------------------
-DATE=$(date "+%Y-%m-%d %H:%M:%S")
-cat > "$ROOTFS/_version_.txt" <<EOF
-RootFS Created: $DATE
-XFCE Version: Minimal Debian XFCE4
-Built for: Winlator Environment
+# XFCE4 desktop (without pulseaudio/alsa)
+apt install -y \
+    xfce4 \
+    xfce4-goodies \
+    lightdm-gtk-greeter \
+    xorg \
+    x11-xserver-utils \
+    dbus-x11
+
+apt clean
 EOF
 
-# -------------------------------
-#  Package result → rootfs.txz
-# -------------------------------
-echo "[4] Packaging rootfs.txz"
+echo "[3] Cleaning chroot…"
+
+### ------------------------------------------------------------
+### CLEAN UP BINDS
+### ------------------------------------------------------------
+
+sudo umount "$ROOTFS/dev" || true
+sudo umount "$ROOTFS/sys" || true
+sudo umount "$ROOTFS/proc" || true
+
+### ------------------------------------------------------------
+### REMOVE qemu-aarch64-static
+### ------------------------------------------------------------
+
+sudo rm -f "$ROOTFS/usr/bin/qemu-aarch64-static"
+
+echo "[4] Packaging final rootfs as imagefs.txz..."
+
+### ------------------------------------------------------------
+### PACK INTO TXZ FOR WINLATOR
+### ------------------------------------------------------------
+
 cd "$ROOTFS"
-tar -cJf /tmp/rootfs.txz *
+sudo tar -I "xz -T$(nproc)" -cpf /tmp/imagefs.txz *
 
 echo "Done!"
-echo "Output: /tmp/rootfs.txz"
+echo "Output: /tmp/imagefs.txz"
