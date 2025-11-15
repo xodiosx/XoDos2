@@ -1,62 +1,39 @@
-
-name:  XoDos full Release
+name: Build Ubuntu Bionic RootFS
 
 on:
   workflow_dispatch:
-    inputs:
-      version_tag:
-        description: 'Version tag (5.4.0)'
-        required: true
-        default: '5.4.0'
-
-permissions:
-  contents: write
+  push:
+    tags:
+      - "bionic-*"
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
-      - name: Create Git Tag
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git tag ${{ github.event.inputs.version_tag }}
-          git push origin ${{ github.event.inputs.version_tag }}
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          qemu-user-static \
+          debootstrap \
+          binfmt-support \
+          xz-utils \
+          tar
 
-      - name: Download Main APK
-        run: |
-          pip install gdown
-          gdown "17YNl7AnlPTK727lrhcoZpeYbkJzZxCwu" -O XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk || exit 1
+    - name: Make script executable
+      run: chmod +x scripts/build-bionic.sh
 
-      
-      - name: Create Release with Both Files
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.event.inputs.version_tag }}
-          name: XoDos ${{ github.event.inputs.version_tag }}
-          files: |
-            XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk
-          body: | 
-           **XoDos Emulator arm64**
-           Windows and Linux Emulator
-            What's new?
-            - loading
-            
-            **Credits:**
-            Team: @xodiosx🇾🇪 & @DevArys🇨🇴 & @Mondo67244🇲🇫 & @Aurora0y🇧🇷 & @Chest1902🇧🇩 & @jiaxinchen-max🇨🇳 & @Snap888🇷🇺
-            Logo designer: @xl_v6/ashen🇮🇶
-            
-            
-            **help and support:**
-            Telegram: https://t.me/xodemulatorr
-            Discord: https://discord.gg/d2ChVhPfnF
-            
-            Thank you for choosing XoDos by xodios M.aleiw
+    - name: Build bionic rootfs
+      run: sudo ./scripts/build-bionic.sh
+
+    - name: Upload as release asset
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: imagefs_bionic.txz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
