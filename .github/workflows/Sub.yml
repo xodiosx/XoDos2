@@ -32,7 +32,7 @@ jobs:
 
     - name: Upload imagefs.txz as Release asset
       uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
+      #if: startsWith(github.ref, 'refs/tags/')
       with:
         files: imagefs.txz
       env:
