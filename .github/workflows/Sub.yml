@@ -42,8 +42,8 @@ jobs:
     - name: Install XFCE4 and base packages
       run: |
         sudo chroot $ROOTFS_DIR bash -c "apt update && apt install -y \
-          xfce4 xfce4-goodies xorg dbus-x11 sudo \
-          pulseaudio p7zip-full xz-utils coreutils bash nano wget curl git"
+          xfce4 xfce4-goodies xorg dbus-x11 sudo coreutils nano
+          #pulseaudio p7zip-full xz-utils coreutils bash nano wget curl git"
 
     - name: Remove systemd
       run: |
