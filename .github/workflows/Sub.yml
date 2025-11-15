@@ -1,50 +1,81 @@
-name: xAdd Submodules
+name: Build  RootFS
 
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write   # allow workflow to push changes
+    inputs:
+      rootfs_tag:
+        description: 'RootFS version tag'
+        required: true
+        default: 'winlator-xfce4'
 
 jobs:
-  add-submodules:
+  build-rootfs:
     runs-on: ubuntu-latest
+    env:
+      ROOTFS_DIR: /tmp/rootfs
+      OUTPUT_DIR: /tmp/output
+      IMAGE_NAME: imagefs.txz
+      ROOTFS_TAG: ${{ github.event.inputs.rootfs_tag }}
+      DATE: ${{ github.run_started_at }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
-      - name: Add submodules if not present
-        run: |
-          git submodule add https://github.com/KhronosGroup/OpenXR-SDK.git termux-x11/src/main/cpp/OpenXR-SDK || true
-          git submodule add https://gitlab.com/bzip2/bzip2 termux-x11/src/main/cpp/bzip2 || true
-          git submodule add https://github.com/anholt/libepoxy termux-x11/src/main/cpp/libepoxy || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libfontenc termux-x11/src/main/cpp/libfontenc || true
-          git submodule add https://github.com/alisw/libtirpc termux-x11/src/main/cpp/libtirpc || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libx11 termux-x11/src/main/cpp/libx11 || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libxau termux-x11/src/main/cpp/libxau || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libxcvt termux-x11/src/main/cpp/libxcvt || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libxdmcp termux-x11/src/main/cpp/libxdmcp || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libxfont termux-x11/src/main/cpp/libxfont || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libxkbfile termux-x11/src/main/cpp/libxkbfile || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libxshmfence termux-x11/src/main/cpp/libxshmfence || true
-          git submodule add https://gitlab.freedesktop.org/xorg/lib/libxtrans termux-x11/src/main/cpp/libxtrans || true
-          git submodule add https://gitlab.freedesktop.org/pixman/pixman termux-x11/src/main/cpp/pixman || true
-          git submodule add https://gitlab.freedesktop.org/xorg/app/xkbcomp termux-x11/src/main/cpp/xkbcomp || true
-          git submodule add https://gitlab.freedesktop.org/xorg/proto/xorgproto termux-x11/src/main/cpp/xorgproto || true
-          git submodule add https://gitlab.freedesktop.org/xorg/xserver termux-x11/src/main/cpp/xserver || true
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          qemu-user-static binfmt-support debootstrap \
+          gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+          patchelf wget git tar xz-utils meson ninja-build python3 \
+          sudo sudo-coreutils
 
-          git submodule sync --recursive
-          git submodule update --init --recursive
+    - name: Create rootfs
+      run: |
+        sudo rm -rf $ROOTFS_DIR
+        sudo mkdir -p $ROOTFS_DIR
+        sudo debootstrap --arch=arm64 --foreign bookworm $ROOTFS_DIR http://deb.debian.org/debian
+        sudo cp /usr/bin/qemu-aarch64-static $ROOTFS_DIR/usr/bin/
+        sudo chroot $ROOTFS_DIR /debootstrap/debootstrap --second-stage
 
-      - name: Commit and push submodules to main
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+    - name: Install XFCE4 and base packages
+      run: |
+        sudo chroot $ROOTFS_DIR bash -c "apt update && apt install -y \
+          xfce4 xfce4-goodies xorg dbus-x11 sudo \
+          pulseaudio p7zip-full xz-utils coreutils bash nano wget curl git"
 
-          git add .gitmodules termux-x11/src/main/cpp/* || true
-          git commit -m "5.9.0 - add/update submodules" || echo "No changes to commit"
-          git push origin HEAD:main
+    - name: Remove systemd
+      run: |
+        sudo rm -rf $ROOTFS_DIR/lib/systemd
+        sudo rm -rf $ROOTFS_DIR/etc/systemd
+        sudo rm -rf $ROOTFS_DIR/usr/lib/systemd
+
+    - name: Apply Patchelf Fix & Patches
+      run: |
+        chmod +x $GITHUB_WORKSPACE/build-rootfs.sh
+        # Copy your script from repo
+        cp $GITHUB_WORKSPACE/build-rootfs.sh /tmp/build-rootfs.sh
+        sudo bash /tmp/build-rootfs.sh
+
+    - name: Compress rootfs
+      run: |
+        mkdir -p $OUTPUT_DIR
+        cd $ROOTFS_DIR
+        sudo tar -cJf $OUTPUT_DIR/$IMAGE_NAME *
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ github.event.inputs.rootfs_tag }}
+        name: "Winlator RootFS ${{ github.event.inputs.rootfs_tag }}"
+        draft: false
+        prerelease: false
+
+    - name: Upload artifact to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: $OUTPUT_DIR/$IMAGE_NAME
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
