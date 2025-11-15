@@ -2,9 +2,16 @@ name: Build Ubuntu Bionic RootFS
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "bionic-*"
+    inputs:
+      version_tag:
+        description: 'Version tag (e.g., 6.0.0)'
+        required: true
+        default: '1.bio'       
+
+permissions:
+  contents: write
+
+
 
 jobs:
   build:
@@ -34,7 +41,8 @@ jobs:
       #if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: latest
+        tag_name: latest.1
         files: imagefs_bionic.txz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
