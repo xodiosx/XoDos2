@@ -33,10 +33,9 @@ apt update
 apt upgrade -y
 
 apt install -y \
-  xfce4 \
-  xfce4-goodies \
-  lightdm \
-  lightdm-gtk-greeter \
+  coreutils \
+  nano \
+  xfce4 \  
   xterm \
   dbus-x11 \
   sudo \
