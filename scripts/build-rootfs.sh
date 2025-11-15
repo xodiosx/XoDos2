@@ -1,4 +1,4 @@
-here#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -e
 
 ROOTFS=/data/data/com.winlator/files/rootfs
