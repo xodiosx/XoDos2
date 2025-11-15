@@ -53,9 +53,9 @@ jobs:
 
     - name: Apply Patchelf Fix & Patches
       run: |
-        chmod +x $GITHUB_WORKSPACE/build-rootfs.sh
+        chmod +x $GITHUB_WORKSPACE/scripts/build-rootfs.sh
         # Copy your script from repo
-        cp $GITHUB_WORKSPACE/build-rootfs.sh /tmp/build-rootfs.sh
+        cp $GITHUB_WORKSPACE/scripts/build-rootfs.sh /tmp/build-rootfs.sh
         sudo bash /tmp/build-rootfs.sh
 
     - name: Compress rootfs
