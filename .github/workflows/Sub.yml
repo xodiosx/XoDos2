@@ -1,81 +1,39 @@
-name: Build  RootFS
+name: Build Ubuntu RootFS
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
-    inputs:
-      rootfs_tag:
-        description: 'RootFS version tag'
-        required: true
-        default: 'winlator-xfce4'
 
 jobs:
-  build-rootfs:
+  build:
     runs-on: ubuntu-latest
-    env:
-      ROOTFS_DIR: /tmp/rootfs
-      OUTPUT_DIR: /tmp/output
-      IMAGE_NAME: imagefs.txz
-      ROOTFS_TAG: ${{ github.event.inputs.rootfs_tag }}
-      DATE: ${{ github.run_started_at }}
 
     steps:
-    - name: Checkout repo
+    - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y \
-          qemu-user-static binfmt-support debootstrap \
-          gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-          patchelf wget git tar xz-utils meson ninja-build python3 \
-          sudo 
+          qemu-user-static \
+          debootstrap \
+          binfmt-support \
+          xz-utils \
+          tar
 
-    - name: Create rootfs
-      run: |
-        sudo rm -rf $ROOTFS_DIR
-        sudo mkdir -p $ROOTFS_DIR
-        sudo debootstrap --arch=arm64 --foreign bookworm $ROOTFS_DIR http://deb.debian.org/debian
-        sudo cp /usr/bin/qemu-aarch64-static $ROOTFS_DIR/usr/bin/
-        sudo chroot $ROOTFS_DIR /debootstrap/debootstrap --second-stage
+    - name: Make script executable
+      run: chmod +x scripts/build-rootfs.sh
 
-    - name: Install XFCE4 and base packages
-      run: |
-        sudo chroot $ROOTFS_DIR bash -c "apt update && apt install -y \
-          xfce4 xfce4-goodies xorg dbus-x11 sudo coreutils nano
-          #pulseaudio p7zip-full xz-utils coreutils bash nano wget curl git"
+    - name: Run Ubuntu rootfs builder
+      run: sudo ./scripts/build-rootfs.sh
 
-    - name: Remove systemd
-      run: |
-        sudo rm -rf $ROOTFS_DIR/lib/systemd
-        sudo rm -rf $ROOTFS_DIR/etc/systemd
-        sudo rm -rf $ROOTFS_DIR/usr/lib/systemd
-
-    - name: Apply Patchelf Fix & Patches
-      run: |
-        chmod +x $GITHUB_WORKSPACE/scripts/build-rootfs.sh
-        # Copy your script from repo
-        cp $GITHUB_WORKSPACE/scripts/build-rootfs.sh /tmp/build-rootfs.sh
-        sudo bash /tmp/build-rootfs.sh
-
-    - name: Compress rootfs
-      run: |
-        mkdir -p $OUTPUT_DIR
-        cd $ROOTFS_DIR
-        sudo tar -cJf $OUTPUT_DIR/$IMAGE_NAME *
-
-    - name: Create GitHub Release
-      id: create_release
-      uses: ncipollo/release-action@v1
-      with:
-        tag: ${{ github.event.inputs.rootfs_tag }}
-        name: "Winlator RootFS ${{ github.event.inputs.rootfs_tag }}"
-        draft: false
-        prerelease: false
-
-    - name: Upload artifact to Release
+    - name: Upload imagefs.txz as Release asset
       uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: $OUTPUT_DIR/$IMAGE_NAME
+        files: imagefs.txz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
