@@ -1,0 +1,89 @@
+name: Upload flutter_sdk
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag (e.g., 6.0.0)'
+        required: true
+        default: '6.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 2: Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y wget
+
+      # Step 3: Create Git Tag
+      - name: Create Git Tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag "v${{ github.event.inputs.version_tag }}"
+          git push origin "v${{ github.event.inputs.version_tag }}"
+
+      # Step 4: List repo files
+      - name: List files
+        run: ls -la
+
+      # Step 5: Download Flutter SDK ZIP
+      - name: Download Flutter ARM64 SDK
+        run: |
+          wget \
+            https://github.com/zhzhzhy/Flutter-SDK-ARM64/releases/download/Flutter-SDK-2025-11-15/Flutter-SDK-ARM64.zip \
+            -O Flutter-SDK-ARM64.zip
+
+      # Step 6: Generate MD5 checksum
+      - name: Generate MD5 Checksums
+        id: md5
+        run: |
+          echo "### File Checksums:" > checksums.txt
+          md5sum Flutter-SDK-ARM64.zip | awk '{print "- **"$2"** → `"$1"`"}' >> checksums.txt
+
+          echo "md5_list<<EOF" >> $GITHUB_ENV
+          cat checksums.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # Step 7: Create GitHub Release and upload assets
+      - name: Create GitHub Release with Files
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ github.event.inputs.version_tag }}"
+          name: "flutter_sdk"
+          files: |
+            Flutter-SDK-ARM64.zip
+
+          body: |
+            🧩 **Flutter ARM64 SDK**
+            Release date: 2025-11-15
+
+            ### 🧾 Checksums
+            ${{ env.md5_list }}
+
+            ---
+
+            **👥 Credits**  
+            Team: XoDos  
+
+            **💬 Support**  
+            Telegram: t.me/xodemulatorr  
+            Discord: discord.gg/d2ChVhPfnF  
+
+            _Thank you for choosing XoDos by xodios M. aleiw ©2025_

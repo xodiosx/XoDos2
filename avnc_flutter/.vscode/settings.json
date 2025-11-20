@@ -1,0 +1,4 @@
+{
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "cmake.sourceDirectory": "C:/Users/29513/Documents/GitHub/tc/avnc_flutter/android/avnc/extern/wolfssl/zephyr/samples/wolfssl_tls_thread"
+}

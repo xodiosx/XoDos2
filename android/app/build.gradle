@@ -1,0 +1,131 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace "com.com.xodos"
+    compileSdk 35
+
+//    compileSdkVersion flutter.compileSdkVersion
+    ndkVersion '27.1.12297006' 
+    
+    /// flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = 17
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+        main.java.srcDirs += 'src/main/java'
+    }
+
+    defaultConfig {
+        // 
+        applicationId "com.xodos"
+        // 
+        // 
+        minSdk 28 // glob() version //proot version //ffmpeg_kit; flutter.minSdkVersion
+        targetSdk 34 //https://github.com/termux/termux-app/issues/1072; native; linker; flutter.targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+ndk {
+            abiFilters "arm64-v8a"
+        }
+        buildConfigField "String", "COMMIT", "\"" + ("git rev-parse HEAD\n".execute().getText().trim() ?: (System.getenv('CURRENT_COMMIT') ?: "NO_COMMIT")) + "\""
+
+    }
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.debug
+            minifyEnabled true
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    buildFeatures {
+        aidl true
+        dataBinding true
+        viewBinding true
+        buildConfig true
+    }
+    
+
+    lint {
+        disable "NullSafeMutableLiveData"
+    }
+
+    lintOptions {
+        //checkReleaseBuilds false
+        abortOnError false
+    }
+
+    packagingOptions {
+    //    pickFirst 'lib/arm64-v8a/libc++_shared.so'
+    //    pickFirst 'lib/x86_64/libc++_shared.so'
+     //   pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+//aaptOptions {
+//        noCompress 'tar.gz'
+ //   }
+    
+dependencies {
+    implementation "androidx.core:core-ktx:1.12.0"
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "com.google.android.material:material:1.7.0"
+    implementation 'com.github.tiann:FreeReflection:3.2.2'
+}

@@ -1,0 +1,81 @@
+group = "com.example.x11_flutter"
+version = "1.0-SNAPSHOT"
+
+buildscript {
+    ext.kotlin_version = "2.1.0"
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.7.3")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+    namespace = "com.example.x11_flutter"
+
+    compileSdk 35
+
+//    
+    ndkVersion '27.1.12297006' 
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+        test.java.srcDirs += "src/test/kotlin"
+    }
+
+    defaultConfig {
+        minSdk = 21
+    }
+
+    
+    lint {
+        disable "NullSafeMutableLiveData"
+    }
+
+    dependencies {        
+        implementation "androidx.appcompat:appcompat:1.7.0"
+        implementation 'androidx.preference:preference:1.2.1'
+        implementation 'com.github.tiann:FreeReflection:3.2.2'
+        testImplementation("org.jetbrains.kotlin:kotlin-test")
+        testImplementation("org.mockito:mockito-core:5.0.0")
+    }
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+
+            testLogging {
+               events "passed", "skipped", "failed", "standardOut", "standardError"
+               outputs.upToDateWhen {false}
+               showStandardStreams = true
+            }
+        }
+    }
+}
+
+dependencies {
+        implementation 'com.github.tiny-computer:termux-x11:5762129903'
+}

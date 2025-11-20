@@ -1,0 +1,60 @@
+name: Build flutter APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    - name: Download Flutter SDK ARM64 2025-11-15
+      run: |
+       wget https://github.com/zhzhzhy/Flutter-SDK-ARM64/releases/download/Flutter-SDK-2025-11-15/Flutter-SDK-ARM64.zip
+       mkdir -p flutter
+       unzip Flutter-SDK-ARM64.zip 
+       ls
+       echo "$PWD/flutter/bin" >> $GITHUB_PATH
+    
+    
+    - name: Install Android SDK dependencies
+      run: |
+        flutter --version
+        sudo apt-get update
+        sudo apt-get install -y unzip wget
+        # Download Android SDK command line tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+        mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006"
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
+    - name: Flutter pub get
+      run: flutter pub get
+
+    - name: Build release APK
+      run: |
+        flutter clean
+        flutter build apk \
+          --target-platform android-arm64 \
+          --split-per-abi \
+          --obfuscate \
+          --split-debug-info=./build/symbols
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-arm64-apk
+        path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
