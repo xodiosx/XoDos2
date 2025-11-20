@@ -1,0 +1,89 @@
+name: Upload wps_office
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag (e.g., 1.0.0)'
+        required: true
+        default: '1.0.1'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 2: Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y wget
+
+      # Step 3: Create Git Tag
+      - name: Create Git Tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag "v${{ github.event.inputs.version_tag }}"
+          git push origin "v${{ github.event.inputs.version_tag }}"
+
+      # Step 4: List files
+      - name: List files
+        run: ls -la
+
+      # Step 5: Download WPS Office ARM64 .deb
+      - name: Download WPS Office ARM64 DEB
+        run: |
+          wget \
+            https://github.com/tiny-computer/third-party-archives/releases/download/archives/wps-office_11.1.0.11720_arm64.deb \
+            -O wps-office_11.1.0.11720_arm64.deb
+
+      # Step 6: Generate MD5 checksum
+      - name: Generate MD5 Checksums
+        id: md5
+        run: |
+          echo "### File Checksums:" > checksums.txt
+          md5sum wps-office_11.1.0.11720_arm64.deb | awk '{print "- **"$2"** → `"$1"`"}' >> checksums.txt
+
+          echo "md5_list<<EOF" >> $GITHUB_ENV
+          cat checksums.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # Step 7: Create GitHub Release and upload assets
+      - name: Create GitHub Release with Files
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ github.event.inputs.version_tag }}"
+          name: "wps_office_release"
+          files: |
+            wps-office_11.1.0.11720_arm64.deb
+
+          body: |
+            🧩 **WPS Office ARM64 Package**
+            Version: 11.1.0.11720
+
+            ### 🧾 Checksums
+            ${{ env.md5_list }}
+
+            ---
+
+            **👥 Credits**  
+            Team: XoDos  
+
+            **💬 Support**  
+            Telegram: t.me/xodemulatorr  
+            Discord: discord.gg/d2ChVhPfnF  
+
+            _Thank you for choosing XoDos by xodios M. aleiw ©2025_
