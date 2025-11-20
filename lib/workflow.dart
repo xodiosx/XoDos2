@@ -352,7 +352,7 @@ class D {
     {"name":"Install scientific computing software Octave", "command":"sudo apt update && sudo apt install -y octave"},
     {"name":"Uninstall Octave", "command":"sudo apt autoremove --purge -y octave"},
     {"name":"Install WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.akams.cn/https://github.com/tiny-computer/third-party-archives/releases/download/archives/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
 EOF
 rm /tmp/wps.deb"""},
     {"name":"Uninstall WPS", "command":"sudo apt autoremove --purge -y wps-office"},
@@ -384,7 +384,7 @@ rm /tmp/wps.deb"""},
     {"name":"Install LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
     {"name":"Uninstall LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
     {"name":"Install WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/tiny-computer/third-party-archives/releases/download/archives/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
 EOF
 rm /tmp/wps.deb"""},
     {"name":"Uninstall WPS", "command":"sudo apt autoremove --purge -y wps-office"},
