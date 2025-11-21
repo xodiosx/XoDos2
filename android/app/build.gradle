@@ -60,9 +60,9 @@ android {
         targetSdk 34 //https://github.com/termux/termux-app/issues/1072; native; linker; flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-ndk {
-            abiFilters "arm64-v8a"
-        }
+//ndk {
+   //         abiFilters "arm64-v8a"
+    //    }
         buildConfigField "String", "COMMIT", "\"" + ("git rev-parse HEAD\n".execute().getText().trim() ?: (System.getenv('CURRENT_COMMIT') ?: "NO_COMMIT")) + "\""
 
     }

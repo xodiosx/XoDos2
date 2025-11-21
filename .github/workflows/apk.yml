@@ -1,0 +1,118 @@
+name: Build xodos2 APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: "Version tag (e.g., 1.0.0)"
+        required: true
+        default: "1.0.2"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repo
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # Step 2: Set up JDK 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Step 3: Download Flutter ARM64 SDK
+      - name: Download Flutter ARM64 SDK
+        run: |
+          wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip
+          unzip Flutter-SDK-ARM64.zip -d flutter
+          echo "$PWD/flutter/flutter/bin" >> $GITHUB_PATH
+          flutter --version
+
+      # Step 4: Install Android SDK
+      - name: Install Android SDK dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip wget
+          
+          # Download Android Commandline Tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "platform-tools" \
+            "ndk;27.1.12297006"
+
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
+      # Step 5: Flutter pub get
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # Step 6: Build APK
+      - name: Build release APK
+        run: |
+          flutter clean
+          flutter build apk \
+            --target-platform android-arm64 \
+            --split-per-abi \
+            
+
+      # Step 7: Generate MD5
+      - name: Generate MD5 checksum
+        id: md5
+        run: |
+          cd build/app/outputs/flutter-apk
+          md5sum app-arm64-v8a-release.apk > md5.txt
+
+          echo "md5_list<<EOF" >> $GITHUB_ENV
+          cat md5.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # Step 8: Create Git Tag
+      - name: Create Git Tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag "v${{ github.event.inputs.version_tag }}"
+          git push origin "v${{ github.event.inputs.version_tag }}"
+
+      # Step 9: Create Release + Upload APK
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ github.event.inputs.version_tag }}"
+          name: "XoDos APK Release"
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          body: |
+            📱 **XoDos 2 APK**
+
+            Version: **${{ github.event.inputs.version_tag }}**
+            
+            ### 🧾 MD5 Checksum
+            ```
+            ${{ env.md5_list }}
+            ```
+
+            ---
+
+            **👥 Credits**  
+            XoDos by xodios  
+
+            **💬 Support**  
+            Telegram: t.me/xodemulatorr  
+            Discord: discord.gg/d2ChVhPfnF  
+
+            _© 2025 XoDos_
