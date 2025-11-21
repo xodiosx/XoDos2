@@ -30,56 +30,102 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DynamicColorBuilder(
-        builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-          return MaterialApp(
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('en'),
-              Locale.fromSubtags(languageCode: 'zh'), // generic Chinese 'zh'
-              Locale.fromSubtags(
-                languageCode: 'zh',
-                scriptCode: 'Hans',
-              ), // generic simplified Chinese 'zh_Hans'
-              Locale.fromSubtags(
-                languageCode: 'zh',
-                scriptCode: 'Hant',
-              ), // generic traditional Chinese 'zh_Hant'
-              Locale.fromSubtags(
-                languageCode: 'zh',
-                scriptCode: 'Hans',
-                countryCode: 'CN',
-              ), // 'zh_Hans_CN'
-              Locale.fromSubtags(
-                languageCode: 'zh',
-                scriptCode: 'Hant',
-                countryCode: 'TW',
-              ), // 'zh_Hant_TW'
-              Locale.fromSubtags(
-                languageCode: 'zh',
-                scriptCode: 'Hant',
-                countryCode: 'HK',
-              ), // 'zh_Hant_HK'
-            ],
-            theme: ThemeData(
-              colorScheme: lightDynamic,
-              useMaterial3: true,
-            ),
-            darkTheme: ThemeData(
-              colorScheme: darkDynamic,
-              useMaterial3: true,
-            ),
-            home: MyHomePage(title: "XoDos"),
-          );
-        }
+    return MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('es'),
+        Locale('pt'),
+        Locale('ru'),
+        Locale('fr'),
+        Locale('ja'),
+        Locale('hi'),
+        Locale('ar'),
+        Locale.fromSubtags(languageCode: 'zh'),
+        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans', countryCode: 'CN'),
+        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant', countryCode: 'TW'),
+        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant', countryCode: 'HK'),
+      ],
+      theme: _buildDarkTheme(),
+      darkTheme: _buildDarkTheme(),
+      themeMode: ThemeMode.dark,
+      home: const MyHomePage(title: "XoDos"),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    final baseTheme = ThemeData.dark(useMaterial3: true);
+    
+    return baseTheme.copyWith(
+      colorScheme: baseTheme.colorScheme.copyWith(
+        primary: Colors.blue,
+        secondary: Colors.green,
+        surface: const Color(0xFF121212),
+        background: const Color(0xFF121212),
+        onBackground: Colors.white,
+        onSurface: Colors.white,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF1E1E1E),
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      cardTheme: baseTheme.cardTheme.copyWith(
+        color: const Color(0xFF1E1E1E),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      dialogTheme: baseTheme.dialogTheme.copyWith(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF1E1E1E),
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
     );
   }
 }
+
+class RTLWrapper extends StatelessWidget {
+  final Widget child;
+  
+  const RTLWrapper({super.key, required this.child});
+  
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    final isRTL = _isRTL(locale);
+    
+    return Directionality(
+      textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+      child: child,
+    );
+  }
+  
+  bool _isRTL(Locale locale) {
+    return locale.languageCode == 'ar' || 
+           locale.languageCode == 'he' || 
+           locale.languageCode == 'fa' ||
+           locale.languageCode == 'ur';
+  }
+}
+
+
+
 
 
 //限制最大宽高比1:1
@@ -537,11 +583,11 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
           const SizedBox.square(dimension: 8),
           Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
             OutlinedButton(style: D.commandButtonStyle, child: Text("${AppLocalizations.of(context)!.installHangoverStable}（10.14）"), onPressed: () async {
-              Util.termWrite("bash ~/.local/share/tiny/extra/install-hangover-stable");
+              Util.termWrite("bash ~/.local/share/xodos/extra/install-hangover-stable");
               G.pageIndex.value = 0;
             }),
             OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.installHangoverLatest), onPressed: () async {
-              Util.termWrite("bash ~/.local/share/tiny/extra/install-hangover");
+              Util.termWrite("bash ~/.local/share/xodos/extra/install-hangover");
               G.pageIndex.value = 0;
             }),
             OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.uninstallHangover), onPressed: () async {
@@ -1298,98 +1344,100 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     G.homePageStateContext = context;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isLoadingComplete ? Util.getCurrentProp("name") : widget.title),
-      ),
-      body: isLoadingComplete
-          ? ValueListenableBuilder(
-              valueListenable: G.pageIndex,
-              builder: (context, value, child) {
-                return IndexedStack(
-                  index: G.pageIndex.value,
-                  children: const [
-                    TerminalPage(),
-                    Padding(
-                      padding: EdgeInsets.all(8),
-                      child: AspectRatioMax1To1(
-                        child: Scrollbar(
-                          child: SingleChildScrollView(
-                            restorationId: "control-scroll",
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: FractionallySizedBox(
-                                    widthFactor: 0.4,
-                                    child: Image(image: AssetImage("images/icon.png")),
+    return RTLWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(isLoadingComplete ? Util.getCurrentProp("name") : widget.title),
+        ),
+        body: isLoadingComplete
+            ? ValueListenableBuilder(
+                valueListenable: G.pageIndex,
+                builder: (context, value, child) {
+                  return IndexedStack(
+                    index: G.pageIndex.value,
+                    children: const [
+                      TerminalPage(),
+                      Padding(
+                        padding: EdgeInsets.all(8),
+                        child: AspectRatioMax1To1(
+                          child: Scrollbar(
+                            child: SingleChildScrollView(
+                              restorationId: "control-scroll",
+                              child: Column(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: FractionallySizedBox(
+                                      widthFactor: 0.4,
+                                      child: Image(image: AssetImage("images/icon.png")),
+                                    ),
                                   ),
-                                ),
-                                FastCommands(),
-                                Padding(
-                                  padding: EdgeInsets.all(8),
-                                  child: Card(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(8),
-                                      child: Column(
-                                        children: [
-                                          SettingPage(),
-                                          SizedBox.square(dimension: 8),
-                                          InfoPage(openFirstInfo: false),
-                                        ],
+                                  FastCommands(),
+                                  Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: Card(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: Column(
+                                          children: [
+                                            SettingPage(),
+                                            SizedBox.square(dimension: 8),
+                                            InfoPage(openFirstInfo: false),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            )
-          : const LoadingPage(),
-      bottomNavigationBar: ValueListenableBuilder(
-        valueListenable: G.pageIndex,
-        builder: (context, value, child) {
-          return Visibility(
-            visible: isLoadingComplete,
-            child: NavigationBar(
-              selectedIndex: G.pageIndex.value,
-              destinations: [
-                NavigationDestination(icon: const Icon(Icons.monitor), label: AppLocalizations.of(context)!.terminal),
-                NavigationDestination(icon: const Icon(Icons.video_settings), label: AppLocalizations.of(context)!.control),
-              ],
-              onDestinationSelected: (index) {
-                G.pageIndex.value = index;
-              },
-            ),
-          );
-        },
-      ),
-      floatingActionButton: ValueListenableBuilder(
-        valueListenable: G.pageIndex,
-        builder: (context, value, child) {
-          return Visibility(
-            visible: isLoadingComplete && (value == 0),
-            child: FloatingActionButton(
-              tooltip: AppLocalizations.of(context)!.enterGUI,
-              onPressed: () {
-                if (G.wasX11Enabled) {
-                  Workflow.launchX11();
-                } else if (G.wasAvncEnabled) {
-                  Workflow.launchAvnc();
-                } else {
-                  Workflow.launchBrowser();
-                }
-              },
-              child: const Icon(Icons.play_arrow),
-            ),
-          );
-        },
+                    ],
+                  );
+                },
+              )
+            : const LoadingPage(),
+        bottomNavigationBar: ValueListenableBuilder(
+          valueListenable: G.pageIndex,
+          builder: (context, value, child) {
+            return Visibility(
+              visible: isLoadingComplete,
+              child: NavigationBar(
+                selectedIndex: G.pageIndex.value,
+                destinations: [
+                  NavigationDestination(icon: const Icon(Icons.monitor), label: AppLocalizations.of(context)!.terminal),
+                  NavigationDestination(icon: const Icon(Icons.video_settings), label: AppLocalizations.of(context)!.control),
+                ],
+                onDestinationSelected: (index) {
+                  G.pageIndex.value = index;
+                },
+              ),
+            );
+          },
+        ),
+        floatingActionButton: ValueListenableBuilder(
+          valueListenable: G.pageIndex,
+          builder: (context, value, child) {
+            return Visibility(
+              visible: isLoadingComplete && (value == 0),
+              child: FloatingActionButton(
+                tooltip: AppLocalizations.of(context)!.enterGUI,
+                onPressed: () {
+                  if (G.wasX11Enabled) {
+                    Workflow.launchX11();
+                  } else if (G.wasAvncEnabled) {
+                    Workflow.launchAvnc();
+                  } else {
+                    Workflow.launchBrowser();
+                  }
+                },
+                child: const Icon(Icons.play_arrow),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
