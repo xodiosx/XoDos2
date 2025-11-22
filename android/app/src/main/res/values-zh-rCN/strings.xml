@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tc_app_name">小小电脑</string>
+    <string name="tc_app_name">XoDos</string>
 
     <string name="tc_s9a_error_message">终端异常终止，返回错误码9。此错误是安卓12+系统限制子进程数量造成的，需要手动关闭限制。</string>
     <string name="tc_s9a_kaomoji">:(</string>

@@ -67,8 +67,8 @@ public class XDocumentsProvider extends DocumentsProvider {
     @Override
     public Cursor queryRoots(String[] projection) {
         final MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_ROOT_PROJECTION);
-        final String applicationName = "小小电脑";
-        final File BASE_DIR = new File(getContext().getFilesDir(), "containers");
+        final String applicationName = "XoDos";
+        final File BASE_DIR = getContext().getFilesDir();
         final MatrixCursor.RowBuilder row = result.newRow();
         row.add(Root.COLUMN_ROOT_ID, getDocIdForFile(BASE_DIR));
         row.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(BASE_DIR));
@@ -173,7 +173,9 @@ public class XDocumentsProvider extends DocumentsProvider {
             // through the whole SD card).
             boolean isInsideHome;
             try {
-                isInsideHome = file.getCanonicalPath().startsWith(new File(getContext().getFilesDir(), "containers").getAbsolutePath());
+                isInsideHome = file.getCanonicalPath().startsWith(
+    getContext().getFilesDir().getAbsolutePath()
+);
             } catch (IOException e) {
                 isInsideHome = true;
             }
