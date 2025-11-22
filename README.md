@@ -1,4 +1,4 @@
-# XoDos Rebirth 🐧📱
+# XoDos Rebirth🐧📱
 <p align="center">
   <img src="images/icon.png" alt="XoDos Logo" width="200" height="200">
 </p>
