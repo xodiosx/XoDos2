@@ -1,4 +1,7 @@
 # XoDos Rebirth 🐧📱
+<p align="center">
+  <img src="images/icon.png" alt="XoDos Logo" width="200" height="200">
+</p>
 
 [![GitHub Release](https://img.shields.io/badge/Release-Coming_Soon-orange)](https://github.com/xodiosx/XoDos2/releases)
 [![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue)](https://t.me/xodemulatorr)
