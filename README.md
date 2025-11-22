@@ -7,11 +7,17 @@
 [![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue)](https://t.me/xodemulatorr)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-7289da)](https://discord.gg/d2ChVhPfnF)
 
+> **"The only thing worse than being blind is having sight but no vision."** - Helen Keller
+>
+> **"The real voyage of discovery consists not in seeking new landscapes, but in having new eyes."** - Marcel Proust
+>
+> **"Awakening is not changing who you are, but discarding who you are not."** - Deepak Chopra
+
 **XoDos** is a revolutionary Linux desktop environment that runs seamlessly on Android devices, bringing the full power of Linux to your mobile device without conflicts with other applications.
 
 > 🚧 **Work in Progress** - First release expected around New Year!
 
-## ✨ What is XoDos re. ?
+## ✨ What is XoDos?
 
 XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/XoDos) project, now reimagined and rebuilt from the ground up. Inspired by the [tiny computer project](https://github.com/Cateners/tiny_computer), XoDos offers:
 
@@ -19,12 +25,12 @@ XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/X
 - **🚀 Standalone Experience**: A complete Linux desktop environment running natively on Android
 - **📱 Mobile-Optimized**: Tailored specifically for Android devices and touch interfaces
 - **🔧 Developer Friendly**: Perfect for coding, testing, and development on the go
-- **📚 students Friendly**: Perfect for students and office trainings, using wide range of office Apps, and writing / learning on the go
+- **📚 Students Friendly**: Perfect for students and office trainings, using wide range of office Apps, and writing / learning on the go
 
 ## 🎯 Key Features
 
 - **Complete Linux Desktop** - Full desktop environment with window management
-- **Windows** - wine with box64 to run PC games/apps 
+- **Windows Compatibility** - Wine with box64 to run PC games/apps 
 - **Android Integration** - Seamlessly works alongside your Android apps
 - **No Root Required** - Runs without needing root access
 - **Lightweight** - Optimized for mobile devices and resource efficiency
@@ -41,7 +47,7 @@ Stay tuned for installation instructions when the first release becomes availabl
 XoDos is currently in active development. We're working hard to deliver a stable and feature-rich experience. Here's what to expect:
 
 - [ ] Core Linux environment integration
-- [ ]  windows environment integration ( wine / box64)
+- [ ] Windows environment integration (wine / box64)
 - [ ] Desktop environment setup
 - [ ] Android compatibility layer
 - [ ] User interface optimization
