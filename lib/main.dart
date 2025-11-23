@@ -1168,7 +1168,7 @@ RawGestureDetector forceScaleGestureDetector({
 
 
 
-cclass TerminalPage extends StatefulWidget {
+class TerminalPage extends StatefulWidget {
   const TerminalPage({super.key});
 
   @override
