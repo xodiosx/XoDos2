@@ -1508,7 +1508,6 @@ class _TerminalPageState extends State<TerminalPage> {
 
 
 
-
 class FastCommands extends StatefulWidget {
   const FastCommands({super.key});
 
@@ -1604,6 +1603,7 @@ class _FastCommandsState extends State<FastCommands> {
   }
 }
 
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -1648,50 +1648,51 @@ class _MyHomePageState extends State<MyHomePage> {
             ? ValueListenableBuilder(
                 valueListenable: G.pageIndex,
                 builder: (context, value, child) {
-                // In your MyHomePage build method, ensure the IndexedStack looks like this:
-return IndexedStack(
-  index: G.pageIndex.value,
-  children: const [
-    TerminalPage(), // This should be first
-    Padding(
-      padding: EdgeInsets.all(8),
-      child: AspectRatioMax1To1(
-        child: Scrollbar(
-          child: SingleChildScrollView(
-            restorationId: "control-scroll",
-            child: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(16),
-                  child: FractionallySizedBox(
-                    widthFactor: 0.4,
-                    child: Image(image: AssetImage("images/icon.png")),
-                  ),
-                ),
-                FastCommands(),
-                Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Column(
-                        children: [
-                          SettingPage(),
-                          SizedBox.square(dimension: 8),
-                          InfoPage(openFirstInfo: false),
-                        ],
+                  return IndexedStack(
+                    index: G.pageIndex.value,
+                    children: const [
+                      TerminalPage(),
+                      Padding(
+                        padding: EdgeInsets.all(8),
+                        child: AspectRatioMax1To1(
+                          child: Scrollbar(
+                            child: SingleChildScrollView(
+                              restorationId: "control-scroll",
+                              child: Column(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: FractionallySizedBox(
+                                      widthFactor: 0.4,
+                                      child: Image(image: AssetImage("images/icon.png")),
+                                    ),
+                                  ),
+                                  FastCommands(),
+                                  Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: Card(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: Column(
+                                          children: [
+                                            SettingPage(),
+                                            SizedBox.square(dimension: 8),
+                                            InfoPage(openFirstInfo: false),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  ],
-);
+                    ],
+                  );
+                },
+              )
             : const LoadingPage(),
         bottomNavigationBar: ValueListenableBuilder(
           valueListenable: G.pageIndex,
@@ -1711,6 +1712,12 @@ return IndexedStack(
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+
         
         // Remove or comment out this floatingActionButton section from MyHomePage:
 /*
