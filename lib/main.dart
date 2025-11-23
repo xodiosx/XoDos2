@@ -1168,54 +1168,291 @@ RawGestureDetector forceScaleGestureDetector({
 
 
 
-class TerminalPage extends StatelessWidget {
+class TerminalPage extends StatefulWidget {
   const TerminalPage({super.key});
 
   @override
+  State<TerminalPage> createState() => _TerminalPageState();
+}
+
+class _TerminalPageState extends State<TerminalPage> {
+  final GlobalKey _terminalKey = GlobalKey();
+  bool _showCopyButton = false;
+  String _selectedText = '';
+  Offset _selectionPosition = Offset.zero;
+
+  void _showCopyMenu(String text, Offset position) {
+    setState(() {
+      _selectedText = text;
+      _showCopyButton = true;
+      _selectionPosition = position;
+    });
+  }
+
+  void _hideCopyMenu() {
+    setState(() {
+      _showCopyButton = false;
+      _selectedText = '';
+    });
+  }
+
+  Future<void> _copySelectedText() async {
+    if (_selectedText.isNotEmpty) {
+      await FlutterClipboard.copy(_selectedText);
+      ScaffoldMessenger.of(G.homePageStateContext).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(G.homePageStateContext)!.textCopied),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      _hideCopyMenu();
+    }
+  }
+
+  void _pasteText() async {
+    final clipboardText = await FlutterClipboard.paste();
+    if (clipboardText.isNotEmpty) {
+      Util.termWrite(clipboardText);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(children: [Expanded(child: forceScaleGestureDetector(onScaleUpdate: (details) {
-        G.termFontScale.value = (details.scale * (Util.getGlobal("termFontScale") as double)).clamp(0.2, 5);
-      }, onScaleEnd: (details) async {
-        await G.prefs.setDouble("termFontScale", G.termFontScale.value);
-      }, child: ValueListenableBuilder(valueListenable: G.termFontScale, builder:(context, value, child) {
-        return TerminalView(G.termPtys[G.currentContainer]!.terminal, textScaler: TextScaler.linear(G.termFontScale.value), keyboardType: TextInputType.multiline);
-      },) )), 
-      ValueListenableBuilder(valueListenable: G.terminalPageChange, builder:(context, value, child) {
-      return (Util.getGlobal("isTerminalCommandsEnabled") as bool)?Padding(padding: const EdgeInsets.all(8), child: Row(children: [AnimatedBuilder(
-          animation: G.keyboard,
-          builder: (context, child) => ToggleButtons(
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 24),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
-            isSelected: [G.keyboard.ctrl, G.keyboard.alt, G.keyboard.shift],
-            onPressed: (index) {
-              switch (index) {
-                case 0:
-                  G.keyboard.ctrl = !G.keyboard.ctrl;
-                  break;
-                case 1:
-                  G.keyboard.alt = !G.keyboard.alt;
-                  break;
-                case 2:
-                  G.keyboard.shift = !G.keyboard.shift;
-                  break;
-              }
+    return Stack(
+      children: [
+        Column(
+          children: [
+            Expanded(
+              child: forceScaleGestureDetector(
+                onScaleUpdate: (details) {
+                  G.termFontScale.value = (details.scale * (Util.getGlobal("termFontScale") as double)).clamp(0.2, 5);
+                }, 
+                onScaleEnd: (details) async {
+                  await G.prefs.setDouble("termFontScale", G.termFontScale.value);
+                }, 
+                child: ValueListenableBuilder(
+                  valueListenable: G.termFontScale, 
+                  builder: (context, value, child) {
+                    return _buildTerminalWithSelection();
+                  },
+                ),
+              ),
+            ), 
+            ValueListenableBuilder(
+              valueListenable: G.terminalPageChange, 
+              builder: (context, value, child) {
+                return (Util.getGlobal("isTerminalCommandsEnabled") as bool) 
+                  ? _buildTermuxStyleControlBar()
+                  : const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
+        
+        // Copy button that appears when text is selected
+        if (_showCopyButton)
+          Positioned(
+            left: _selectionPosition.dx,
+            top: _selectionPosition.dy - 50, // Position above the selection
+            child: _buildCopyMenu(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTerminalWithSelection() {
+    return GestureDetector(
+      onLongPressStart: (details) {
+        _showContextMenu(details.globalPosition);
+      },
+      onLongPress: () {
+        // This will trigger text selection in the terminal
+      },
+      child: TerminalView(
+        key: _terminalKey,
+        G.termPtys[G.currentContainer]!.terminal, 
+        textScaler: TextScaler.linear(G.termFontScale.value), 
+        keyboardType: TextInputType.multiline,
+      ),
+    );
+  }
+
+  void _showContextMenu(Offset globalPosition) {
+    // Get the current terminal content
+    final terminal = G.termPtys[G.currentContainer]!.terminal;
+    final buffer = terminal.buffer;
+    String selectedText = '';
+    
+    // Try to get selected text from terminal buffer
+    // This is a simplified approach - you might need to implement proper selection logic
+    try {
+      // Get visible lines or recent output
+      final lines = buffer.lines;
+      int startLine = max(0, lines.length - 50); // Last 50 lines
+      for (int i = startLine; i < lines.length; i++) {
+        selectedText += '${lines[i].toString()}\n';
+      }
+      selectedText = selectedText.trim();
+    } catch (e) {
+      selectedText = 'Terminal output';
+    }
+    
+    _showCopyMenu(selectedText, globalPosition);
+  }
+
+  Widget _buildCopyMenu() {
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardDark,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.primaryPurple),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Copy button
+            _buildContextMenuButton(
+              Icons.content_copy,
+              AppLocalizations.of(G.homePageStateContext)!.copy,
+              _copySelectedText,
+            ),
+            
+            // Paste button  
+            _buildContextMenuButton(
+              Icons.content_paste,
+              AppLocalizations.of(G.homePageStateContext)!.paste,
+              _pasteText,
+            ),
+            
+            // Close button
+            _buildContextMenuButton(
+              Icons.close,
+              AppLocalizations.of(G.homePageStateContext)!.close,
+              _hideCopyMenu,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContextMenuButton(IconData icon, String text, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primaryPurple),
+            const SizedBox(height: 4),
+            Text(
+              text,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTermuxStyleControlBar() {
+    return Container(
+      color: AppColors.surfaceDark,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          // Ctrl, Alt, Shift toggle buttons
+          _buildModifierKeys(),
+          const SizedBox(height: 8),
+          // Function keys row
+          _buildFunctionKeys(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModifierKeys() {
+    return AnimatedBuilder(
+      animation: G.keyboard,
+      builder: (context, child) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildTermuxKey(
+            'CTRL',
+            isActive: G.keyboard.ctrl,
+            onTap: () => G.keyboard.ctrl = !G.keyboard.ctrl,
+          ),
+          _buildTermuxKey(
+            'ALT', 
+            isActive: G.keyboard.alt,
+            onTap: () => G.keyboard.alt = !G.keyboard.alt,
+          ),
+          _buildTermuxKey(
+            'SHIFT',
+            isActive: G.keyboard.shift, 
+            onTap: () => G.keyboard.shift = !G.keyboard.shift,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFunctionKeys() {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: D.termCommands.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 4),
+        itemBuilder: (context, index) {
+          return _buildTermuxKey(
+            D.termCommands[index]["name"]! as String,
+            onTap: () {
+              G.termPtys[G.currentContainer]!.terminal.keyInput(
+                D.termCommands[index]["key"]! as TerminalKey
+              );
             },
-            children: const [Text('Ctrl'), Text('Alt'), Text('Shift')],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primaryPurple : AppColors.cardDark,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? AppColors.primaryPurple : AppColors.divider,
+            width: 1,
           ),
         ),
-        const SizedBox.square(dimension: 8), 
-        Expanded(child: SizedBox(height: 24, child: ListView.separated(scrollDirection: Axis.horizontal, itemBuilder:(context, index) {
-          return OutlinedButton(style: D.controlButtonStyle, onPressed: () {
-            G.termPtys[G.currentContainer]!.terminal.keyInput(D.termCommands[index]["key"]! as TerminalKey);
-          }, child: Text(D.termCommands[index]["name"]! as String));
-        }, separatorBuilder:(context, index) {
-          return const SizedBox.square(dimension: 4);
-        }, itemCount: D.termCommands.length))), SizedBox.fromSize(size: const Size(72, 0))])):const SizedBox.square(dimension: 0);
-      })
-    ]);
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.black : AppColors.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
   }
 }
+
+
 
 
 
