@@ -1168,7 +1168,7 @@ RawGestureDetector forceScaleGestureDetector({
 
 
 
-class TerminalPage extends StatefulWidget {
+cclass TerminalPage extends StatefulWidget {
   const TerminalPage({super.key});
 
   @override
@@ -1180,12 +1180,42 @@ class _TerminalPageState extends State<TerminalPage> {
   bool _showCopyButton = false;
   String _selectedText = '';
   Offset _selectionPosition = Offset.zero;
+  late TerminalController _terminalController;
 
-  void _showCopyMenu(String text, Offset position) {
+  @override
+  void initState() {
+    super.initState();
+    _terminalController = TerminalController();
+  }
+
+  @override
+  void dispose() {
+    _terminalController.dispose();
+    super.dispose();
+  }
+
+  void _showContextMenu(Offset globalPosition) {
+    // Get terminal content for copying
+    final terminal = G.termPtys[G.currentContainer]!.terminal;
+    final buffer = terminal.buffer;
+    String terminalText = '';
+    
+    try {
+      // Get recent terminal output (last 100 lines)
+      final lines = buffer.lines;
+      int startLine = max(0, lines.length - 100);
+      for (int i = startLine; i < lines.length; i++) {
+        terminalText += '${lines[i].toString()}\n';
+      }
+      terminalText = terminalText.trim();
+    } catch (e) {
+      terminalText = 'Terminal output';
+    }
+    
     setState(() {
-      _selectedText = text;
+      _selectedText = terminalText;
       _showCopyButton = true;
-      _selectionPosition = position;
+      _selectionPosition = globalPosition;
     });
   }
 
@@ -1199,12 +1229,14 @@ class _TerminalPageState extends State<TerminalPage> {
   Future<void> _copySelectedText() async {
     if (_selectedText.isNotEmpty) {
       await FlutterClipboard.copy(_selectedText);
-      ScaffoldMessenger.of(G.homePageStateContext).showSnackBar(
-  SnackBar(
-    content: Text('Text copied to clipboard'), // Hardcoded for now
-    duration: const Duration(seconds: 2),
-  ),
-);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Text copied to clipboard'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
       _hideCopyMenu();
     }
   }
@@ -1214,6 +1246,7 @@ class _TerminalPageState extends State<TerminalPage> {
     if (clipboardText.isNotEmpty) {
       Util.termWrite(clipboardText);
     }
+    _hideCopyMenu();
   }
 
   @override
@@ -1249,11 +1282,11 @@ class _TerminalPageState extends State<TerminalPage> {
           ],
         ),
         
-        // Copy button that appears when text is selected
+        // Copy/Paste menu
         if (_showCopyButton)
           Positioned(
             left: _selectionPosition.dx,
-            top: _selectionPosition.dy - 50, // Position above the selection
+            top: _selectionPosition.dy - 60,
             child: _buildCopyMenu(),
           ),
       ],
@@ -1261,103 +1294,132 @@ class _TerminalPageState extends State<TerminalPage> {
   }
 
   Widget _buildTerminalWithSelection() {
-    return GestureDetector(
-      onLongPressStart: (details) {
-        _showContextMenu(details.globalPosition);
+    return Listener(
+      onPointerDown: (event) {
+        // Hide menu when tapping outside
+        if (_showCopyButton) {
+          _hideCopyMenu();
+        }
       },
-      onLongPress: () {
-        // This will trigger text selection in the terminal
+      onPointerUp: (event) {
+        // Show context menu on long press (handled by onLongPress)
       },
-      child: TerminalView(
-        key: _terminalKey,
-        G.termPtys[G.currentContainer]!.terminal, 
-        textScaler: TextScaler.linear(G.termFontScale.value), 
-        keyboardType: TextInputType.multiline,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onLongPress: () {
+          final renderBox = context.findRenderObject() as RenderBox?;
+          if (renderBox != null) {
+            final localPosition = renderBox.globalToLocal(_selectionPosition);
+            _showContextMenu(localPosition);
+          }
+        },
+        onLongPressStart: (details) {
+          // Store the position where long press started
+          setState(() {
+            _selectionPosition = details.globalPosition;
+          });
+        },
+        onLongPressUp: () {
+          // Show menu after long press is complete
+          _showContextMenu(_selectionPosition);
+        },
+        child: TerminalView(
+          key: _terminalKey,
+          G.termPtys[G.currentContainer]!.terminal, 
+          controller: _terminalController,
+          textScaler: TextScaler.linear(G.termFontScale.value), 
+          keyboardType: TextInputType.multiline,
+          // Make sure terminal doesn't consume all gestures
+          readOnly: false,
+        ),
       ),
     );
   }
 
-  void _showContextMenu(Offset globalPosition) {
-    // Get the current terminal content
-    final terminal = G.termPtys[G.currentContainer]!.terminal;
-    final buffer = terminal.buffer;
-    String selectedText = '';
-    
-    // Try to get selected text from terminal buffer
-    // This is a simplified approach - you might need to implement proper selection logic
-    try {
-      // Get visible lines or recent output
-      final lines = buffer.lines;
-      int startLine = max(0, lines.length - 50); // Last 50 lines
-      for (int i = startLine; i < lines.length; i++) {
-        selectedText += '${lines[i].toString()}\n';
-      }
-      selectedText = selectedText.trim();
-    } catch (e) {
-      selectedText = 'Terminal output';
-    }
-    
-    _showCopyMenu(selectedText, globalPosition);
-  }
-
   Widget _buildCopyMenu() {
-  return Material(
-    elevation: 4,
-    borderRadius: BorderRadius.circular(8),
-    child: Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primaryPurple),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Copy button
-          _buildContextMenuButton(
-            Icons.content_copy,
-            'Copy🗒️', // Hardcoded for now
-            _copySelectedText,
-          ),
-          
-          // Paste button  
-          _buildContextMenuButton(
-            Icons.content_paste,
-            'Paste📋', // Hardcoded for now
-            _pasteText,
-          ),
-          
-          // Close button
-          _buildContextMenuButton(
-            Icons.close,
-            'Close❌', // Hardcoded for now
-            _hideCopyMenu,
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-  Widget _buildContextMenuButton(IconData icon, String text, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: AppColors.primaryPurple),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 10,
-              ),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primaryPurple, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: IntrinsicWidth(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Copy button
+              _buildContextMenuButton(
+                Icons.content_copy,
+                'Copy',
+                _copySelectedText,
+              ),
+              
+              // Divider
+              Container(
+                height: 1,
+                color: AppColors.divider,
+              ),
+              
+              // Paste button  
+              _buildContextMenuButton(
+                Icons.content_paste,
+                'Paste',
+                _pasteText,
+              ),
+              
+              // Divider
+              Container(
+                height: 1,
+                color: AppColors.divider,
+              ),
+              
+              // Close button
+              _buildContextMenuButton(
+                Icons.close,
+                'Close',
+                _hideCopyMenu,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContextMenuButton(IconData icon, String text, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: AppColors.primaryPurple),
+              const SizedBox(width: 8),
+              Text(
+                text,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1430,7 +1492,12 @@ class _TerminalPageState extends State<TerminalPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        constraints: const BoxConstraints(
+          minWidth: 40,
+          maxWidth: 80,
+          minHeight: 32,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isActive ? AppColors.primaryPurple : AppColors.cardDark,
           borderRadius: BorderRadius.circular(8),
@@ -1439,19 +1506,24 @@ class _TerminalPageState extends State<TerminalPage> {
             width: 1,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.black : AppColors.textPrimary,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.black : AppColors.textPrimary,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),
     );
   }
 }
-
 
 
 
