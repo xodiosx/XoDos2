@@ -1200,11 +1200,11 @@ class _TerminalPageState extends State<TerminalPage> {
     if (_selectedText.isNotEmpty) {
       await FlutterClipboard.copy(_selectedText);
       ScaffoldMessenger.of(G.homePageStateContext).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(G.homePageStateContext)!.textCopied),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+  SnackBar(
+    content: Text('Text copied to clipboard'), // Hardcoded for now
+    duration: const Duration(seconds: 2),
+  ),
+);
       _hideCopyMenu();
     }
   }
@@ -1301,43 +1301,43 @@ class _TerminalPageState extends State<TerminalPage> {
   }
 
   Widget _buildCopyMenu() {
-    return Material(
-      elevation: 4,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.cardDark,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.primaryPurple),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Copy button
-            _buildContextMenuButton(
-              Icons.content_copy,
-              AppLocalizations.of(G.homePageStateContext)!.copy,
-              _copySelectedText,
-            ),
-            
-            // Paste button  
-            _buildContextMenuButton(
-              Icons.content_paste,
-              AppLocalizations.of(G.homePageStateContext)!.paste,
-              _pasteText,
-            ),
-            
-            // Close button
-            _buildContextMenuButton(
-              Icons.close,
-              AppLocalizations.of(G.homePageStateContext)!.close,
-              _hideCopyMenu,
-            ),
-          ],
-        ),
+  return Material(
+    elevation: 4,
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primaryPurple),
       ),
-    );
-  }
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Copy button
+          _buildContextMenuButton(
+            Icons.content_copy,
+            'Copy🗒️', // Hardcoded for now
+            _copySelectedText,
+          ),
+          
+          // Paste button  
+          _buildContextMenuButton(
+            Icons.content_paste,
+            'Paste📋', // Hardcoded for now
+            _pasteText,
+          ),
+          
+          // Close button
+          _buildContextMenuButton(
+            Icons.close,
+            'Close❌', // Hardcoded for now
+            _hideCopyMenu,
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _buildContextMenuButton(IconData icon, String text, VoidCallback onTap) {
     return InkWell(
@@ -1685,3 +1685,40 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      constraints: const BoxConstraints(
+        minWidth: 40,
+        maxWidth: 80, // Limit maximum width
+        minHeight: 32,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.primaryPurple : AppColors.cardDark,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isActive ? AppColors.primaryPurple : AppColors.divider,
+          width: 1,
+        ),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.black : AppColors.textPrimary,
+            fontSize: 10, // Smaller font size
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ),
+  );
+}
+
+
