@@ -1315,68 +1315,75 @@ class _TerminalPageState extends State<TerminalPage> {
     );
   }
 
-  Future<void> _copyTerminalText() async {
-    try {
-      final terminal = G.termPtys[G.currentContainer]!.terminal;
-      final buffer = terminal.buffer;
-      String terminalText = '';
+Future<void> _copyTerminalText() async {
+  try {
+    final terminal = G.termPtys[G.currentContainer]!.terminal;
+    
+    // For xterm 4.0.0, check if there's a selection and get the selected text
+    final selection = terminal.selection;
+    
+    if (selection != null) {
+      // Use the buffer's getText method with the selection range
+      final selectedText = terminal.buffer.getText(selection);
       
-      // Get recent terminal output (last 200 lines)
-      final lines = buffer.lines;
-      int startLine = max(0, lines.length - 200);
-      for (int i = startLine; i < lines.length; i++) {
-        terminalText += '${lines[i].toString()}\n';
-      }
-      terminalText = terminalText.trim();
-      
-      if (terminalText.isNotEmpty) {
-        await FlutterClipboard.copy(terminalText);
+      if (selectedText.isNotEmpty) {
+        await FlutterClipboard.copy(selectedText);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Terminal text copied to clipboard'),
+            content: Text('Selected text copied to clipboard'),
             duration: Duration(seconds: 2),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('No text to copy'),
+            content: Text('No text selected - please select text in the terminal first'),
             duration: Duration(seconds: 2),
           ),
         );
       }
-    } catch (e) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Failed to copy terminal text'),
+          content: Text('No text selected - please select text by long-pressing and dragging in the terminal'),
           duration: Duration(seconds: 2),
         ),
       );
     }
+  } catch (e) {
+    print('Copy error: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to copy selected text'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
+}
 
   Future<void> _pasteToTerminal() async {
-    try {
-      final clipboardText = await FlutterClipboard.paste();
-      if (clipboardText.isNotEmpty) {
-        Util.termWrite(clipboardText);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Clipboard is empty'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
+  try {
+    final clipboardText = await FlutterClipboard.paste();
+    if (clipboardText.isNotEmpty) {
+      // Use textInput for xterm 4.0.0 compatibility
+      G.termPtys[G.currentContainer]!.terminal.textInput(clipboardText);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Failed to paste from clipboard'),
+          content: Text('Clipboard is empty'),
           duration: Duration(seconds: 2),
         ),
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to paste from clipboard'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
+}
 
   Widget _buildTermuxStyleControlBar() {
     return Container(
