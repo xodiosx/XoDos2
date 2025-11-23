@@ -1176,253 +1176,206 @@ class TerminalPage extends StatefulWidget {
 }
 
 class _TerminalPageState extends State<TerminalPage> {
-  final GlobalKey _terminalKey = GlobalKey();
-  bool _showCopyButton = false;
-  String _selectedText = '';
-  Offset _selectionPosition = Offset.zero;
-  late TerminalController _terminalController;
-
-  @override
-  void initState() {
-    super.initState();
-    _terminalController = TerminalController();
-  }
-
-  @override
-  void dispose() {
-    _terminalController.dispose();
-    super.dispose();
-  }
-
-  void _showContextMenu(Offset globalPosition) {
-    // Get terminal content for copying
-    final terminal = G.termPtys[G.currentContainer]!.terminal;
-    final buffer = terminal.buffer;
-    String terminalText = '';
-    
-    try {
-      // Get recent terminal output (last 100 lines)
-      final lines = buffer.lines;
-      int startLine = max(0, lines.length - 100);
-      for (int i = startLine; i < lines.length; i++) {
-        terminalText += '${lines[i].toString()}\n';
-      }
-      terminalText = terminalText.trim();
-    } catch (e) {
-      terminalText = 'Terminal output';
-    }
-    
-    setState(() {
-      _selectedText = terminalText;
-      _showCopyButton = true;
-      _selectionPosition = globalPosition;
-    });
-  }
-
-  void _hideCopyMenu() {
-    setState(() {
-      _showCopyButton = false;
-      _selectedText = '';
-    });
-  }
-
-  Future<void> _copySelectedText() async {
-    if (_selectedText.isNotEmpty) {
-      await FlutterClipboard.copy(_selectedText);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Text copied to clipboard'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-      _hideCopyMenu();
-    }
-  }
-
-  void _pasteText() async {
-    final clipboardText = await FlutterClipboard.paste();
-    if (clipboardText.isNotEmpty) {
-      Util.termWrite(clipboardText);
-    }
-    _hideCopyMenu();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return Column(
       children: [
-        Column(
-          children: [
-            Expanded(
-              child: forceScaleGestureDetector(
-                onScaleUpdate: (details) {
-                  G.termFontScale.value = (details.scale * (Util.getGlobal("termFontScale") as double)).clamp(0.2, 5);
-                }, 
-                onScaleEnd: (details) async {
-                  await G.prefs.setDouble("termFontScale", G.termFontScale.value);
-                }, 
-                child: ValueListenableBuilder(
-                  valueListenable: G.termFontScale, 
-                  builder: (context, value, child) {
-                    return _buildTerminalWithSelection();
-                  },
-                ),
-              ),
-            ), 
-            ValueListenableBuilder(
-              valueListenable: G.terminalPageChange, 
+        _buildTopActionButtons(),
+        Expanded(
+          child: forceScaleGestureDetector(
+            onScaleUpdate: (details) {
+              G.termFontScale.value = (details.scale * (Util.getGlobal("termFontScale") as double)).clamp(0.2, 5);
+            }, 
+            onScaleEnd: (details) async {
+              await G.prefs.setDouble("termFontScale", G.termFontScale.value);
+            }, 
+            child: ValueListenableBuilder(
+              valueListenable: G.termFontScale, 
               builder: (context, value, child) {
-                return (Util.getGlobal("isTerminalCommandsEnabled") as bool) 
-                  ? _buildTermuxStyleControlBar()
-                  : const SizedBox.shrink();
+                return TerminalView(
+                  G.termPtys[G.currentContainer]!.terminal, 
+                  textScaler: TextScaler.linear(G.termFontScale.value), 
+                  keyboardType: TextInputType.multiline,
+                );
               },
             ),
-          ],
-        ),
-        
-        // Copy/Paste menu
-        if (_showCopyButton)
-          Positioned(
-            left: _selectionPosition.dx,
-            top: _selectionPosition.dy - 60,
-            child: _buildCopyMenu(),
           ),
+        ), 
+        ValueListenableBuilder(
+          valueListenable: G.terminalPageChange, 
+          builder: (context, value, child) {
+            return (Util.getGlobal("isTerminalCommandsEnabled") as bool) 
+              ? _buildTermuxStyleControlBar()
+              : const SizedBox.shrink();
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildTerminalWithSelection() {
-    return Listener(
-      onPointerDown: (event) {
-        // Hide menu when tapping outside
-        if (_showCopyButton) {
-          _hideCopyMenu();
-        }
-      },
-      onPointerUp: (event) {
-        // Show context menu on long press (handled by onLongPress)
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onLongPress: () {
-          final renderBox = context.findRenderObject() as RenderBox?;
-          if (renderBox != null) {
-            final localPosition = renderBox.globalToLocal(_selectionPosition);
-            _showContextMenu(localPosition);
-          }
-        },
-        onLongPressStart: (details) {
-          // Store the position where long press started
-          setState(() {
-            _selectionPosition = details.globalPosition;
-          });
-        },
-        onLongPressUp: () {
-          // Show menu after long press is complete
-          _showContextMenu(_selectionPosition);
-        },
-        child: TerminalView(
-          key: _terminalKey,
-          G.termPtys[G.currentContainer]!.terminal, 
-          controller: _terminalController,
-          textScaler: TextScaler.linear(G.termFontScale.value), 
-          keyboardType: TextInputType.multiline,
-          // Make sure terminal doesn't consume all gestures
-          readOnly: false,
-        ),
+  Widget _buildTopActionButtons() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppColors.surfaceDark,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Start GUI button
+          _buildTopActionButton(
+            Icons.play_arrow,
+            'Start GUI',
+            _startGUI,
+          ),
+          
+          // Exit/Stop button
+          _buildTopActionButton(
+            Icons.stop,
+            'Exit Container',
+            _exitContainer,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCopyMenu() {
-    return Material(
-      elevation: 8,
-      borderRadius: BorderRadius.circular(12),
+  Widget _buildTopActionButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primaryPurple, width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+          color: AppColors.cardDark,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.primaryPurple),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primaryPurple),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
-        child: IntrinsicWidth(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Copy button
-              _buildContextMenuButton(
-                Icons.content_copy,
-                'Copy',
-                _copySelectedText,
-              ),
-              
-              // Divider
-              Container(
-                height: 1,
-                color: AppColors.divider,
-              ),
-              
-              // Paste button  
-              _buildContextMenuButton(
-                Icons.content_paste,
-                'Paste',
-                _pasteText,
-              ),
-              
-              // Divider
-              Container(
-                height: 1,
-                color: AppColors.divider,
-              ),
-              
-              // Close button
-              _buildContextMenuButton(
-                Icons.close,
-                'Close',
-                _hideCopyMenu,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildContextMenuButton(IconData icon, String text, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: AppColors.primaryPurple),
-              const SizedBox(width: 8),
-              Text(
-                text,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+  void _startGUI() {
+    if (G.wasX11Enabled) {
+      Workflow.launchX11();
+    } else if (G.wasAvncEnabled) {
+      Workflow.launchAvnc();
+    } else {
+      Workflow.launchBrowser();
+    }
+  }
+
+  void _exitContainer() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Container'),
+        content: const Text('This will stop the current container and return to the terminal. Are you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
           ),
-        ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _forceExitContainer();
+            },
+            child: const Text('Exit'),
+          ),
+        ],
       ),
     );
+  }
+
+  void _forceExitContainer() {
+    // Send exit commands to stop the container
+    Util.termWrite('stopvnc');
+    Util.termWrite('exit');
+    Util.termWrite('exit');
+    
+    // Show confirmation
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Container stopped. Starting fresh terminal...'),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _copyTerminalText() async {
+    try {
+      final terminal = G.termPtys[G.currentContainer]!.terminal;
+      final buffer = terminal.buffer;
+      String terminalText = '';
+      
+      // Get recent terminal output (last 200 lines)
+      final lines = buffer.lines;
+      int startLine = max(0, lines.length - 200);
+      for (int i = startLine; i < lines.length; i++) {
+        terminalText += '${lines[i].toString()}\n';
+      }
+      terminalText = terminalText.trim();
+      
+      if (terminalText.isNotEmpty) {
+        await FlutterClipboard.copy(terminalText);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Terminal text copied to clipboard'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No text to copy'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to copy terminal text'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _pasteToTerminal() async {
+    try {
+      final clipboardText = await FlutterClipboard.paste();
+      if (clipboardText.isNotEmpty) {
+        Util.termWrite(clipboardText);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Clipboard is empty'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to paste from clipboard'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Widget _buildTermuxStyleControlBar() {
@@ -1431,13 +1384,39 @@ class _TerminalPageState extends State<TerminalPage> {
       padding: const EdgeInsets.all(8),
       child: Column(
         children: [
-          // Ctrl, Alt, Shift toggle buttons
-          _buildModifierKeys(),
+          // First row: Modifier keys + Copy/Paste
+          Row(
+            children: [
+              // Modifier keys
+              Expanded(
+                child: _buildModifierKeys(),
+              ),
+              const SizedBox(width: 8),
+              // Copy/Paste buttons
+              _buildCopyPasteButtons(),
+            ],
+          ),
           const SizedBox(height: 8),
-          // Function keys row
+          // Second row: Function keys
           _buildFunctionKeys(),
         ],
       ),
+    );
+  }
+
+  Widget _buildCopyPasteButtons() {
+    return Row(
+      children: [
+        _buildTermuxKey(
+          'COPY',
+          onTap: _copyTerminalText,
+        ),
+        const SizedBox(width: 4),
+        _buildTermuxKey(
+          'PASTE', 
+          onTap: _pasteToTerminal,
+        ),
+      ],
     );
   }
 
@@ -1524,6 +1503,7 @@ class _TerminalPageState extends State<TerminalPage> {
     );
   }
 }
+
 
 
 
@@ -1668,51 +1648,50 @@ class _MyHomePageState extends State<MyHomePage> {
             ? ValueListenableBuilder(
                 valueListenable: G.pageIndex,
                 builder: (context, value, child) {
-                  return IndexedStack(
-                    index: G.pageIndex.value,
-                    children: const [
-                      TerminalPage(),
-                      Padding(
-                        padding: EdgeInsets.all(8),
-                        child: AspectRatioMax1To1(
-                          child: Scrollbar(
-                            child: SingleChildScrollView(
-                              restorationId: "control-scroll",
-                              child: Column(
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: FractionallySizedBox(
-                                      widthFactor: 0.4,
-                                      child: Image(image: AssetImage("images/icon.png")),
-                                    ),
-                                  ),
-                                  FastCommands(),
-                                  Padding(
-                                    padding: EdgeInsets.all(8),
-                                    child: Card(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(8),
-                                        child: Column(
-                                          children: [
-                                            SettingPage(),
-                                            SizedBox.square(dimension: 8),
-                                            InfoPage(openFirstInfo: false),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                // In your MyHomePage build method, ensure the IndexedStack looks like this:
+return IndexedStack(
+  index: G.pageIndex.value,
+  children: const [
+    TerminalPage(), // This should be first
+    Padding(
+      padding: EdgeInsets.all(8),
+      child: AspectRatioMax1To1(
+        child: Scrollbar(
+          child: SingleChildScrollView(
+            restorationId: "control-scroll",
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: FractionallySizedBox(
+                    widthFactor: 0.4,
+                    child: Image(image: AssetImage("images/icon.png")),
+                  ),
+                ),
+                FastCommands(),
+                Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Column(
+                        children: [
+                          SettingPage(),
+                          SizedBox.square(dimension: 8),
+                          InfoPage(openFirstInfo: false),
+                        ],
                       ),
-                    ],
-                  );
-                },
-              )
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  ],
+);
             : const LoadingPage(),
         bottomNavigationBar: ValueListenableBuilder(
           valueListenable: G.pageIndex,
@@ -1732,31 +1711,32 @@ class _MyHomePageState extends State<MyHomePage> {
             );
           },
         ),
-        floatingActionButton: ValueListenableBuilder(
-          valueListenable: G.pageIndex,
-          builder: (context, value, child) {
-            return Visibility(
-              visible: isLoadingComplete && (value == 0),
-              child: FloatingActionButton(
-                tooltip: AppLocalizations.of(context)!.enterGUI,
-                onPressed: () {
-                  if (G.wasX11Enabled) {
-                    Workflow.launchX11();
-                  } else if (G.wasAvncEnabled) {
-                    Workflow.launchAvnc();
-                  } else {
-                    Workflow.launchBrowser();
-                  }
-                },
-                child: const Icon(Icons.play_arrow),
-              ),
-            );
-          },
-        ),
+        
+        // Remove or comment out this floatingActionButton section from MyHomePage:
+/*
+floatingActionButton: ValueListenableBuilder(
+  valueListenable: G.pageIndex,
+  builder: (context, value, child) {
+    return Visibility(
+      visible: isLoadingComplete && (value == 0),
+      child: FloatingActionButton(
+        tooltip: AppLocalizations.of(context)!.enterGUI,
+        onPressed: () {
+          if (G.wasX11Enabled) {
+            Workflow.launchX11();
+          } else if (G.wasAvncEnabled) {
+            Workflow.launchAvnc();
+          } else {
+            Workflow.launchBrowser();
+          }
+        },
+        child: const Icon(Icons.play_arrow),
       ),
     );
-  }
-}
+  },
+),
+*/
+
 Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap}) {
   return GestureDetector(
     onTap: onTap,
