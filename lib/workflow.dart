@@ -456,6 +456,8 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
     {"name":"Kill Wine Process", "command":"wineserver -k"}
   ];
 
+
+
   // Default numpad
   static const termCommands = [
     {"name": "Esc", "key": TerminalKey.escape},
@@ -486,13 +488,16 @@ static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=
 
 
   // Modern Android-style button themes
+
+  // Termux-style button themes
   static final ButtonStyle commandButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: AppColors.cardDark,
     foregroundColor: AppColors.textPrimary,
     elevation: 0,
     shadowColor: Colors.transparent,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
+      side: BorderSide(color: AppColors.divider, width: 1),
     ),
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   );
@@ -503,11 +508,11 @@ static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=
     elevation: 0,
     shadowColor: Colors.transparent,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
+      side: BorderSide(color: AppColors.divider, width: 1),
     ),
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
   );
-
   // Android-style list tile theme
   static final ListTileThemeData listTileTheme = ListTileThemeData(
     tileColor: AppColors.cardDark,
