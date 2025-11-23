@@ -1173,132 +1173,49 @@ class TerminalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: forceScaleGestureDetector(
-            onScaleUpdate: (details) {
-              G.termFontScale.value = (details.scale * (Util.getGlobal("termFontScale") as double)).clamp(0.2, 5);
-            }, 
-            onScaleEnd: (details) async {
-              await G.prefs.setDouble("termFontScale", G.termFontScale.value);
-            }, 
-            child: ValueListenableBuilder(
-              valueListenable: G.termFontScale, 
-              builder: (context, value, child) {
-                return TerminalView(
-                  G.termPtys[G.currentContainer]!.terminal, 
-                  textScaler: TextScaler.linear(G.termFontScale.value), 
-                  keyboardType: TextInputType.multiline,
-                  // Make terminal text selectable
-                  selectionEnabled: true,
-                );
-              },
-            ),
-          ),
-        ), 
-        ValueListenableBuilder(
-          valueListenable: G.terminalPageChange, 
-          builder: (context, value, child) {
-            return (Util.getGlobal("isTerminalCommandsEnabled") as bool) 
-              ? _buildTermuxStyleControlBar()
-              : const SizedBox.shrink();
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTermuxStyleControlBar() {
-    return Container(
-      color: AppColors.surfaceDark,
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        children: [
-          // Ctrl, Alt, Shift toggle buttons
-          _buildModifierKeys(),
-          const SizedBox(height: 8),
-          // Function keys row
-          _buildFunctionKeys(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModifierKeys() {
-    return AnimatedBuilder(
-      animation: G.keyboard,
-      builder: (context, child) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildTermuxKey(
-            'CTRL',
-            isActive: G.keyboard.ctrl,
-            onTap: () => G.keyboard.ctrl = !G.keyboard.ctrl,
-          ),
-          _buildTermuxKey(
-            'ALT', 
-            isActive: G.keyboard.alt,
-            onTap: () => G.keyboard.alt = !G.keyboard.alt,
-          ),
-          _buildTermuxKey(
-            'SHIFT',
-            isActive: G.keyboard.shift, 
-            onTap: () => G.keyboard.shift = !G.keyboard.shift,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFunctionKeys() {
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: D.termCommands.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 4),
-        itemBuilder: (context, index) {
-          return _buildTermuxKey(
-            D.termCommands[index]["name"]! as String,
-            onTap: () {
-              G.termPtys[G.currentContainer]!.terminal.keyInput(
-                D.termCommands[index]["key"]! as TerminalKey
-              );
+    return Column(children: [Expanded(child: forceScaleGestureDetector(onScaleUpdate: (details) {
+        G.termFontScale.value = (details.scale * (Util.getGlobal("termFontScale") as double)).clamp(0.2, 5);
+      }, onScaleEnd: (details) async {
+        await G.prefs.setDouble("termFontScale", G.termFontScale.value);
+      }, child: ValueListenableBuilder(valueListenable: G.termFontScale, builder:(context, value, child) {
+        return TerminalView(G.termPtys[G.currentContainer]!.terminal, textScaler: TextScaler.linear(G.termFontScale.value), keyboardType: TextInputType.multiline);
+      },) )), 
+      ValueListenableBuilder(valueListenable: G.terminalPageChange, builder:(context, value, child) {
+      return (Util.getGlobal("isTerminalCommandsEnabled") as bool)?Padding(padding: const EdgeInsets.all(8), child: Row(children: [AnimatedBuilder(
+          animation: G.keyboard,
+          builder: (context, child) => ToggleButtons(
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 24),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            isSelected: [G.keyboard.ctrl, G.keyboard.alt, G.keyboard.shift],
+            onPressed: (index) {
+              switch (index) {
+                case 0:
+                  G.keyboard.ctrl = !G.keyboard.ctrl;
+                  break;
+                case 1:
+                  G.keyboard.alt = !G.keyboard.alt;
+                  break;
+                case 2:
+                  G.keyboard.shift = !G.keyboard.shift;
+                  break;
+              }
             },
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryPurple : AppColors.cardDark,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isActive ? AppColors.primaryPurple : AppColors.divider,
-            width: 1,
+            children: const [Text('Ctrl'), Text('Alt'), Text('Shift')],
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.black : AppColors.textPrimary,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
+        const SizedBox.square(dimension: 8), 
+        Expanded(child: SizedBox(height: 24, child: ListView.separated(scrollDirection: Axis.horizontal, itemBuilder:(context, index) {
+          return OutlinedButton(style: D.controlButtonStyle, onPressed: () {
+            G.termPtys[G.currentContainer]!.terminal.keyInput(D.termCommands[index]["key"]! as TerminalKey);
+          }, child: Text(D.termCommands[index]["name"]! as String));
+        }, separatorBuilder:(context, index) {
+          return const SizedBox.square(dimension: 4);
+        }, itemCount: D.termCommands.length))), SizedBox.fromSize(size: const Size(72, 0))])):const SizedBox.square(dimension: 0);
+      })
+    ]);
   }
 }
-
-
 
 
 
