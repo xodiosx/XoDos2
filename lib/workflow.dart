@@ -29,6 +29,18 @@ import 'package:xodos/l10n/app_localizations.dart';
 import 'package:avnc_flutter/avnc_flutter.dart';
 import 'package:x11_flutter/x11_flutter.dart';
 
+// Modern color scheme with dark purple theme
+class AppColors {
+  static const Color primaryPurple = Color(0xFFBB86FC);
+  static const Color primaryDark = Color(0xFF121212);
+  static const Color surfaceDark = Color(0xFF1E1E1E);
+  static const Color cardDark = Color(0xFF252525);
+  static const Color accentPurple = Color(0xFF9C27B0);
+  static const Color textPrimary = Color(0xFFE1E1E1);
+  static const Color textSecondary = Color(0xFFA0A0A0);
+  static const Color divider = Color(0xFF333333);
+}
+
 class Util {
 
   static Future<void> copyAsset(String src, String dst) async {
@@ -53,8 +65,6 @@ class Util {
   static void termWrite(String str) {
     G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert("$str\n"));
   }
-
-
 
   // All keys
   // int defaultContainer = 0: Default start the 0th container
@@ -473,21 +483,46 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
     {"name": "F12", "key": TerminalKey.f12},
   ];
 
-  static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=/home/xodos --rootfs=\$CONTAINER_DIR --mount=/system --mount=/apex --mount=/sys --mount=/data --kill-on-exit --mount=/storage --sysvipc -L --link2symlink --mount=/proc --mount=/dev --mount=\$CONTAINER_DIR/tmp:/dev/shm --mount=/dev/urandom:/dev/random --mount=/proc/self/fd:/dev/fd --mount=/proc/self/fd/0:/dev/stdin --mount=/proc/self/fd/1:/dev/stdout --mount=/proc/self/fd/2:/dev/stderr --mount=/dev/null:/dev/tty0 --mount=/dev/null:/proc/sys/kernel/cap_last_cap --mount=/storage/self/primary:/media/sd --mount=\$DATA_DIR/share:/home/xodos/Public --mount=\$DATA_DIR/xodos:/home/xodos/.local/share/tiny --mount=/storage/self/primary/Fonts:/usr/share/fonts/wpsm --mount=/storage/self/primary/AppFiles/Fonts:/usr/share/fonts/yozom --mount=/system/fonts:/usr/share/fonts/androidm --mount=/storage/self/primary/Pictures:/home/xodos/Pictures --mount=/storage/self/primary/Music:/home/xodos/Music --mount=/storage/self/primary/Movies:/home/xodos/Videos --mount=/storage/self/primary/Download:/home/xodos/Downloads --mount=/storage/self/primary/DCIM:/home/xodos/Photos --mount=/storage/self/primary/Documents:/home/xodos/Documents --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.stat:/proc/stat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.version:/proc/version --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/bus:/proc/bus --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/buddyinfo:/proc/buddyinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/cgroups:/proc/cgroups --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/consoles:/proc/consoles --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/crypto:/proc/crypto --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/devices:/proc/devices --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/diskstats:/proc/diskstats --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/execdomains:/proc/execdomains --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/fb:/proc/fb --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/filesystems:/proc/filesystems --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/interrupts:/proc/interrupts --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/iomem:/proc/iomem --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/ioports:/proc/ioports --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kallsyms:/proc/kallsyms --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/keys:/proc/keys --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/key-users:/proc/key-users --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kpageflags:/proc/kpageflags --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/loadavg:/proc/loadavg --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/locks:/proc/locks --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/misc:/proc/misc --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/modules:/proc/modules --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/pagetypeinfo:/proc/pagetypeinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/partitions:/proc/partitions --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/sched_debug:/proc/sched_debug --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/softirqs:/proc/softirqs --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/timer_list:/proc/timer_list --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/uptime:/proc/uptime --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmallocinfo:/proc/vmallocinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmstat:/proc/vmstat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/zoneinfo:/proc/zoneinfo \$EXTRA_MOUNT /usr/bin/env -i HOSTNAME=xodos HOME=/home/xodos USER=xodos TERM=xterm-256color SDL_IM_MODULE=fcitx XMODIFIERS=@im=fcitx QT_IM_MODULE=fcitx GTK_IM_MODULE=fcitx TMOE_CHROOT=false TMOE_PROOT=true TMPDIR=/tmp MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 DISPLAY=:4 PULSE_SERVER=tcp:127.0.0.1:4718 LANG=zh_CN.UTF-8 SHELL=/bin/bash PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games \$EXTRA_OPT /bin/bash -l";
-
-  static final ButtonStyle commandButtonStyle = OutlinedButton.styleFrom(
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    minimumSize: const Size(0, 0),
-    padding: const EdgeInsets.fromLTRB(4, 2, 4, 2)
+  // Modern Android-style button themes
+  static final ButtonStyle commandButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.cardDark,
+    foregroundColor: AppColors.textPrimary,
+    elevation: 0,
+    shadowColor: Colors.transparent,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   );
 
-  
-  static final ButtonStyle controlButtonStyle = OutlinedButton.styleFrom(
-    textStyle: const TextStyle(fontWeight: FontWeight.w400),
-    side: const BorderSide(color: Color(0x1F000000)),
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    minimumSize: const Size(0, 0),
-    padding: const EdgeInsets.fromLTRB(8, 4, 8, 4)
+  static final ButtonStyle controlButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.surfaceDark,
+    foregroundColor: AppColors.textPrimary,
+    elevation: 0,
+    shadowColor: Colors.transparent,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  );
+
+  // Android-style list tile theme
+  static final ListTileThemeData listTileTheme = ListTileThemeData(
+    tileColor: AppColors.cardDark,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    titleTextStyle: const TextStyle(
+      color: AppColors.textPrimary,
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+    ),
+    subtitleTextStyle: const TextStyle(
+      color: AppColors.textSecondary,
+      fontSize: 14,
+    ),
+    iconColor: AppColors.primaryPurple,
   );
 
   static const MethodChannel androidChannel = MethodChannel("android");
@@ -519,7 +554,6 @@ class G {
   
   static bool wasAvncEnabled = false;
   static bool wasX11Enabled = false;
-
 
   static late SharedPreferences prefs;
 }
@@ -594,49 +628,23 @@ chmod 1777 tmp
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
     await setupBootstrap();
     
- //   G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
+    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
     // Folder 0 for storing containers and folder .l2s for storing hard links
- //   Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+    Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
     // This is the container rootfs, split into xa* by split command, placed in assets
     // On first startup, use this, don't let the user choose another one
- //   for (String name in jsonDecode(await rootBundle.loadString('AssetManifest.json')).keys.where((String e) => e.startsWith("assets/xa")).map((String e) => e.split("/").last).toList()) {
-   //   await Util.copyAsset("assets/$name", "${G.dataPath}/$name");
-  //  }
-    //-J
-/*
-G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
-// Folder 0 for storing containers and folder .l2s for storing hard links
-Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
-// This is the container rootfs, split into xa* by split command, placed in assets
-// On first startup, use this, don't let the user choose another one
 
-// Hardcoded list of split container files
-List<String> xaFiles = ['xaa', 'xab', 'xac', 'xad', 'xae', 'xaf', 'xag', 'xah', 'xai', 'xaj'];
+    // Load custom manifest for container files
+    final manifestString = await rootBundle.loadString('assets/container_manifest.json');
+    final Map<String, dynamic> manifest = json.decode(manifestString);
 
-for (String name in xaFiles) {
-  await Util.copyAsset("assets/$name", "${G.dataPath}/$name");
-}
-*/
+    // Get the list of xa files
+    final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
 
-
-G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
-// Folder 0 for storing containers and folder .l2s for storing hard links
-Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
-// This is the container rootfs, split into xa* by split command, placed in assets
-// On first startup, use this, don't let the user choose another one
-
-// Load custom manifest for container files
-final manifestString = await rootBundle.loadString('assets/container_manifest.json');
-final Map<String, dynamic> manifest = json.decode(manifestString);
-
-// Get the list of xa files
-final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
-
-for (String assetPath in xaFiles) {
-  final fileName = assetPath.split('/').last;
-  await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
-}
-
+    for (String assetPath in xaFiles) {
+      final fileName = assetPath.split('/').last;
+      await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
+    }
 
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
@@ -672,7 +680,7 @@ ${Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? "" : "ec
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
-    // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of 💩 code :P
+    // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of stuff code :P
     await G.prefs.setStringList("containersInfo", ["""{
 "name":"Debian Bookworm",
 "boot":"${Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? D.boot : D.boot.replaceFirst('LANG=zh_CN.UTF-8', 'LANG=en_US.UTF-8').replaceFirst('公共', 'Public').replaceFirst('图片', 'Pictures').replaceFirst('音乐', 'Music').replaceFirst('视频', 'Videos').replaceFirst('下载', 'Downloads').replaceFirst('文档', 'Documents').replaceFirst('照片', 'Photos')}",
