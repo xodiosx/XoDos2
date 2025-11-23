@@ -11,12 +11,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appTitle => 'XoDos';
 
-String get copy => 'Copy';
-String get paste => 'Paste'; 
-String get close => 'Close';
-String get textCopied => 'Text copied to clipboard';
-
-  
   @override
   String get advancedSettings => 'Advanced Settings';
 

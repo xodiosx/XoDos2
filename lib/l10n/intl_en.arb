@@ -1,9 +1,5 @@
 {
   "appTitle": "XoDos",
-    "copy": "Copy",
-  "paste": "Paste", 
-  "close": "Close",
-  "textCopied": "Text copied to clipboard"
   "advancedSettings": "Advanced Settings",
   "restartAfterChange": "Changes take effect after restart",
   "resetStartupCommand": "Reset Startup Command",
