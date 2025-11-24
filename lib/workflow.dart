@@ -392,8 +392,6 @@ class Util {
     G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert("$str\n"));
   }
 
-
-
   // All keys
   // int defaultContainer = 0: Default start the 0th container
   // int defaultAudioPort = 4718: Default pulseaudio port (changed to 4718 to avoid conflicts with other software, original default was 4713)
@@ -456,15 +454,6 @@ class Util {
       case "containersInfo" : return G.prefs.getStringList(key)!;
     }
   }
-
-//     await G.prefs.setStringList("containersInfo", ["""{
-// "name":"Debian Bookworm",
-// "boot":"${D.boot}",
-// "vnc":"startnovnc &",
-// "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
-// "commands":${jsonEncode(D.commands)}
-// }"""]);
-// case "lastDate" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("1970-01-01");
 
   static dynamic getCurrentProp(String key) {
     dynamic m = jsonDecode(Util.getGlobal("containersInfo")[G.currentContainer]);
@@ -619,14 +608,13 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
 }
 
 // A class combining terminal and pty
-// A class combining terminal and pty
 class TermPty{
   late final Terminal terminal;
   late final Pty pty;
-  late final TerminalController controller; // Add this line
+  late final TerminalController controller;
 
   TermPty() {
-    controller = TerminalController(); // Initialize the controller
+    controller = TerminalController();
     terminal = Terminal(
       inputHandler: G.keyboard, 
       maxLines: Util.getGlobal("termMaxLines") as int,
@@ -854,7 +842,6 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
     minimumSize: const Size(0, 28), // Fixed minimum height
   );
   
-  
   // Android-style list tile theme
   static final ListTileThemeData listTileTheme = ListTileThemeData(
     tileColor: AppColors.cardDark,
@@ -875,7 +862,6 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
   );
 
   static const MethodChannel androidChannel = MethodChannel("android");
-
 }
 
 // Global variables
@@ -899,11 +885,11 @@ class G {
   static ValueNotifier<bool> terminalPageChange = ValueNotifier(true); // Change value, used to refresh numpad
   static ValueNotifier<bool> bootTextChange = ValueNotifier(true); // Change value, used to refresh boot command
   static ValueNotifier<String> updateText = ValueNotifier("xodos"); // Description text on loading screen
+  static ValueNotifier<double> progressValue = ValueNotifier(0.0); // Progress value for loading screen
   static String postCommand = ""; // Additional command to run when first entering the container
   
   static bool wasAvncEnabled = false;
   static bool wasX11Enabled = false;
-
 
   static late SharedPreferences prefs;
 }
@@ -912,10 +898,13 @@ class Workflow {
 
   static Future<void> grantPermissions() async {
     Permission.storage.request();
-    //Permission.manageExternalStorage.request();
   }
 
   static Future<void> setupBootstrap() async {
+    // Update progress
+    G.progressValue.value = 0.1;
+    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
+    
     // Folder for sharing data files
     Util.createDirFromString("${G.dataPath}/share");
     // Folder for storing executable files
@@ -928,19 +917,23 @@ class Workflow {
     Util.createDirFromString("${G.dataPath}/proot_tmp");
     // tmp folder for pulseaudio
     Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
+    
     // After extraction, get bin folder and libexec folder
     // bin contains proot, pulseaudio, tar, etc.
     // libexec contains proot loader
     await Util.copyAsset(
-    "assets/assets.zip",
-    "${G.dataPath}/assets.zip",
+      "assets/assets.zip",
+      "${G.dataPath}/assets.zip",
     );
     // patch.tar.gz contains the xodos folder
     // These are some patches that will be mounted to ~/.local/share/tiny
     await Util.copyAsset(
-    "assets/patch.tar.gz",
-    "${G.dataPath}/patch.tar.gz",
+      "assets/patch.tar.gz",
+      "${G.dataPath}/patch.tar.gz",
     );
+    
+    G.progressValue.value = 0.3;
+    
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
@@ -970,18 +963,22 @@ chmod 1777 tmp
 \$DATA_DIR/bin/tar zxf patch.tar.gz
 \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.gz
 """);
+    
+    G.progressValue.value = 0.5;
   }
 
   // Things to do on first startup
   static Future<void> initForFirstTime() async {
     // First set up bootstrap
-    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
     await setupBootstrap();
     
+    G.progressValue.value = 0.6;
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
+    
     // Folder 0 for storing containers and folder .l2s for storing hard links
     Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
 
+    G.progressValue.value = 0.7;
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     
     // Extract directly from assets without copying the file first
@@ -992,6 +989,8 @@ chmod 1777 tmp
     final tempTarPath = '${G.dataPath}/temp_xodos.tar.xz';
     await File(tempTarPath).writeAsBytes(tarBytes);
 
+    G.progressValue.value = 0.8;
+    
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
@@ -1005,7 +1004,7 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 # Extract from the temporary tar file
-\$DATA_DIR/bin/tar -xf temp_xodos.tar.xz --delay-directory-restore --preserve-permissions -v -C containers/0
+\$DATA_DIR/bin/tar -xJf temp_xodos.tar.xz --delay-directory-restore --preserve-permissions -v -C containers/0
 
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
@@ -1027,10 +1026,9 @@ done
     // Remove the temporary file
     await File(tempTarPath).delete();
 
-    // Some data initialization
-    // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
-    // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of stuff code :P
+    G.progressValue.value = 0.9;
     
+    // Some data initialization
     // Use LanguageManager for proper language support
     final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
     await G.prefs.setStringList("containersInfo", ["""{
@@ -1041,20 +1039,23 @@ done
 "commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))}
 }"""]);
     
+    G.progressValue.value = 1.0;
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
+    
+    // Add a small delay to show completion message
+    await Future.delayed(Duration(seconds: 1));
   }
 
   static Future<void> initData() async {
-
     G.dataPath = (await getApplicationSupportDirectory()).path;
-
     G.termPtys = {};
-
     G.keyboard = VirtualKeyboard(defaultInputHandler);
-    
     G.prefs = await SharedPreferences.getInstance();
 
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
+
+    // Reset progress for new session
+    G.progressValue.value = 0.0;
 
     // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
@@ -1076,7 +1077,11 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""";
         await G.prefs.setBool("wakelock", true);
       }
       await G.prefs.setBool("getifaddrsBridge", (await DeviceInfoPlugin().androidInfo).version.sdkInt >= 31);
+      
+      // Reset progress after first time setup
+      G.progressValue.value = 0.0;
     }
+    
     G.currentContainer = Util.getGlobal("defaultContainer") as int;
 
     // Need to reinstall bootstrap package?
