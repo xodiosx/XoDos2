@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:retry/retry.dart';
@@ -980,22 +981,17 @@ chmod 1777 tmp
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
     // Folder 0 for storing containers and folder .l2s for storing hard links
     Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
-    // This is the container rootfs, split into xa* by split command, placed in assets
-    // On first startup, use this, don't let the user choose another one
-
-    // Load custom manifest for container files
-    final manifestString = await rootBundle.loadString('assets/container_manifest.json');
-    final Map<String, dynamic> manifest = json.decode(manifestString);
-
-    // Get the list of xa files
-    final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
-
-    for (String assetPath in xaFiles) {
-      final fileName = assetPath.split('/').last;
-      await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
-    }
 
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
+    
+    // Extract directly from assets without copying the file first
+    final ByteData tarData = await rootBundle.load('assets/xodos.tar.xz');
+    final Uint8List tarBytes = tarData.buffer.asUint8List(tarData.offsetInBytes, tarData.lengthInBytes);
+    
+    // Write the tar data to a temporary file and extract it
+    final tempTarPath = '${G.dataPath}/temp_xodos.tar.xz';
+    await File(tempTarPath).writeAsBytes(tarBytes);
+
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
@@ -1008,8 +1004,9 @@ export PATH=\$DATA_DIR/bin:\$PATH
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-#export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
-\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C containers/0"
+# Extract from the temporary tar file
+\$DATA_DIR/bin/tar -xf temp_xodos.tar.xz --delay-directory-restore --preserve-permissions -v -C containers/0
+
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
@@ -1024,8 +1021,12 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
-\$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
+\$DATA_DIR/bin/busybox rm -rf temp_xodos.tar.xz tmp1 tmp2 tmp3
 """);
+
+    // Remove the temporary file
+    await File(tempTarPath).delete();
+
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
     // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of stuff code :P
