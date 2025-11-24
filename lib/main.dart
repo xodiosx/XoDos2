@@ -1317,14 +1317,14 @@ class _TerminalPageState extends State<TerminalPage> {
 
 Future<void> _copyTerminalText() async {
   try {
-    final terminal = G.termPtys[G.currentContainer]!.terminal;
+    final terminalController = G.termPtys[G.currentContainer]!;
     
-    // For xterm 4.0.0, check if there's a selection and get the selected text
-    final selection = terminal.selection;
+    // For xterm 4.0.0, selection is accessed through the controller
+    final selection = terminalController.controller.selection;
     
     if (selection != null) {
-      // Use the buffer's getText method with the selection range
-      final selectedText = terminal.buffer.getText(selection);
+      // Get the selected text using the selection range from the terminal buffer
+      final selectedText = terminalController.terminal.buffer.getText(selection);
       
       if (selectedText.isNotEmpty) {
         await FlutterClipboard.copy(selectedText);
