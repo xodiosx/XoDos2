@@ -618,12 +618,18 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
 }
 
 // A class combining terminal and pty
-class TermPty {
+// A class combining terminal and pty
+class TermPty{
   late final Terminal terminal;
   late final Pty pty;
+  late final TerminalController controller; // Add this line
 
   TermPty() {
-    terminal = Terminal(inputHandler: G.keyboard, maxLines: Util.getGlobal("termMaxLines") as int);
+    controller = TerminalController(); // Initialize the controller
+    terminal = Terminal(
+      inputHandler: G.keyboard, 
+      maxLines: Util.getGlobal("termMaxLines") as int,
+    );
     pty = Pty.start(
       "/system/bin/sh",
       workingDirectory: G.dataPath,
@@ -631,9 +637,9 @@ class TermPty {
       rows: terminal.viewHeight,
     );
     pty.output
-        .cast<List<int>>()
-        .transform(const Utf8Decoder())
-        .listen(terminal.write);
+      .cast<List<int>>()
+      .transform(const Utf8Decoder())
+      .listen(terminal.write);
     pty.exitCode.then((code) {
       terminal.write('the process exited with exit code $code');
       if (code == 0) {
@@ -662,7 +668,6 @@ class TermPty {
       pty.resize(h, w);
     };
   }
-
 }
 
 // default values

@@ -1189,16 +1189,17 @@ class _TerminalPageState extends State<TerminalPage> {
             onScaleEnd: (details) async {
               await G.prefs.setDouble("termFontScale", G.termFontScale.value);
             }, 
-            child: ValueListenableBuilder(
-              valueListenable: G.termFontScale, 
-              builder: (context, value, child) {
-                return TerminalView(
-                  G.termPtys[G.currentContainer]!.terminal, 
-                  textScaler: TextScaler.linear(G.termFontScale.value), 
-                  keyboardType: TextInputType.multiline,
-                );
-              },
-            ),
+           child: ValueListenableBuilder(
+  valueListenable: G.termFontScale, 
+  builder: (context, value, child) {
+    return TerminalView(
+      G.termPtys[G.currentContainer]!.terminal, 
+      controller: G.termPtys[G.currentContainer]!.controller, // Make sure to pass the controller
+      textScaler: TextScaler.linear(G.termFontScale.value), 
+      keyboardType: TextInputType.multiline,
+    );
+  },
+),
           ),
         ), 
         ValueListenableBuilder(
@@ -1317,14 +1318,14 @@ class _TerminalPageState extends State<TerminalPage> {
 
 Future<void> _copyTerminalText() async {
   try {
-    final terminalController = G.termPtys[G.currentContainer]!;
+    final termPty = G.termPtys[G.currentContainer]!;
     
     // Get selection from the controller
-    final selection = terminalController.controller.selection;
+    final selection = termPty.controller.selection;
     
     if (selection != null) {
       // Use the terminal's buffer to get text from the selection range
-      final selectedText = terminalController.terminal.buffer.getText(selection);
+      final selectedText = termPty.terminal.buffer.getText(selection);
       
       if (selectedText.isNotEmpty) {
         await FlutterClipboard.copy(selectedText);
@@ -1360,6 +1361,9 @@ Future<void> _copyTerminalText() async {
     );
   }
 }
+
+
+
 
   Future<void> _pasteToTerminal() async {
   try {
