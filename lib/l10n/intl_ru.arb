@@ -111,5 +111,17 @@
   "updateRequest": "Пожалуйста, используйте последнюю версию. Проверьте проект.",
   "avncScreenResize": "Адаптивный размер экрана",
   "avncResizeFactor": "Масштаб экрана",
-  "avncResizeFactorValue": "Текущий масштаб:"
+  "avncResizeFactorValue": "Текущий масштаб:",
+  "avncResizeFactor": "Screen Scaling Ratio", 
+  "avncResizeFactorValue": "Current scaling is",
+  "waitingGames": "Waiting Games",
+  "extrusionProcess": "Extrusion Process",
+  "gameTitleSnake": "Snake Game",
+  "gameTitleTetris": "Tetris",
+  "gameTitleFlappy": "Flappy Bird",
+  "score": "Score: {score}",
+  "gameOver": "Game Over! Tap to restart",
+  "startGame": "Tap to Start",
+  "pause": "Pause",
+  "resume": "Resume"
 }

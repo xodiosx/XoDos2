@@ -111,5 +111,17 @@
   "updateRequest": "कृपया नवीनतम संस्करण का उपयोग करें। प्रोजेक्ट पेज पर देखें।",
   "avncScreenResize": "अनुकूली स्क्रीन आकार",
   "avncResizeFactor": "स्क्रीन स्केलिंग अनुपात",
-  "avncResizeFactorValue": "वर्तमान स्केल है"
+  "avncResizeFactorValue": "वर्तमान स्केल है",
+  "avncResizeFactor": "Screen Scaling Ratio", 
+  "avncResizeFactorValue": "Current scaling is",
+  "waitingGames": "Waiting Games",
+  "extrusionProcess": "Extrusion Process",
+  "gameTitleSnake": "Snake Game",
+  "gameTitleTetris": "Tetris",
+  "gameTitleFlappy": "Flappy Bird",
+  "score": "Score: {score}",
+  "gameOver": "Game Over! Tap to restart",
+  "startGame": "Tap to Start",
+  "pause": "Pause",
+  "resume": "Resume"
 }

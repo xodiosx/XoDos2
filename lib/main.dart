@@ -652,15 +652,6 @@ class InfoPage extends StatefulWidget {
   State<InfoPage> createState() => _InfoPageState();
 }
 
-class InfoPage extends StatefulWidget {
-  final bool openFirstInfo;
-
-  const InfoPage({super.key, this.openFirstInfo=false});
-
-  @override
-  State<InfoPage> createState() => _InfoPageState();
-}
-
 class _InfoPageState extends State<InfoPage> {
   final List<bool> _expandState = [false, false, false, false];
   

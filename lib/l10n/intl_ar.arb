@@ -111,5 +111,17 @@
   "updateRequest": "يرجى محاولة استخدام أحدث إصدار. قم بزيارة عنوان المشروع للتحقق من أحدث إصدار.",
   "avncScreenResize": "تكيف حجم الشاشة",
   "avncResizeFactor": "نسبة تحجيم الشاشة",
-  "avncResizeFactorValue": "التحجيم الحالي هو"
+  "avncResizeFactorValue": "التحجيم الحالي هو",
+  "avncResizeFactor": "Screen Scaling Ratio", 
+  "avncResizeFactorValue": "Current scaling is",
+  "waitingGames": "Waiting Games",
+  "extrusionProcess": "Extrusion Process",
+  "gameTitleSnake": "Snake Game",
+  "gameTitleTetris": "Tetris",
+  "gameTitleFlappy": "Flappy Bird",
+  "score": "Score: {score}",
+  "gameOver": "Game Over! Tap to restart",
+  "startGame": "Tap to Start",
+  "pause": "Pause",
+  "resume": "Resume"
 }

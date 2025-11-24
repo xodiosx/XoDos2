@@ -111,5 +111,18 @@
   "updateRequest": "Por favor usa la última versión. Revisa el proyecto para actualizaciones.",
   "avncScreenResize": "Tamaño adaptable de pantalla",
   "avncResizeFactor": "Escala de pantalla",
-  "avncResizeFactorValue": "La escala actual es"
+  "avncResizeFactorValue": "La escala actual es",
+  "avncResizeFactor": "Screen Scaling Ratio", 
+  "avncResizeFactorValue": "Current scaling is",
+  "waitingGames": "Waiting Games",
+  "extrusionProcess": "Extrusion Process",
+  "gameTitleSnake": "Snake Game",
+  "gameTitleTetris": "Tetris",
+  "gameTitleFlappy": "Flappy Bird",
+  "score": "Score: {score}",
+  "gameOver": "Game Over! Tap to restart",
+  "startGame": "Tap to Start",
+  "pause": "Pause",
+  "resume": "Resume"
+  
 }

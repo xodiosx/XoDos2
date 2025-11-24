@@ -110,5 +110,17 @@
   "updateRequest": "请尽量使用最新版本。前往项目地址可查看最新版本。",
   "avncScreenResize": "自适应屏幕尺寸",
   "avncResizeFactor": "屏幕缩放比",
-  "avncResizeFactorValue": "当前缩放为"
+  "avncResizeFactorValue": "当前缩放为",
+  "avncResizeFactor": "Screen Scaling Ratio", 
+  "avncResizeFactorValue": "Current scaling is",
+  "waitingGames": "Waiting Games",
+  "extrusionProcess": "Extrusion Process",
+  "gameTitleSnake": "Snake Game",
+  "gameTitleTetris": "Tetris",
+  "gameTitleFlappy": "Flappy Bird",
+  "score": "Score: {score}",
+  "gameOver": "Game Over! Tap to restart",
+  "startGame": "Tap to Start",
+  "pause": "Pause",
+  "resume": "Resume"
 }
