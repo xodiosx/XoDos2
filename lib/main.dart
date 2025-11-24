@@ -1224,14 +1224,14 @@ class _TerminalPageState extends State<TerminalPage> {
           // Start GUI button
           _buildTopActionButton(
             Icons.play_arrow,
-            'Start GUI',
+            'Start Desktop,',
             _startGUI,
           ),
           
           // Exit/Stop button
           _buildTopActionButton(
             Icons.stop,
-            'Exit Container',
+            'Exit Desktop',
             _exitContainer,
           ),
         ],
@@ -1282,19 +1282,19 @@ class _TerminalPageState extends State<TerminalPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Exit Container'),
-        content: const Text('This will stop the current container and return to the terminal. Are you sure?'),
+        title: const Text('Exit 🛑'),
+        content: const Text('This will stop the current container and exit. Are you sure?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: const Text('Cancel❌'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               _forceExitContainer();
             },
-            child: const Text('Exit'),
+            child: const Text('Exit✅'),
           ),
         ],
       ),
