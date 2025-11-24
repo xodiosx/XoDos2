@@ -1,4 +1,4 @@
-// workflow.dart  
+// workflow.dart - Fixed with correct Process.start and existing localization strings
 
 import 'dart:io';
 import 'dart:async';
@@ -250,7 +250,7 @@ rm /tmp/wps.deb"""},
     {"name":"स्क्रीन साफ करें", "command":"clear"},
     {"name":"कार्य बाधित करें", "command":"\x03"},
     {"name":"ग्राफिक सॉफ्टवेयर क्रिता इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"क्रिता अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y kritा krita-l10n"},
+    {"name":"क्रिता अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
     {"name":"वीडियो एडिटिंग सॉफ्टवेयर केडेनलाइव इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y kdenlive"},
     {"name":"केडेनलाइव अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y kdenlive"},
     {"name":"रीसाइकिल बिन सक्षम करें", "command":"sudo apt update && sudo apt install -y gvfs && echo 'इंस्टॉलेशन पूर्ण, रीसाइकिल बिन का उपयोग करने के लिए ऐप को पुनरारंभ करें।'"},
@@ -301,7 +301,7 @@ rm /tmp/wps.deb"""},
     {"name":"Désinstaller Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
     {"name":"Installer l'éditeur vidéo Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
     {"name":"Désinstaller Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"Activer la corbeille", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Installation terminée, redémarrez l\\'application pour utiliser la corbeille.'"},
+    {"name":"Activer la corbeille", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Installation terminée, redémarrez l\\'application pour utilizar la corbeille.'"},
     {"name":"Nettoyer le cache des paquets", "command":"sudo apt clean"},
     {"name":"Éteindre", "command":"stopvnc\nexit\nexit"},
     {"name":"???", "command":"timeout 8 cmatrix"}
@@ -393,34 +393,6 @@ class Util {
   }
 
   // All keys
-  // int defaultContainer = 0: Default start the 0th container
-  // int defaultAudioPort = 4718: Default pulseaudio port (changed to 4718 to avoid conflicts with other software, original default was 4713)
-  // bool autoLaunchVnc = true: Whether to automatically start the graphical interface and jump (previously only supported VNC, hence the name)
-  // String lastDate: Last startup date of the software, yyyy-MM-dd
-  // bool isTerminalWriteEnabled = false
-  // bool isTerminalCommandsEnabled = false 
-  // int termMaxLines = 4095 Terminal maximum lines
-  // double termFontScale = 1 Terminal font size
-  // bool isStickyKey = true Whether terminal ctrl, shift, alt keys are sticky
-  // String defaultFFmpegCommand Default streaming command
-  // String defaultVirglCommand Default virgl parameters
-  // String defaultVirglOpt Default virgl environment variables
-  // bool reinstallBootstrap = false Whether to reinstall the bootstrap package on next startup
-  // bool getifaddrsBridge = false Whether to bridge getifaddrs on next startup
-  // bool uos = false Whether to disguise as UOS on next startup
-  // bool virgl = false Whether to enable virgl on next startup
-  // bool wakelock = false Keep screen on
-  // bool isHidpiEnabled = false Whether to enable high DPI
-  // bool isJpEnabled = false Whether to switch system to Japanese
-  // bool useAvnc = false Whether to use AVNC by default
-  // bool avncResizeDesktop = true Whether AVNC adjusts resolution based on current screen size by default
-  // double avncScaleFactor = -0.5 AVNC: Adjust scaling factor based on current screen size. Range -1~1, corresponding to ratio 4^-1~4^1
-  // String defaultHidpiOpt Default HiDPI environment variables
-  // ? int bootstrapVersion: Bootstrap package version
-  // String[] containersInfo: All container information (json)
-  // {name, boot:"\$DATA_DIR/bin/proot ...", vnc:"startnovnc", vncUrl:"...", commands:[{name:"Update and upgrade", command:"apt update -y && apt upgrade -y"},
-  // bind:[{name:"USB Drive", src:"/storage/xxxx", dst:"/media/meow"}]...]}
-  // TODO: Is this way of writing still not right? Try changing to class when have time?
   static dynamic getGlobal(String key) {
     bool b = G.prefs.containsKey(key);
     switch (key) {
@@ -470,7 +442,6 @@ class Util {
     }
   }
 
-  // Used to set name, boot, vnc, vncUrl, etc.
   static Future<void> setCurrentProp(String key, dynamic value) async {
     await G.prefs.setStringList("containersInfo",
       Util.getGlobal("containersInfo")..setAll(G.currentContainer,
@@ -481,7 +452,6 @@ class Util {
     );
   }
 
-  // Used to add non-existent keys, etc.
   static Future<void> addCurrentProp(String key, dynamic value) async {
     await G.prefs.setStringList("containersInfo",
       Util.getGlobal("containersInfo")..setAll(G.currentContainer,
@@ -492,7 +462,6 @@ class Util {
     );
   }
 
-  // Limit string between min and max, for text box validator
   static String? validateBetween(String? value, int min, int max, Function opr) {
     if (value == null || value.isEmpty) {
       return AppLocalizations.of(G.homePageStateContext)!.enterNumber;
@@ -548,10 +517,128 @@ class Util {
     }
   }
 
+  // Real progress tracking using BusyBox + Dart streaming
+  static Stream<ExtractionProgress> extractWithBusyBoxProgress({
+    required String busyboxPath,
+    required String archivePath,
+    required String outputDir,
+  }) async* {
+    final streamController = StreamController<ExtractionProgress>();
+    
+    try {
+      // Get total size of compressed file
+      final archiveFile = File(archivePath);
+      final totalSize = await archiveFile.length();
+      int processedBytes = 0;
+      
+      G.updateText.value = "Preparing extraction...";
+      
+      // Create output directory
+      await Directory(outputDir).create(recursive: true);
+      
+      // Start xz decompression process
+      final xzProcess = await Process.start(
+        busyboxPath,
+        ['xz', '-dc', archivePath],
+        runInShell: false,
+      );
+      
+      // Start tar extraction process - FIXED: removed stdin parameter
+      final tarProcess = await Process.start(
+        busyboxPath,
+        ['tar', '-x', '-C', outputDir, '--verbose'],
+        runInShell: false,
+      );
+      
+      // Track current file being extracted
+      String currentFile = '';
+      final tarOutput = tarProcess.stdout
+          .transform(utf8.decoder)
+          .transform(LineSplitter())
+          .asBroadcastStream();
+      
+      // Listen to tar output for file names
+      tarOutput.listen((line) {
+        if (line.isNotEmpty && !line.startsWith('tar:') && line != outputDir) {
+          currentFile = line;
+        }
+      });
+      
+      // Stream xz output to tar input and track progress
+      final xzOutput = xzProcess.stdout.asBroadcastStream();
+      
+      // Start streaming data
+      await for (final chunk in xzOutput) {
+        processedBytes += chunk.length;
+        tarProcess.stdin.add(chunk);
+        
+        final percentage = (processedBytes / totalSize * 100).clamp(0, 100).toDouble();
+        
+        yield ExtractionProgress(
+          currentBytes: processedBytes,
+          totalBytes: totalSize,
+          percentage: percentage,
+          currentFile: currentFile.isNotEmpty ? currentFile : "Decompressing...",
+        );
+        
+        // Update UI text
+        if (currentFile.isNotEmpty) {
+          G.updateText.value = 'Extracting: $currentFile (${percentage.toStringAsFixed(1)}%)';
+        } else {
+          G.updateText.value = 'Decompressing... (${percentage.toStringAsFixed(1)}%)';
+        }
+      }
+      
+      // Close tar stdin and wait for completion
+      await tarProcess.stdin.close();
+      
+      // Check for errors
+      final xzExitCode = await xzProcess.exitCode;
+      final tarExitCode = await tarProcess.exitCode;
+      
+      if (xzExitCode != 0) {
+        throw Exception('XZ decompression failed with exit code $xzExitCode');
+      }
+      
+      if (tarExitCode != 0) {
+        throw Exception('Tar extraction failed with exit code $tarExitCode');
+      }
+      
+      // Final progress
+      yield ExtractionProgress(
+        currentBytes: totalSize,
+        totalBytes: totalSize,
+        percentage: 100.0,
+        currentFile: "Extraction complete!",
+      );
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('BusyBox extraction error: $e');
+      }
+      rethrow;
+    } finally {
+      await streamController.close();
+    }
+  }
+}
+
+// Progress tracking class
+class ExtractionProgress {
+  final int currentBytes;
+  final int totalBytes;
+  final double percentage;
+  final String currentFile;
+
+  ExtractionProgress({
+    required this.currentBytes,
+    required this.totalBytes,
+    required this.percentage,
+    required this.currentFile,
+  });
 }
 
 // From xterms example about handling ctrl, shift, alt keys
-// This class should only have one instance G.keyboard
 class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
   final TerminalInputHandler _inputHandler;
 
@@ -597,7 +684,7 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
       shift: event.shift || _shift,
       alt: event.alt || _alt,
     ));
-    G.maybeCtrlJ = event.key.name == "keyJ"; // This is to distinguish whether the key pressed is Enter or Ctrl+J later
+    G.maybeCtrlJ = event.key.name == "keyJ";
     if (!(Util.getGlobal("isStickyKey") as bool)) {
       G.keyboard.ctrl = false;
       G.keyboard.shift = false;
@@ -643,7 +730,6 @@ class TermPty{
       if (!(Util.getGlobal("isTerminalWriteEnabled") as bool)) {
         return;
       }
-      // Due to apparent issues with handling carriage returns, handle them separately
       data.split("").forEach((element) {
         if (element == "\n" && !G.maybeCtrlJ) {
           terminal.keyInput(TerminalKey.enter);
@@ -804,10 +890,9 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
     {"name": "F12", "key": TerminalKey.f12},
   ];
 
-  // Add this missing boot constant
   static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=/home/xodos --rootfs=\$CONTAINER_DIR --mount=/system --mount=/apex --mount=/sys --mount=/data --kill-on-exit --mount=/storage --sysvipc -L --link2symlink --mount=/proc --mount=/dev --mount=\$CONTAINER_DIR/tmp:/dev/shm --mount=/dev/urandom:/dev/random --mount=/proc/self/fd:/dev/fd --mount=/proc/self/fd/0:/dev/stdin --mount=/proc/self/fd/1:/dev/stdout --mount=/proc/self/fd/2:/dev/stderr --mount=/dev/null:/dev/tty0 --mount=/dev/null:/proc/sys/kernel/cap_last_cap --mount=/storage/self/primary:/media/sd --mount=\$DATA_DIR/share:/home/xodos/Public --mount=\$DATA_DIR/xodos:/home/tiny/.local/share/tiny --mount=/storage/self/primary/Fonts:/usr/share/fonts/wpsm --mount=/storage/self/primary/AppFiles/Fonts:/usr/share/fonts/yozom --mount=/system/fonts:/usr/share/fonts/androidm --mount=/storage/self/primary/Pictures:/home/xodos/Pictures --mount=/storage/self/primary/Music:/home/xodos/Music --mount=/storage/self/primary/Movies:/home/xodos/Videos --mount=/storage/self/primary/Download:/home/xodos/Downloads --mount=/storage/self/primary/DCIM:/home/xodos/Photos --mount=/storage/self/primary/Documents:/home/xodos/Documents --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.stat:/proc/stat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.version:/proc/version --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/bus:/proc/bus --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/buddyinfo:/proc/buddyinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/cgroups:/proc/cgroups --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/consoles:/proc/consoles --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/crypto:/proc/crypto --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/devices:/proc/devices --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/diskstats:/proc/diskstats --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/execdomains:/proc/execdomains --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/fb:/proc/fb --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/filesystems:/proc/filesystems --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/interrupts:/proc/interrupts --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/iomem:/proc/iomem --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/ioports:/proc/ioports --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kallsyms:/proc/kallsyms --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/keys:/proc/keys --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/key-users:/proc/key-users --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kpageflags:/proc/kpageflags --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/loadavg:/proc/loadavg --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/locks:/proc/locks --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/misc:/proc/misc --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/modules:/proc/modules --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/pagetypeinfo:/proc/pagetypeinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/partitions:/proc/partitions --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/sched_debug:/proc/sched_debug --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/softirqs:/proc/softirqs --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/timer_list:/proc/timer_list --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/uptime:/proc/uptime --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmallocinfo:/proc/vmallocinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmstat:/proc/vmstat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/zoneinfo:/proc/zoneinfo \$EXTRA_MOUNT /usr/bin/env -i HOSTNAME=xodos HOME=/home/xodos USER=xodos TERM=xterm-256color SDL_IM_MODULE=fcitx XMODIFIERS=@im=fcitx QT_IM_MODULE=fcitx GTK_IM_MODULE=fcitx TMOE_CHROOT=false TMOE_PROOT=true TMPDIR=/tmp MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 DISPLAY=:4 PULSE_SERVER=tcp:127.0.0.1:4718 LANG=zh_CN.UTF-8 SHELL=/bin/bash PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games \$EXTRA_OPT /bin/bash -l";
 
-    // Termux-style button themes - FIXED SIZES
+  // Termux-style button themes - FIXED SIZES
   static final ButtonStyle commandButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: AppColors.cardDark,
     foregroundColor: AppColors.textPrimary,
@@ -817,12 +902,12 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
       borderRadius: BorderRadius.circular(8),
       side: const BorderSide(color: AppColors.divider, width: 1),
     ),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced padding
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     textStyle: const TextStyle(
-      fontSize: 12, // Smaller font size
+      fontSize: 12,
       fontWeight: FontWeight.w500,
     ),
-    minimumSize: const Size(0, 36), // Fixed minimum height
+    minimumSize: const Size(0, 36),
   );
 
   static final ButtonStyle controlButtonStyle = ElevatedButton.styleFrom(
@@ -834,12 +919,12 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
       borderRadius: BorderRadius.circular(6),
       side: const BorderSide(color: AppColors.divider, width: 1),
     ),
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Reduced padding
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     textStyle: const TextStyle(
-      fontSize: 10, // Even smaller font size for control buttons
+      fontSize: 10,
       fontWeight: FontWeight.w500,
     ),
-    minimumSize: const Size(0, 28), // Fixed minimum height
+    minimumSize: const Size(0, 28),
   );
   
   // Android-style list tile theme
@@ -870,24 +955,20 @@ class G {
   static Pty? audioPty;
   static late WebViewController controller;
   static late BuildContext homePageStateContext;
-  static late int currentContainer; // Currently running which container
-  static late Map<int, TermPty> termPtys; // Store TermPty data for container<int>
-  static late VirtualKeyboard keyboard; // Store ctrl, shift, alt state
-  static bool maybeCtrlJ = false; // Variable prepared to distinguish between pressed ctrl+J and enter
-  static ValueNotifier<double> termFontScale = ValueNotifier(1); // Terminal font size, stored as G.prefs' termFontScale
+  static late int currentContainer;
+  static late Map<int, TermPty> termPtys;
+  static late VirtualKeyboard keyboard;
+  static bool maybeCtrlJ = false;
+  static ValueNotifier<double> termFontScale = ValueNotifier(1);
   static bool isStreamServerStarted = false;
   static bool isStreaming = false;
-  //static int? streamingPid;
   static String streamingOutput = "";
   static late Pty streamServerPty;
-  //static int? virglPid;
-  static ValueNotifier<int> pageIndex = ValueNotifier(0); // Main interface index
-  static ValueNotifier<bool> terminalPageChange = ValueNotifier(true); // Change value, used to refresh numpad
-  static ValueNotifier<bool> bootTextChange = ValueNotifier(true); // Change value, used to refresh boot command
-  static ValueNotifier<String> updateText = ValueNotifier("xodos"); // Description text on loading screen
-  static ValueNotifier<double> progressValue = ValueNotifier(0.0); // Progress value for loading screen
-  static ValueNotifier<String> progressPercentage = ValueNotifier("0%"); // Progress percentage for display
-  static String postCommand = ""; // Additional command to run when first entering the container
+  static ValueNotifier<int> pageIndex = ValueNotifier(0);
+  static ValueNotifier<bool> terminalPageChange = ValueNotifier(true);
+  static ValueNotifier<bool> bootTextChange = ValueNotifier(true);
+  static ValueNotifier<String> updateText = ValueNotifier("xodos");
+  static String postCommand = "";
   
   static bool wasAvncEnabled = false;
   static bool wasX11Enabled = false;
@@ -902,11 +983,6 @@ class Workflow {
   }
 
   static Future<void> setupBootstrap() async {
-    // Update progress
-    G.progressValue.value = 0.1;
-    G.progressPercentage.value = "10%";
-    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
-    
     // Folder for sharing data files
     Util.createDirFromString("${G.dataPath}/share");
     // Folder for storing executable files
@@ -927,15 +1003,13 @@ class Workflow {
       "assets/assets.zip",
       "${G.dataPath}/assets.zip",
     );
+    
     // patch.tar.gz contains the xodos folder
     // These are some patches that will be mounted to ~/.local/share/tiny
     await Util.copyAsset(
       "assets/patch.tar.gz",
       "${G.dataPath}/patch.tar.gz",
     );
-    
-    G.progressValue.value = 0.3;
-    G.progressPercentage.value = "30%";
     
     await Util.execute(
 """
@@ -966,43 +1040,60 @@ chmod 1777 tmp
 \$DATA_DIR/bin/tar zxf patch.tar.gz
 \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.gz
 """);
-    
-    G.progressValue.value = 0.5;
-    G.progressPercentage.value = "50%";
   }
 
-  // Things to do on first startup
-  static Future<void> initForFirstTime() async {
-    // First set up bootstrap
-    await setupBootstrap();
+  // Updated method with real BusyBox progress tracking
+  static Future<void> extractContainerWithProgress() async {
+    G.updateText.value = "Preparing extraction...";
     
-    G.progressValue.value = 0.6;
-    G.progressPercentage.value = "60%";
-    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
-    
-    // Folder 0 for storing containers and folder .l2s for storing hard links
-    Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
-
-    G.progressValue.value = 0.7;
-    G.progressPercentage.value = "70%";
-    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
-    
-    // Extract directly from assets without copying the file first
+    // Copy the tar.xz from assets to temporary location
     final ByteData tarData = await rootBundle.load('assets/xodos.tar.xz');
-    final Uint8List tarBytes = tarData.buffer.asUint8List(tarData.offsetInBytes, tarData.lengthInBytes);
-    
-    // Write the tar data to a temporary file and extract it
     final tempTarPath = '${G.dataPath}/temp_xodos.tar.xz';
-    await File(tempTarPath).writeAsBytes(tarBytes);
+    await File(tempTarPath).writeAsBytes(tarData.buffer.asUint8List(tarData.offsetInBytes, tarData.lengthInBytes));
+    
+    final containerDir = '${G.dataPath}/containers/0';
+    final busyboxPath = '${G.dataPath}/bin/busybox';
+    
+    try {
+      // Use BusyBox with real progress tracking
+      final progressStream = Util.extractWithBusyBoxProgress(
+        busyboxPath: busyboxPath,
+        archivePath: tempTarPath,
+        outputDir: containerDir,
+      );
+      
+      await for (final progress in progressStream) {
+        // Progress is automatically updated in the extraction method
+        if (kDebugMode) {
+          print('Extraction progress: ${progress.percentage}% - ${progress.currentFile}');
+        }
+      }
+      
+      // Run post-extraction setup
+      await runPostExtractionSetup();
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('BusyBox extraction failed: $e');
+      }
+      
+      // Fallback to simple extraction without progress
+      G.updateText.value = "Using fallback extraction method...";
+      await extractContainerFallback(tempTarPath, containerDir);
+    } finally {
+      // Clean up temporary file
+      try {
+        await File(tempTarPath).delete();
+      } catch (e) {
+        if (kDebugMode) {
+          print('Failed to delete temp file: $e');
+        }
+      }
+    }
+  }
 
-    G.progressValue.value = 0.8;
-    G.progressPercentage.value = "80%";
-    
-    // Initialize terminal first so we can use termWrite
-    await Workflow.initTerminalForCurrent();
-    
-    // Extract using termWrite (like the old working version)
-    Util.termWrite(
+  static Future<void> runPostExtractionSetup() async {
+    await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
@@ -1014,12 +1105,8 @@ export PATH=\$DATA_DIR/bin:\$PATH
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-# Extract from the temporary tar file
-echo "Extracting container system (this may take a while)..."
-\$DATA_DIR/bin/tar -xJf temp_xodos.tar.xz --delay-directory-restore --preserve-permissions -v -C containers/0
 
-#Script from proot-distro
-echo "Setting up container permissions..."
+# Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
 echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
@@ -1033,19 +1120,57 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
-\$DATA_DIR/bin/busybox rm -rf temp_xodos.tar.xz tmp1 tmp2 tmp3
-echo "Container extraction completed successfully!"
+\$DATA_DIR/bin/busybox rm -rf tmp1 tmp2 tmp3
 """);
+  }
 
-    // Wait a bit for the extraction to complete
-    await Future.delayed(Duration(seconds: 3));
+  // Fallback method using simple BusyBox extraction
+  static Future<void> extractContainerFallback(String tarPath, String containerDir) async {
+    await Util.execute(
+"""
+export DATA_DIR=${G.dataPath}
+export PATH=\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export CONTAINER_DIR=\$DATA_DIR/containers/0
+cd \$DATA_DIR
 
-    // Remove the temporary file
-    await File(tempTarPath).delete();
+# Simple extraction without progress
+echo "Extracting container system..."
+\$DATA_DIR/bin/busybox xz -dc "$tarPath" | \$DATA_DIR/bin/busybox tar -x -C "\$CONTAINER_DIR"
 
-    G.progressValue.value = 0.9;
-    G.progressPercentage.value = "90%";
+# Run post-extraction setup
+chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
+echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
+echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
+id -Gn | tr ' ' '\\n' > tmp1
+id -G | tr ' ' '\\n' > tmp2
+\$DATA_DIR/bin/busybox paste tmp1 tmp2 > tmp3
+local group_name group_id
+cat tmp3 | while read -r group_name group_id; do
+	echo "aid_\${group_name}:x:\${group_id}:root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/group"
+	if [ -f "\$CONTAINER_DIR/etc/gshadow" ]; then
+		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
+	fi
+done
+\$DATA_DIR/bin/busybox rm -rf tmp1 tmp2 tmp3
+""");
+  }
+
+  // Things to do on first startup
+  static Future<void> initForFirstTime() async {
+    // First set up bootstrap
+    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
+    await setupBootstrap();
     
+    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
+    // Folder 0 for storing containers and folder .l2s for storing hard links
+    Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+
+    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
+    
+    // Use the new BusyBox progress-tracking extraction method
+    await extractContainerWithProgress();
+
     // Some data initialization
     // Use LanguageManager for proper language support
     final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
@@ -1057,25 +1182,19 @@ echo "Container extraction completed successfully!"
 "commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))}
 }"""]);
     
-    G.progressValue.value = 1.0;
-    G.progressPercentage.value = "100%";
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
-    
-    // Add a small delay to show completion message
-    await Future.delayed(Duration(seconds: 2));
   }
 
   static Future<void> initData() async {
     G.dataPath = (await getApplicationSupportDirectory()).path;
+
     G.termPtys = {};
+
     G.keyboard = VirtualKeyboard(defaultInputHandler);
+    
     G.prefs = await SharedPreferences.getInstance();
 
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
-
-    // Reset progress for new session
-    G.progressValue.value = 0.0;
-    G.progressPercentage.value = "0%";
 
     // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
@@ -1097,12 +1216,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""";
         await G.prefs.setBool("wakelock", true);
       }
       await G.prefs.setBool("getifaddrsBridge", (await DeviceInfoPlugin().androidInfo).version.sdkInt >= 31);
-      
-      // Reset progress after first time setup
-      G.progressValue.value = 0.0;
-      G.progressPercentage.value = "0%";
     }
-    
     G.currentContainer = Util.getGlobal("defaultContainer") as int;
 
     // Need to reinstall bootstrap package?
@@ -1152,7 +1266,7 @@ exit
   }
 
   static Future<void> launchCurrentContainer() async {
-    String extraMount = ""; //mount options and other proot options
+    String extraMount = "";
     String extraOpt = "";
     if (Util.getGlobal("getifaddrsBridge")) {
       Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
@@ -1193,7 +1307,6 @@ export LD_LIBRARY_PATH=\$DATA_DIR/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
-#export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
 cd \$DATA_DIR
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
@@ -1210,9 +1323,7 @@ clear""");
 
   static Future<void> waitForConnection() async {
     await retry(
-      // Make a GET request
       () => http.get(Uri.parse(Util.getCurrentProp("vncUrl"))).timeout(const Duration(milliseconds: 250)),
-      // Retry on SocketException or TimeoutException
       retryIf: (e) => e is SocketException || e is TimeoutException,
     );
   }
@@ -1222,10 +1333,6 @@ clear""");
     Navigator.push(G.homePageStateContext, MaterialPageRoute(builder: (context) {
       return Focus(
         onKeyEvent: (node, event) {
-          // Allow webview to handle cursor keys. Without this, the
-          // arrow keys seem to get "eaten" by Flutter and therefore
-          // never reach the webview.
-          // (https://github.com/flutter/flutter/issues/102505).
           if (!kIsWeb) {
             if ({
               LogicalKeyboardKey.arrowLeft,
