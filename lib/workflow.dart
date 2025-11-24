@@ -1237,14 +1237,3 @@ clear""");
   }
 }
 
-// Add this method to replace the open source section with mini games
-Widget buildWaitingGamesSection(BuildContext context) {
-  return Container(
-    height: 600, // Fixed height for the games section
-    margin: const EdgeInsets.all(16),
-    child: const SpiritedMiniGamesView(),
-  );
-}
-
-// In your main build method, replace the open source section with:
-// buildWaitingGamesSection(context),
