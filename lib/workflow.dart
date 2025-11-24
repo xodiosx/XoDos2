@@ -1,5 +1,3 @@
-// workflow.dart  
-
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
@@ -28,6 +26,9 @@ import 'package:xodos/l10n/app_localizations.dart';
 
 import 'package:avnc_flutter/avnc_flutter.dart';
 import 'package:x11_flutter/x11_flutter.dart';
+
+// Import the mini games
+import 'spirited_mini_games.dart';
 
 // Modern color scheme with dark purple theme
 class AppColors {
@@ -276,7 +277,7 @@ rm /tmp/wps.deb"""},
 
   // Portuguese commands
   static const List<Map<String, String>> _portugueseCommands = [
-    {"name":"Atualizar e melhorar pacotes", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"Atualizar y mejorar pacotes", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
     {"name":"Informações do sistema", "command":"neofetch -L && neofetch --off"},
     {"name":"Limpar tela", "command":"clear"},
     {"name":"Interromper tarefa", "command":"\x03"},
@@ -391,8 +392,6 @@ class Util {
     G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert("$str\n"));
   }
 
-
-
   // All keys
   // int defaultContainer = 0: Default start the 0th container
   // int defaultAudioPort = 4718: Default pulseaudio port (changed to 4718 to avoid conflicts with other software, original default was 4713)
@@ -455,15 +454,6 @@ class Util {
       case "containersInfo" : return G.prefs.getStringList(key)!;
     }
   }
-
-//     await G.prefs.setStringList("containersInfo", ["""{
-// "name":"Debian Bookworm",
-// "boot":"${D.boot}",
-// "vnc":"startnovnc &",
-// "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
-// "commands":${jsonEncode(D.commands)}
-// }"""]);
-// case "lastDate" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("1970-01-01");
 
   static dynamic getCurrentProp(String key) {
     dynamic m = jsonDecode(Util.getGlobal("containersInfo")[G.currentContainer]);
@@ -617,7 +607,6 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
   }
 }
 
-// A class combining terminal and pty
 // A class combining terminal and pty
 class TermPty{
   late final Terminal terminal;
@@ -902,7 +891,6 @@ class G {
   
   static bool wasAvncEnabled = false;
   static bool wasX11Enabled = false;
-
 
   static late SharedPreferences prefs;
 }
@@ -1248,3 +1236,15 @@ clear""");
     }
   }
 }
+
+// Add this method to replace the open source section with mini games
+Widget buildWaitingGamesSection(BuildContext context) {
+  return Container(
+    height: 600, // Fixed height for the games section
+    margin: const EdgeInsets.all(16),
+    child: const SpiritedMiniGamesView(),
+  );
+}
+
+// In your main build method, replace the open source section with:
+// buildWaitingGamesSection(context),
