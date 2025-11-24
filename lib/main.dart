@@ -1319,11 +1319,11 @@ Future<void> _copyTerminalText() async {
   try {
     final terminalController = G.termPtys[G.currentContainer]!;
     
-    // For xterm 4.0.0, selection is accessed through the controller
+    // Get selection from the controller
     final selection = terminalController.controller.selection;
     
     if (selection != null) {
-      // Get the selected text using the selection range from the terminal buffer
+      // Use the terminal's buffer to get text from the selection range
       final selectedText = terminalController.terminal.buffer.getText(selection);
       
       if (selectedText.isNotEmpty) {
