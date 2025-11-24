@@ -1,7 +1,7 @@
 
 import 'dart:async';
 import 'dart:math';
-
+import 'package:flutter/services.dart'; // Add this import
 import 'package:clipboard/clipboard.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/gestures.dart';
@@ -1316,22 +1316,24 @@ class _TerminalPageState extends State<TerminalPage> {
     );
   }
 
+
+
+// Update your copy function
 Future<void> _copyTerminalText() async {
   try {
     final termPty = G.termPtys[G.currentContainer]!;
-    
-    // Get selection from the controller
     final selection = termPty.controller.selection;
     
     if (selection != null) {
-      // Use the terminal's buffer to get text from the selection range
       final selectedText = termPty.terminal.buffer.getText(selection);
       
       if (selectedText.isNotEmpty) {
-        await FlutterClipboard.copy(selectedText);
+        // Use Flutter's built-in clipboard - this shares with Android system
+        await Clipboard.setData(ClipboardData(text: selectedText));
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Selected text copied to clipboard'),
+            content: Text('Selected text copied to clipboard (shared with Android)'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -1362,15 +1364,15 @@ Future<void> _copyTerminalText() async {
   }
 }
 
-
-
-
-  Future<void> _pasteToTerminal() async {
+// Update your paste function too
+Future<void> _pasteToTerminal() async {
   try {
-    final clipboardText = await FlutterClipboard.paste();
-    if (clipboardText.isNotEmpty) {
-      // Use textInput for xterm 4.0.0 compatibility
-      G.termPtys[G.currentContainer]!.terminal.textInput(clipboardText);
+    // Use Flutter's built-in clipboard to get data from Android system
+    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+    final clipboardText = data?.text;
+    
+    if (clipboardText != null && clipboardText.isNotEmpty) {
+      Util.termWrite(clipboardText);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1388,6 +1390,7 @@ Future<void> _copyTerminalText() async {
     );
   }
 }
+
 
   Widget _buildTermuxStyleControlBar() {
     return Container(
