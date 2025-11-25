@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -16,7 +15,7 @@ class SpiritedMiniGamesView extends StatefulWidget {
     _GameInfo('Memory Vortex', MemoryVortexGame.new),
     _GameInfo('Reflex Matrix', ReflexMatrixGame.new),
     _GameInfo('Gravity Boxes', GravityBoxesGame.new),
-    _GameInfo('Pattern Lock', PatternLockGame.new),
+    _GameInfo('Sudoku Puzzle', SudokuGame.new),
     _GameInfo('Neon Sweeper', NeonSweeperGame.new),
   ];
 
@@ -37,6 +36,7 @@ class _SpiritedMiniGamesViewState extends State<SpiritedMiniGamesView> {
   Future<void> _startMusic() async {
     try {
       await _player.setReleaseMode(ReleaseMode.loop);
+      await _player.setVolume(0.6);
       // music.mp3 should be declared in pubspec.yaml under assets
       await _player.play(AssetSource('music.mp3'));
       _musicStarted = true;
@@ -510,12 +510,24 @@ class _QuantumSnakeGameState extends State<QuantumSnakeGame> {
                       ),
                     ),
                     if (gameOver)
-                      const Text(
-                        'GAME OVER! TAP TO RESTART',
-                        style: TextStyle(
-                          color: Color(0xFFE040FB),
-                          fontSize: 16,
-                        ),
+                      Column(
+                        children: [
+                          const Text(
+                            'GAME OVER!',
+                            style: TextStyle(
+                              color: Color(0xFFE040FB),
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: _startGame,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFBB86FC),
+                            ),
+                            child: const Text('RESTART'),
+                          ),
+                        ],
                       )
                     else if (isPaused)
                       const Text(
@@ -566,8 +578,6 @@ class _QuantumGridPainter extends CustomPainter {
 /* =============================
    2. SPACE INVADERS (UPGRADED)
    ============================= */
-
-
 
 class SpaceInvadersGame extends StatefulWidget {
   const SpaceInvadersGame({super.key});
@@ -684,53 +694,32 @@ class _SpaceInvadersGameState extends State<SpaceInvadersGame> {
   }
 
   void _showGameOver() {
-    gameOver = true;
+    setState(() {
+      gameOver = true;
+    });
     gameTimer?.cancel();
     speedTimer?.cancel();
+  }
 
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => Center(
-          child: Container(
-            width: 280,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A3A),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "GAME OVER",
-                  style: TextStyle(
-                    fontSize: 28,
-                    color: Colors.pinkAccent,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  "Score: $score",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 25),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("BACK"),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+  void _restartGame() {
+    setState(() {
+      gameOver = false;
+      score = 0;
+      lives = 3;
+      shipX = 0.5;
+      bullets.clear();
+      enemyBullets.clear();
+      _initInvaders();
+    });
+
+    gameTimer?.cancel();
+    speedTimer?.cancel();
+    
+    gameTimer = Timer.periodic(const Duration(milliseconds: 16), (_) => _updateGame());
+    speedTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      setState(() {
+        bulletSpeed *= 1.3;
+      });
     });
   }
 
@@ -747,73 +736,115 @@ class _SpaceInvadersGameState extends State<SpaceInvadersGame> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F23),
-      body: GestureDetector(
-        onHorizontalDragUpdate: (details) {
-          setState(() {
-            shipX = (shipX + details.delta.dx / MediaQuery.of(context).size.width).clamp(0.05, 0.95);
-          });
-        },
-        onTap: _fireBullet,
-        child: Stack(
-          children: [
-            // Invaders
-            for (final invader in invaders)
-              Positioned(
-                left: invader.dx * MediaQuery.of(context).size.width,
-                top: invader.dy * MediaQuery.of(context).size.height,
-                child: _enemySprite(),
-              ),
-
-            // Player Bullets
-            for (final bullet in bullets)
-              Positioned(
-                left: bullet.dx * MediaQuery.of(context).size.width - 2,
-                top: bullet.dy * MediaQuery.of(context).size.height,
-                child: _playerBullet(),
-              ),
-
-            // Enemy Bullets
-            for (final b in enemyBullets)
-              Positioned(
-                left: b.dx * MediaQuery.of(context).size.width - 3,
-                top: b.dy * MediaQuery.of(context).size.height,
-                child: _enemyBullet(),
-              ),
-
-            // Player Ship
-            Positioned(
-              left: shipX * MediaQuery.of(context).size.width - 25,
-              top: MediaQuery.of(context).size.height * 0.90,
-              child: _playerShip(),
-            ),
-
-            // HUD
-            Positioned(
-              top: 20,
-              left: 20,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SCORE: $score',
-                    style: const TextStyle(
-                      color: Color(0xFFBB86FC),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+      body: Stack(
+        children: [
+          GestureDetector(
+            onHorizontalDragUpdate: (details) {
+              setState(() {
+                shipX = (shipX + details.delta.dx / MediaQuery.of(context).size.width).clamp(0.05, 0.95);
+              });
+            },
+            onTap: _fireBullet,
+            child: Stack(
+              children: [
+                // Invaders
+                for (final invader in invaders)
+                  Positioned(
+                    left: invader.dx * MediaQuery.of(context).size.width,
+                    top: invader.dy * MediaQuery.of(context).size.height,
+                    child: _enemySprite(),
                   ),
-                  Text(
-                    'LIVES: $lives',
-                    style: const TextStyle(
-                      color: Color(0xFFE040FB),
-                      fontSize: 16,
-                    ),
+
+                // Player Bullets
+                for (final bullet in bullets)
+                  Positioned(
+                    left: bullet.dx * MediaQuery.of(context).size.width - 2,
+                    top: bullet.dy * MediaQuery.of(context).size.height,
+                    child: _playerBullet(),
                   ),
-                ],
+
+                // Enemy Bullets
+                for (final b in enemyBullets)
+                  Positioned(
+                    left: b.dx * MediaQuery.of(context).size.width - 3,
+                    top: b.dy * MediaQuery.of(context).size.height,
+                    child: _enemyBullet(),
+                  ),
+
+                // Player Ship
+                Positioned(
+                  left: shipX * MediaQuery.of(context).size.width - 25,
+                  top: MediaQuery.of(context).size.height * 0.90,
+                  child: _playerShip(),
+                ),
+
+                // HUD
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SCORE: $score',
+                        style: const TextStyle(
+                          color: Color(0xFFBB86FC),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'LIVES: $lives',
+                        style: const TextStyle(
+                          color: Color(0xFFE040FB),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Game Over Overlay
+          if (gameOver)
+            Container(
+              color: Colors.black.withOpacity(0.8),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'GAME OVER',
+                      style: TextStyle(
+                        fontSize: 32,
+                        color: Colors.pinkAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Score: $score',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pinkAccent,
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      ),
+                      onPressed: _restartGame,
+                      child: const Text("RESTART", style: TextStyle(fontSize: 18)),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -894,6 +925,8 @@ class _MatrixTetrisGameState extends State<MatrixTetrisGame> {
     current = Tetromino.random(rnd, cols ~/ 2);
     score = 0;
     gameOver = false;
+    timer?.cancel();
+    timer = Timer.periodic(const Duration(milliseconds: 400), (_) => tick());
   }
 
   void tick() {
@@ -908,6 +941,7 @@ class _MatrixTetrisGameState extends State<MatrixTetrisGame> {
             grid[r][c] = current.color;
           } else {
             gameOver = true;
+            return;
           }
         }
         clearLines();
@@ -966,29 +1000,70 @@ class _MatrixTetrisGameState extends State<MatrixTetrisGame> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          Text('SCORE: $score', style: const TextStyle(color: Color(0xFFBB86FC))),
+          Text('SCORE: $score', style: const TextStyle(color: Color(0xFFBB86FC), fontSize: 20)),
           const SizedBox(height: 8),
           Expanded(
-            child: Center(
-              child: GestureDetector(
-                onTap: rotate,
-                onHorizontalDragUpdate: (d) {
-                  if (d.delta.dx > 6) move(0, 1);
-                  if (d.delta.dx < -6) move(0, -1);
-                  setState(() {});
-                },
-                child: Container(
-                  width: cols * cellSize.toDouble(),
-                  height: rows * cellSize.toDouble(),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    border: Border.all(color: const Color(0xFFBB86FC).withOpacity(0.2)),
-                  ),
-                  child: CustomPaint(
-                    painter: _TetrisPainter(grid: grid, current: current),
+            child: Stack(
+              children: [
+                Center(
+                  child: GestureDetector(
+                    onTap: rotate,
+                    onHorizontalDragUpdate: (d) {
+                      if (d.delta.dx > 6) move(0, 1);
+                      if (d.delta.dx < -6) move(0, -1);
+                      setState(() {});
+                    },
+                    child: Container(
+                      width: cols * cellSize.toDouble(),
+                      height: rows * cellSize.toDouble(),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        border: Border.all(color: const Color(0xFFBB86FC).withOpacity(0.2)),
+                      ),
+                      child: CustomPaint(
+                        painter: _TetrisPainter(grid: grid, current: current),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                
+                if (gameOver)
+                  Container(
+                    color: Colors.black.withOpacity(0.8),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'GAME OVER',
+                            style: TextStyle(
+                              fontSize: 32,
+                              color: Colors.pinkAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Score: $score',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(height: 25),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.pinkAccent,
+                              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                            ),
+                            onPressed: reset,
+                            child: const Text("RESTART", style: TextStyle(fontSize: 18)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -1100,6 +1175,8 @@ class _PsychedelicBrickBreakerState extends State<PsychedelicBrickBreaker> {
     vy = -0.015;
     score = 0;
     gameOver = false;
+    t?.cancel();
+    t = Timer.periodic(const Duration(milliseconds: 16), (_) => step());
   }
 
   void step() {
@@ -1152,37 +1229,67 @@ class _PsychedelicBrickBreakerState extends State<PsychedelicBrickBreaker> {
     return _gameScaffold(
       title: 'Psychedelic Bricks',
       onBack: () => Navigator.of(context).pop(),
-      body: GestureDetector(
-        onHorizontalDragUpdate: (d) {
-          setState(() {
-            paddleX = (paddleX + d.delta.dx / MediaQuery.of(context).size.width).clamp(0.1, 0.9);
-          });
-        },
-        onTap: () {
-          if (gameOver) reset();
-        },
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _BrickPainter(paddleX, ballX, ballY, bricks),
-              ),
+      body: Stack(
+        children: [
+          GestureDetector(
+            onHorizontalDragUpdate: (d) {
+              setState(() {
+                paddleX = (paddleX + d.delta.dx / MediaQuery.of(context).size.width).clamp(0.1, 0.9);
+              });
+            },
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _BrickPainter(paddleX, ballX, ballY, bricks),
+                  ),
+                ),
+                Positioned(
+                  left: 12,
+                  top: 12,
+                  child: Text('SCORE: $score', style: const TextStyle(color: Color(0xFFBB86FC), fontSize: 18)),
+                ),
+              ],
             ),
-            Positioned(
-              left: 12,
-              top: 12,
-              child: Text('SCORE: $score', style: const TextStyle(color: Color(0xFFBB86FC))),
-            ),
-            if (gameOver)
-              Center(
-                child: ElevatedButton(
-                  onPressed: reset,
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBB86FC)),
-                  child: const Text('RESTART'),
+          ),
+          
+          if (gameOver)
+            Container(
+              color: Colors.black.withOpacity(0.8),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'GAME OVER',
+                      style: TextStyle(
+                        fontSize: 32,
+                        color: Colors.pinkAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Score: $score',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFBB86FC),
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      ),
+                      onPressed: reset,
+                      child: const Text('RESTART', style: TextStyle(fontSize: 18)),
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -1288,7 +1395,11 @@ class _MindPuzzleGameState extends State<MindPuzzleGame> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          ElevatedButton(onPressed: reset, child: const Text('Shuffle')),
+          ElevatedButton(
+            onPressed: reset, 
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBB86FC)),
+            child: const Text('Shuffle')
+          ),
           const SizedBox(height: 12),
           Expanded(
             child: Center(
@@ -1404,7 +1515,11 @@ class _MemoryVortexGameState extends State<MemoryVortexGame> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          ElevatedButton(onPressed: reset, child: const Text('Shuffle')),
+          ElevatedButton(
+            onPressed: reset, 
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBB86FC)),
+            child: const Text('Shuffle')
+          ),
           const SizedBox(height: 12),
           Expanded(
             child: GridView.builder(
@@ -1473,7 +1588,7 @@ class _ReflexMatrixGameState extends State<ReflexMatrixGame> {
       });
     });
     spawnTimer = Timer.periodic(const Duration(milliseconds: 700), (_) {
-      if (active.length < 3) active.add(Random().nextInt(9));
+      if (timeLeft > 0 && active.length < 3) active.add(Random().nextInt(9));
       // fade random
       if (Random().nextDouble() < 0.4 && active.isNotEmpty) active.remove(active.first);
       setState(() {});
@@ -1506,7 +1621,7 @@ class _ReflexMatrixGameState extends State<ReflexMatrixGame> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          Text('TIME: $timeLeft  SCORE: $score', style: const TextStyle(color: Color(0xFFBB86FC))),
+          Text('TIME: $timeLeft  SCORE: $score', style: const TextStyle(color: Color(0xFFBB86FC), fontSize: 18)),
           const SizedBox(height: 12),
           Expanded(
             child: GridView.count(
@@ -1527,7 +1642,11 @@ class _ReflexMatrixGameState extends State<ReflexMatrixGame> {
               }),
             ),
           ),
-          ElevatedButton(onPressed: start, child: const Text('RESTART')),
+          ElevatedButton(
+            onPressed: start, 
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBB86FC)),
+            child: const Text('RESTART')
+          ),
         ],
       ),
     );
@@ -1606,7 +1725,7 @@ class _GravityBoxesGameState extends State<GravityBoxesGame> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          Text('SCORE: $score', style: const TextStyle(color: Color(0xFFBB86FC))),
+          Text('SCORE: $score', style: const TextStyle(color: Color(0xFFBB86FC), fontSize: 18)),
           const SizedBox(height: 12),
           Expanded(
             child: GestureDetector(
@@ -1633,6 +1752,7 @@ class _GravityBoxesGameState extends State<GravityBoxesGame> {
                 score = 0;
               });
             },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBB86FC)),
             child: const Text('RESET'),
           ),
         ],
@@ -1663,133 +1783,253 @@ class _GravityPainter extends CustomPainter {
 }
 
 /* =============================
-   9. PATTERN LOCK (connect the dots)
+   9. SUDOKU PUZZLE (replaces Pattern Lock)
    ============================= */
-class PatternLockGame extends StatefulWidget {
-  const PatternLockGame({super.key});
+class SudokuGame extends StatefulWidget {
+  const SudokuGame({super.key});
   @override
-  State<PatternLockGame> createState() => _PatternLockGameState();
+  State<SudokuGame> createState() => _SudokuGameState();
 }
 
-class _PatternLockGameState extends State<PatternLockGame> {
-  final List<int> path = [];
-  final List<Offset> nodes = List.generate(9, (i) {
-    final r = i ~/ 3;
-    final c = i % 3;
-    return Offset(c.toDouble(), r.toDouble());
-  });
+class _SudokuGameState extends State<SudokuGame> {
+  late List<List<int>> board;
+  late List<List<bool>> fixed;
+  int selectedRow = -1;
+  int selectedCol = -1;
+  bool solved = false;
 
-  void restart() {
-    path.clear();
+  @override
+  void initState() {
+    super.initState();
+    _generatePuzzle();
+  }
+
+  void _generatePuzzle() {
+    // Simple Sudoku puzzle (0 represents empty cells)
+    board = [
+      [5, 3, 0, 0, 7, 0, 0, 0, 0],
+      [6, 0, 0, 1, 9, 5, 0, 0, 0],
+      [0, 9, 8, 0, 0, 0, 0, 6, 0],
+      [8, 0, 0, 0, 6, 0, 0, 0, 3],
+      [4, 0, 0, 8, 0, 3, 0, 0, 1],
+      [7, 0, 0, 0, 2, 0, 0, 0, 6],
+      [0, 6, 0, 0, 0, 0, 2, 8, 0],
+      [0, 0, 0, 4, 1, 9, 0, 0, 5],
+      [0, 0, 0, 0, 8, 0, 0, 7, 9],
+    ];
+
+    // Mark fixed cells (pre-filled numbers)
+    fixed = List.generate(9, (i) => List.generate(9, (j) => board[i][j] != 0));
+    
+    selectedRow = -1;
+    selectedCol = -1;
+    solved = false;
     setState(() {});
   }
 
-  void onTapNode(int idx) {
-    if (!path.contains(idx)) {
-      path.add(idx);
-      setState(() {});
+  void _selectCell(int row, int col) {
+    if (!fixed[row][col]) {
+      setState(() {
+        selectedRow = row;
+        selectedCol = col;
+      });
+    }
+  }
+
+  void _placeNumber(int number) {
+    if (selectedRow != -1 && selectedCol != -1 && !fixed[selectedRow][selectedCol]) {
+      setState(() {
+        board[selectedRow][selectedCol] = number;
+        _checkSolution();
+      });
+    }
+  }
+
+  void _checkSolution() {
+    // Simple check - verify if all cells are filled and follow basic rules
+    bool allFilled = true;
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        if (board[i][j] == 0) {
+          allFilled = false;
+          break;
+        }
+      }
+      if (!allFilled) break;
+    }
+
+    if (allFilled) {
+      // Check rows, columns, and boxes for duplicates (simplified check)
+      bool valid = true;
+      
+      // Check rows
+      for (int i = 0; i < 9; i++) {
+        Set<int> rowSet = {};
+        for (int j = 0; j < 9; j++) {
+          if (!rowSet.add(board[i][j])) {
+            valid = false;
+            break;
+          }
+        }
+        if (!valid) break;
+      }
+
+      if (valid) {
+        setState(() {
+          solved = true;
+        });
+      }
+    }
+  }
+
+  void _clearCell() {
+    if (selectedRow != -1 && selectedCol != -1 && !fixed[selectedRow][selectedCol]) {
+      setState(() {
+        board[selectedRow][selectedCol] = 0;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const double gridSize = 300;
     return _gameScaffold(
-      title: 'Pattern Lock',
+      title: 'Sudoku Puzzle',
       onBack: () => Navigator.of(context).pop(),
       body: Column(
         children: [
           const SizedBox(height: 12),
           Text(
-            'PATTERN LENGTH: ${path.length}',
-            style: const TextStyle(color: Color(0xFFBB86FC)),
+            solved ? 'PUZZLE SOLVED!' : 'Fill the empty cells',
+            style: TextStyle(
+              color: solved ? const Color(0xFF64FFDA) : const Color(0xFFBB86FC),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           Expanded(
             child: Center(
-              child: GestureDetector(
-                onPanDown: (details) {
-                  final RenderBox box = context.findRenderObject() as RenderBox;
-                  final local = box.globalToLocal(details.globalPosition);
-
-                  final cell = gridSize / 3;
-                  final c = (local.dx / cell).clamp(0, 2).toInt();
-                  final r = (local.dy / cell).clamp(0, 2).toInt();
-                  final idx = r * 3 + c;
-                  onTapNode(idx);
-                },
-                onPanUpdate: (details) {
-                  final RenderBox box = context.findRenderObject() as RenderBox;
-                  final local = box.globalToLocal(details.globalPosition);
-
-                  final cell = gridSize / 3;
-                  final c = (local.dx / cell).clamp(0, 2).toInt();
-                  final r = (local.dy / cell).clamp(0, 2).toInt();
-                  final idx = r * 3 + c;
-                  onTapNode(idx);
-                },
-                child: Container(
-                  width: gridSize,
-                  height: gridSize,
-                  color: Colors.transparent,
-                  child: CustomPaint(
-                    painter: _PatternPainter(nodes, path),
+              child: Container(
+                width: 360,
+                height: 360,
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFBB86FC).withOpacity(0.3)),
+                ),
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 9,
                   ),
+                  itemCount: 81,
+                  itemBuilder: (context, index) {
+                    final row = index ~/ 9;
+                    final col = index % 9;
+                    final isSelected = row == selectedRow && col == selectedCol;
+                    final isFixed = fixed[row][col];
+                    final value = board[row][col];
+                    
+                    // Add thicker borders for 3x3 boxes
+                    bool showTopBorder = row % 3 == 0;
+                    bool showLeftBorder = col % 3 == 0;
+                    
+                    return GestureDetector(
+                      onTap: () => _selectCell(row, col),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected 
+                              ? const Color(0xFFBB86FC).withOpacity(0.3)
+                              : Colors.transparent,
+                          border: Border(
+                            top: BorderSide(
+                              color: const Color(0xFFBB86FC).withOpacity(showTopBorder ? 0.8 : 0.2),
+                              width: showTopBorder ? 2.0 : 1.0,
+                            ),
+                            left: BorderSide(
+                              color: const Color(0xFFBB86FC).withOpacity(showLeftBorder ? 0.8 : 0.2),
+                              width: showLeftBorder ? 2.0 : 1.0,
+                            ),
+                            right: BorderSide(
+                              color: const Color(0xFFBB86FC).withOpacity((col == 8) ? 0.8 : 0.2),
+                              width: (col == 8) ? 2.0 : 1.0,
+                            ),
+                            bottom: BorderSide(
+                              color: const Color(0xFFBB86FC).withOpacity((row == 8) ? 0.8 : 0.2),
+                              width: (row == 8) ? 2.0 : 1.0,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            value == 0 ? '' : value.toString(),
+                            style: TextStyle(
+                              color: isFixed ? const Color(0xFFE040FB) : const Color(0xFF64FFDA),
+                              fontSize: 18,
+                              fontWeight: isFixed ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
-          ElevatedButton(onPressed: restart, child: const Text('RESET')),
+          const SizedBox(height: 12),
+          // Number pad
+          Container(
+            height: 80,
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(9, (index) {
+                final number = index + 1;
+                return GestureDetector(
+                  onTap: () => _placeNumber(number),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A2E),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFBB86FC)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        number.toString(),
+                        style: const TextStyle(
+                          color: Color(0xFFBB86FC),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: _clearCell,
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE040FB)),
+                child: const Text('CLEAR'),
+              ),
+              ElevatedButton(
+                onPressed: _generatePuzzle,
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBB86FC)),
+                child: const Text('NEW PUZZLE'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
-}
-
-class _PatternPainter extends CustomPainter {
-  final List<Offset> nodes;
-  final List<int> path;
-  _PatternPainter(this.nodes, this.path);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cell = size.width / 3;
-
-    // Draw connections
-    if (path.length > 1) {
-      final linePaint = Paint()
-        ..color = const Color(0xFF64FFDA)
-        ..strokeWidth = 6
-        ..strokeCap = StrokeCap.round;
-
-      for (int i = 0; i < path.length - 1; i++) {
-        final a = path[i];
-        final b = path[i + 1];
-        final ax = nodes[a].dx * cell + cell / 2;
-        final ay = nodes[a].dy * cell + cell / 2;
-        final bx = nodes[b].dx * cell + cell / 2;
-        final by = nodes[b].dy * cell + cell / 2;
-        canvas.drawLine(Offset(ax, ay), Offset(bx, by), linePaint);
-      }
-    }
-
-    // Draw nodes
-    for (int i = 0; i < nodes.length; i++) {
-      final nx = nodes[i].dx * cell + cell / 2;
-      final ny = nodes[i].dy * cell + cell / 2;
-      final fillPaint = Paint()..color = path.contains(i) ? const Color(0xFF64FFDA) : const Color(0xFF1A1A2E);
-      final borderPaint = Paint()
-        ..color = const Color(0xFFBB86FC)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2;
-
-      canvas.drawCircle(Offset(nx, ny), 28, fillPaint);
-      canvas.drawCircle(Offset(nx, ny), 28, borderPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 /* =============================
@@ -1898,8 +2138,19 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
         children: [
           const SizedBox(height: 12),
           Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-            ElevatedButton(onPressed: reset, child: const Text('RESET')),
-            Text(lost ? 'BOOM' : (won ? 'WIN' : 'GOOD LUCK'), style: const TextStyle(color: Color(0xFFBB86FC))),
+            ElevatedButton(
+              onPressed: reset, 
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBB86FC)),
+              child: const Text('RESET')
+            ),
+            Text(
+              lost ? 'BOOM!' : (won ? 'YOU WIN!' : 'FIND THE MINES'),
+              style: TextStyle(
+                color: lost ? const Color(0xFFE040FB) : (won ? const Color(0xFF64FFDA) : const Color(0xFFBB86FC)),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ]),
           const SizedBox(height: 12),
           Expanded(
@@ -1924,14 +2175,28 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
                       child: Container(
                         margin: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: isExposed ? (val == -1 ? Colors.red : const Color(0xFF16213E)) : Colors.black26,
+                          color: isExposed 
+                              ? (val == -1 
+                                  ? const Color(0xFFE040FB) 
+                                  : const Color(0xFF16213E))
+                              : Colors.black26,
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFFBB86FC).withOpacity(0.12)),
+                          border: Border.all(color: const Color(0xFFBB86FC).withOpacity(0.3)),
                         ),
                         child: Center(
                           child: isExposed
-                              ? (val == -1 ? const Icon(Icons.ac_unit, color: Colors.white) : Text(val == 0 ? '' : '$val', style: const TextStyle(color: Colors.white)))
-                              : (isFlag ? const Icon(Icons.flag, color: Color(0xFFE040FB)) : const SizedBox.shrink()),
+                              ? (val == -1 
+                                  ? const Icon(Icons.ac_unit, color: Colors.white) 
+                                  : Text(
+                                      val == 0 ? '' : '$val', 
+                                      style: TextStyle(
+                                        color: _getNumberColor(val),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ))
+                              : (isFlag 
+                                  ? const Icon(Icons.flag, color: Color(0xFFE040FB)) 
+                                  : const SizedBox.shrink()),
                         ),
                       ),
                     );
@@ -1943,5 +2208,19 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
         ],
       ),
     );
+  }
+
+  Color _getNumberColor(int value) {
+    switch (value) {
+      case 1: return const Color(0xFF64FFDA);
+      case 2: return const Color(0xFF40C4FF);
+      case 3: return const Color(0xFFE040FB);
+      case 4: return const Color(0xFFBB86FC);
+      case 5: return const Color(0xFFFF9800);
+      case 6: return const Color(0xFF4CAF50);
+      case 7: return const Color(0xFFF44336);
+      case 8: return const Color(0xFF9C27B0);
+      default: return Colors.white;
+    }
   }
 }
