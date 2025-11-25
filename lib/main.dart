@@ -648,7 +648,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
 class InfoPage extends StatefulWidget {
   final bool openFirstInfo;
 
-  const InfoPage({super.key, this.openFirstInfo=false});
+  const InfoPage({super.key, this.openFirstInfo = false});
 
   @override
   State<InfoPage> createState() => _InfoPageState();
@@ -663,8 +663,38 @@ class _InfoPageState extends State<InfoPage> {
   void initState() {
     super.initState();
     _expandState[0] = widget.openFirstInfo;
+    
+    // Auto-expand games panel on first load
+    if (widget.openFirstInfo) {
+      _expandState[1] = true;
+      _startGamesMusic();
+    }
+    
     _gamesMusicPlayer = AudioPlayer();
     _setupMusicPlayer();
+    
+    // Set up the extraction complete callback
+    G.onExtractionComplete = _onExtractionComplete;
+  }
+
+  void _onExtractionComplete() {
+    // Stop games music
+    _stopGamesMusic();
+    
+    // Collapse games panel
+    setState(() {
+      _expandState[1] = false;
+    });
+    
+    // Show completion message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Container extraction complete!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _setupMusicPlayer() async {
@@ -700,6 +730,8 @@ class _InfoPageState extends State<InfoPage> {
 
   @override
   void dispose() {
+    // Clean up the callback
+    G.onExtractionComplete = null;
     _stopGamesMusic();
     _gamesMusicPlayer.dispose();
     super.dispose();
@@ -763,7 +795,12 @@ class _InfoPageState extends State<InfoPage> {
           headerBuilder: ((context, isExpanded) {
             return ListTile(
               title: Text('Mind Twister Games'),
-              subtitle: Text('Play while waiting for system processes'),
+              subtitle: Text(_isGamesMusicPlaying ? 
+                'Playing - Extraction in progress...' : 
+                'Play while waiting for system processes'),
+              trailing: _isGamesMusicPlaying ? 
+                Icon(Icons.music_note, color: Colors.green) : 
+                Icon(Icons.games),
             );
           }), 
           body: _buildGamesSection(),

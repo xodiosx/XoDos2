@@ -868,6 +868,9 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
 
 // Global variables
 class G {
+
+static VoidCallback? onExtractionComplete;
+  
   static late final String dataPath;
   static Pty? audioPty;
   static late WebViewController controller;
@@ -1029,6 +1032,12 @@ done
 }"""]);
     
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
+    
+       if (G.onExtractionComplete != null) {
+      G.onExtractionComplete!();
+    }
+    
+     
   }
 
   static Future<void> initData() async {
