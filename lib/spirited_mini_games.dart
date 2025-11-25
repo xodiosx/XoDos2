@@ -1,11 +1,16 @@
+// spirited_mini_games.dart
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 
 class SpiritedMiniGamesView extends StatefulWidget {
   const SpiritedMiniGamesView({super.key});
 
+  @override
+  State<SpiritedMiniGamesView> createState() => _SpiritedMiniGamesViewState();
+}
+
+class _SpiritedMiniGamesViewState extends State<SpiritedMiniGamesView> {
   static final _games = <_GameInfo>[
     _GameInfo('Quantum Snake', QuantumSnakeGame.new),
     _GameInfo('Neon Invaders', SpaceInvadersGame.new),
@@ -18,39 +23,6 @@ class SpiritedMiniGamesView extends StatefulWidget {
     _GameInfo('Sudoku Puzzle', SudokuGame.new),
     _GameInfo('Neon Sweeper', NeonSweeperGame.new),
   ];
-
-  @override
-  State<SpiritedMiniGamesView> createState() => _SpiritedMiniGamesViewState();
-}
-
-class _SpiritedMiniGamesViewState extends State<SpiritedMiniGamesView> {
-  final AudioPlayer _player = AudioPlayer();
-  bool _musicStarted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _startMusic();
-  }
-
-  Future<void> _startMusic() async {
-    try {
-      await _player.setReleaseMode(ReleaseMode.loop);
-      await _player.setVolume(0.6);
-      // music.mp3 should be declared in pubspec.yaml under assets
-      await _player.play(AssetSource('music.mp3'));
-      _musicStarted = true;
-    } catch (_) {
-      // ignore audio errors silently (device may not allow audio)
-    }
-  }
-
-  @override
-  void dispose() {
-    _player.stop();
-    _player.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,9 +41,9 @@ class _SpiritedMiniGamesViewState extends State<SpiritedMiniGamesView> {
                 mainAxisSpacing: 16,
                 childAspectRatio: 1.3,
               ),
-              itemCount: SpiritedMiniGamesView._games.length,
+              itemCount: _games.length,
               itemBuilder: (context, index) {
-                final game = SpiritedMiniGamesView._games[index];
+                final game = _games[index];
                 return _NeonGameCard(
                   title: game.title,
                   onTap: () => Navigator.of(context).push(
@@ -192,7 +164,7 @@ class _NeonGameCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: SpiritedMiniGamesViewStateHelper.neonBoxDecoration(),
+        decoration: _neonBoxDecoration(),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -241,11 +213,8 @@ class _NeonGameCard extends StatelessWidget {
       ),
     );
   }
-}
 
-/// Small helper to expose the same decoration (keeps code tidy)
-class SpiritedMiniGamesViewStateHelper {
-  static BoxDecoration neonBoxDecoration() {
+  static BoxDecoration _neonBoxDecoration() {
     return BoxDecoration(
       gradient: const LinearGradient(
         colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
@@ -306,6 +275,9 @@ Widget _gameScaffold({
     ),
   );
 }
+
+// ========== ALL THE GAME CLASSES ARE HERE ==========
+
 
 /* =============================
    1. QUANTUM SNAKE

@@ -2,7 +2,9 @@
 import 'dart:async';
 
 
-import 'spirited_mini_games.dart'; // Make sure this file is in the same directory
+import 'spirited_mini_games.dart'; // 
+import 'package:audioplayers/audioplayers.dart';
+
 import 'dart:math';
 import 'package:flutter/services.dart'; // Add this import
 import 'package:clipboard/clipboard.dart';
@@ -654,11 +656,53 @@ class InfoPage extends StatefulWidget {
 
 class _InfoPageState extends State<InfoPage> {
   final List<bool> _expandState = [false, false, false, false];
+  late AudioPlayer _gamesMusicPlayer;
+  bool _isGamesMusicPlaying = false;
   
   @override
   void initState() {
     super.initState();
     _expandState[0] = widget.openFirstInfo;
+    _gamesMusicPlayer = AudioPlayer();
+    _setupMusicPlayer();
+  }
+
+  void _setupMusicPlayer() async {
+    try {
+      await _gamesMusicPlayer.setReleaseMode(ReleaseMode.loop);
+      await _gamesMusicPlayer.setVolume(0.6);
+    } catch (_) {
+      // ignore audio errors
+    }
+  }
+
+  void _startGamesMusic() async {
+    if (_isGamesMusicPlaying) return;
+    
+    try {
+      await _gamesMusicPlayer.play(AssetSource('music.mp3'));
+      _isGamesMusicPlaying = true;
+    } catch (_) {
+      // ignore audio errors
+    }
+  }
+
+  void _stopGamesMusic() async {
+    if (!_isGamesMusicPlaying) return;
+    
+    try {
+      await _gamesMusicPlayer.stop();
+      _isGamesMusicPlaying = false;
+    } catch (_) {
+      // ignore audio errors
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopGamesMusic();
+    _gamesMusicPlayer.dispose();
+    super.dispose();
   }
 
   @override
@@ -667,78 +711,97 @@ class _InfoPageState extends State<InfoPage> {
       elevation: 1,
       expandedHeaderPadding: const EdgeInsets.all(0),
       expansionCallback: (panelIndex, isExpanded) {
-        _expandState[panelIndex] = isExpanded;
-        WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+        // Control music based on games panel expansion
+        if (panelIndex == 1) { // Games panel is at index 1
+          if (isExpanded) {
+            _startGamesMusic();
+          } else {
+            _stopGamesMusic();
+          }
+        }
+        
+        setState(() {
+          _expandState[panelIndex] = isExpanded;
+        });
       },
-    children: [
-      ExpansionPanel(
-        headerBuilder: (context, isExpanded) {
-          return ListTile(title: Text(AppLocalizations.of(context)!.userManual));
-        },
-        body: Padding(padding: const EdgeInsets.all(8), child: Column(
+      children: [
+        ExpansionPanel(
+          headerBuilder: (context, isExpanded) {
+            return ListTile(title: Text(AppLocalizations.of(context)!.userManual));
+          },
+          body: Padding(padding: const EdgeInsets.all(8), child: Column(
+            children: [
+              Text(AppLocalizations.of(context)!.firstLoadInstructions),
+              const SizedBox.square(dimension: 16),
+              Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
+                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestStoragePermission), onPressed: () {
+                  Permission.storage.request();
+                }),
+                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestAllFilesAccess), onPressed: () {
+                  Permission.manageExternalStorage.request();
+                }),
+                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.ignoreBatteryOptimization), onPressed: () {
+                  Permission.ignoreBatteryOptimizations.request();
+                }),
+              ]),
+              const SizedBox.square(dimension: 16),
+              Text(AppLocalizations.of(context)!.updateRequest),
+              const SizedBox.square(dimension: 16),
+              Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: D.links
+              .asMap().entries.map<Widget>((e) {
+                return OutlinedButton(style: D.commandButtonStyle, child: Text(Util.getl10nText(e.value["name"]!, context)), onPressed: () {
+                  launchUrl(Uri.parse(e.value["value"]!), mode: LaunchMode.externalApplication);
+                });
+              }).toList()),
+            ],
+          )),
+          isExpanded: _expandState[0],
+        ),
+        // ========== MINI GAMES SECTION ==========
+        ExpansionPanel(
+          isExpanded: _expandState[1],
+          headerBuilder: ((context, isExpanded) {
+            return ListTile(
+              title: Text('Mind Twister Games'),
+              subtitle: Text('Play while waiting for system processes'),
+            );
+          }), 
+          body: _buildGamesSection(),
+        ),
+        // ========== END MINI GAMES SECTION ==========
+        ExpansionPanel(
+          isExpanded: _expandState[2],
+          headerBuilder: ((context, isExpanded) {
+            return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
+          }), body: Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
+        ExpansionPanel(
+          isExpanded: _expandState[3],
+          headerBuilder: ((context, isExpanded) {
+            return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
+          }), body: Column(
           children: [
-            Text(AppLocalizations.of(context)!.firstLoadInstructions),
-            const SizedBox.square(dimension: 16),
-            Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
-              OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestStoragePermission), onPressed: () {
-                Permission.storage.request();
-              }),
-              OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestAllFilesAccess), onPressed: () {
-                Permission.manageExternalStorage.request();
-              }),
-              OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.ignoreBatteryOptimization), onPressed: () {
-                Permission.ignoreBatteryOptimizations.request();
-              }),
-            ]),
-            const SizedBox.square(dimension: 16),
-            Text(AppLocalizations.of(context)!.updateRequest),
-            const SizedBox.square(dimension: 16),
-            Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: D.links
-            .asMap().entries.map<Widget>((e) {
-              return OutlinedButton(style: D.commandButtonStyle, child: Text(Util.getl10nText(e.value["name"]!, context)), onPressed: () {
-                launchUrl(Uri.parse(e.value["value"]!), mode: LaunchMode.externalApplication);
-              });
-            }).toList()),
-          ],
+            Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
+            ElevatedButton(
+              onPressed: () {
+                launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2"), mode: LaunchMode.externalApplication);
+              },
+              child: Text(AppLocalizations.of(context)!.projectUrl),
+            ),
+          ]
         )),
-        isExpanded: _expandState[0],
-      ),
-      // ========== MINI GAMES SECTION - REPLACES OPEN SOURCE LICENSES ==========
-      ExpansionPanel(
-        isExpanded: _expandState[1],
-        headerBuilder: ((context, isExpanded) {
-          return ListTile(
-            title: Text('Mind Twister Games'),
-            subtitle: Text('Play while waiting for extrusion process'),
-          );
-        }), 
-        body: buildWaitingGamesSection(context),
-      ),
-      // ========== END MINI GAMES SECTION ==========
-      ExpansionPanel(
-        isExpanded: _expandState[2],
-        headerBuilder: ((context, isExpanded) {
-          return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
-        }), body: Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
-      ExpansionPanel(
-        isExpanded: _expandState[3],
-        headerBuilder: ((context, isExpanded) {
-          return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
-        }), body: Column(
-        children: [
-          Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
-          ElevatedButton(
-            onPressed: () {
-              launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2"), mode: LaunchMode.externalApplication);
-            },
-            child: Text(AppLocalizations.of(context)!.projectUrl),
-          ),
-        ]
-      )),
-    ],
-  );
+      ],
+    );
+  }
+
+  Widget _buildGamesSection() {
+    return Container(
+      height: 600, // Fixed height for the games section
+      margin: const EdgeInsets.all(8),
+      child: SpiritedMiniGamesView(), // This uses the separate games file
+    );
   }
 }
+
 
 class LoadingPage extends StatelessWidget {
   const LoadingPage({super.key});
