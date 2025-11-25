@@ -72,7 +72,7 @@ class _SpiritedMiniGamesViewState extends State<SpiritedMiniGamesView> {
     try {
       await _player.setReleaseMode(ReleaseMode.loop);
       // music.mp3 should be declared in pubspec.yaml under assets
-      await _player.play(AssetSource('music.mp3'));
+    await _player.play(AssetSource('music.mp3'), volume: 0.6); 
       _musicStarted = true;
     } catch (_) {
       // ignore audio errors silently (device may not allow audio)
