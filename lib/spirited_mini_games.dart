@@ -1,10 +1,8 @@
-// Plays Mimi games 
+
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter_midi/flutter_midi.dart';
-import 'package:flutter/services.dart';
 
 class SpiritedMiniGamesView extends StatefulWidget {
   const SpiritedMiniGamesView({super.key});
@@ -28,51 +26,19 @@ class SpiritedMiniGamesView extends StatefulWidget {
 
 class _SpiritedMiniGamesViewState extends State<SpiritedMiniGamesView> {
   final AudioPlayer _player = AudioPlayer();
-  final Midi _midi = Midi();
   bool _musicStarted = false;
-  bool _midiInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _startMusic();
-    _initializeMidi();
-  }
-
-  Future<void> _initializeMidi() async {
-    try {
-      // Use system's default MIDI synthesizer
-      await _midi.prepare(sf2: null);
-      setState(() {
-        _midiInitialized = true;
-      });
-    } catch (e) {
-      print("MIDI initialization failed: $e");
-    }
-  }
-
-  void _playMenuSelectSound() {
-    if (!_midiInitialized) return;
-    _midi.playMidiNote(midi: 72, velocity: 80); // C5 - menu selection
-  }
-
-  void _playGameStartSound() {
-    if (!_midiInitialized) return;
-    // Play a short ascending sequence
-    _midi.playMidiNote(midi: 60, velocity: 100); // C4
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _midi.playMidiNote(midi: 64, velocity: 100); // E4
-    });
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _midi.playMidiNote(midi: 67, velocity: 100); // G4
-    });
   }
 
   Future<void> _startMusic() async {
     try {
       await _player.setReleaseMode(ReleaseMode.loop);
       // music.mp3 should be declared in pubspec.yaml under assets
-    await _player.play(AssetSource('music.mp3'), volume: 0.6); 
+      await _player.play(AssetSource('music.mp3'));
       _musicStarted = true;
     } catch (_) {
       // ignore audio errors silently (device may not allow audio)
@@ -83,7 +49,6 @@ class _SpiritedMiniGamesViewState extends State<SpiritedMiniGamesView> {
   void dispose() {
     _player.stop();
     _player.dispose();
-    _midi.dispose();
     super.dispose();
   }
 
@@ -109,12 +74,9 @@ class _SpiritedMiniGamesViewState extends State<SpiritedMiniGamesView> {
                 final game = SpiritedMiniGamesView._games[index];
                 return _NeonGameCard(
                   title: game.title,
-                  onTap: () {
-                    _playGameStartSound();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => game.builder()),
-                    );
-                  },
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => game.builder()),
+                  ),
                   index: index,
                 );
               },
@@ -303,79 +265,6 @@ class SpiritedMiniGamesViewStateHelper {
   }
 }
 
-// MIDI Sound Manager for games
-class GameSoundManager {
-  static final Midi _midi = Midi();
-  static bool _initialized = false;
-
-  static Future<void> initialize() async {
-    if (_initialized) return;
-    try {
-      await _midi.prepare(sf2: null);
-      _initialized = true;
-    } catch (e) {
-      print("GameSoundManager initialization failed: $e");
-    }
-  }
-
-  static void playMoveSound() {
-    if (!_initialized) return;
-    _midi.playMidiNote(midi: 60, velocity: 60); // C4 - soft move
-  }
-
-  static void playClickSound() {
-    if (!_initialized) return;
-    _midi.playMidiNote(midi: 72, velocity: 80); // C5 - button click
-  }
-
-  static void playSuccessSound() {
-    if (!_initialized) return;
-    _midi.playMidiNote(midi: 76, velocity: 100); // E5 - success
-    Future.delayed(const Duration(milliseconds: 150), () {
-      _midi.playMidiNote(midi: 79, velocity: 100); // G5
-    });
-  }
-
-  static void playErrorSound() {
-    if (!_initialized) return;
-    _midi.playMidiNote(midi: 58, velocity: 100); // A#4 - error
-  }
-
-  static void playGameOverSound() {
-    if (!_initialized) return;
-    _midi.playMidiNote(midi: 55, velocity: 100); // G3
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _midi.playMidiNote(midi: 53, velocity: 100); // F3
-    });
-    Future.delayed(const Duration(milliseconds: 400), () {
-      _midi.playMidiNote(midi: 51, velocity: 100); // D#3
-    });
-  }
-
-  static void playScoreSound() {
-    if (!_initialized) return;
-    _midi.playMidiNote(midi: 84, velocity: 90); // C6 - score gain
-  }
-
-  static void playExplosionSound() {
-    if (!_initialized) return;
-    // Play multiple notes for explosion effect
-    _midi.playMidiNote(midi: 45, velocity: 120); // A2
-    _midi.playMidiNote(midi: 48, velocity: 100); // C3
-    _midi.playMidiNote(midi: 51, velocity: 80); // D#3
-  }
-
-  static void playShootSound() {
-    if (!_initialized) return;
-    _midi.playMidiNote(midi: 84, velocity: 70); // C6 - laser shoot
-  }
-
-  static void dispose() {
-    _midi.dispose();
-    _initialized = false;
-  }
-}
-
 // Utility function for game scaffolds
 Widget _gameScaffold({
   required String title,
@@ -402,10 +291,7 @@ Widget _gameScaffold({
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Color(0xFFBB86FC)),
-        onPressed: () {
-          GameSoundManager.playClickSound();
-          onBack();
-        },
+        onPressed: onBack,
       ),
     ),
     body: Container(
@@ -445,7 +331,6 @@ class _QuantumSnakeGameState extends State<QuantumSnakeGame> {
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     _startGame();
   }
 
@@ -483,7 +368,6 @@ class _QuantumSnakeGameState extends State<QuantumSnakeGame> {
 
     if (snake.contains(newHead)) {
       setState(() => gameOver = true);
-      GameSoundManager.playGameOverSound();
       return;
     }
 
@@ -491,7 +375,6 @@ class _QuantumSnakeGameState extends State<QuantumSnakeGame> {
       snake.insert(0, newHead);
       if (newHead == food) {
         score += 10;
-        GameSoundManager.playScoreSound();
         _generateFood();
       } else {
         snake.removeLast();
@@ -502,16 +385,12 @@ class _QuantumSnakeGameState extends State<QuantumSnakeGame> {
   void _handleSwipe(DragUpdateDetails details) {
     if (details.delta.dx > 2 && direction != const Offset(-1, 0)) {
       direction = const Offset(1, 0);
-      GameSoundManager.playMoveSound();
     } else if (details.delta.dx < -2 && direction != const Offset(1, 0)) {
       direction = const Offset(-1, 0);
-      GameSoundManager.playMoveSound();
     } else if (details.delta.dy > 2 && direction != const Offset(0, -1)) {
       direction = const Offset(0, 1);
-      GameSoundManager.playMoveSound();
     } else if (details.delta.dy < -2 && direction != const Offset(0, 1)) {
       direction = const Offset(0, -1);
-      GameSoundManager.playMoveSound();
     }
   }
 
@@ -529,11 +408,9 @@ class _QuantumSnakeGameState extends State<QuantumSnakeGame> {
       body: GestureDetector(
         onTap: () {
           if (gameOver) {
-            GameSoundManager.playClickSound();
             _startGame();
           } else {
             setState(() => isPaused = !isPaused);
-            GameSoundManager.playClickSound();
           }
         },
         onVerticalDragUpdate: _handleSwipe,
@@ -690,6 +567,8 @@ class _QuantumGridPainter extends CustomPainter {
    2. SPACE INVADERS (UPGRADED)
    ============================= */
 
+
+
 class SpaceInvadersGame extends StatefulWidget {
   const SpaceInvadersGame({super.key});
   @override
@@ -698,23 +577,36 @@ class SpaceInvadersGame extends StatefulWidget {
 
 class _SpaceInvadersGameState extends State<SpaceInvadersGame> {
   double shipX = 0.5;
+
   final List<Offset> invaders = [];
   final List<Offset> bullets = [];
   final List<Offset> enemyBullets = [];
+
   Timer? gameTimer;
+  Timer? speedTimer;
   final Random random = Random();
+
   int score = 0;
   int lives = 3;
   bool moveRight = true;
   double enemySpeed = 0.008;
+  double bulletSpeed = 0.03; // initial bullet speed
   bool gameOver = false;
 
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     _initInvaders();
+
+    // Main game loop
     gameTimer = Timer.periodic(const Duration(milliseconds: 16), (_) => _updateGame());
+
+    // Increase bullet speed every 30 seconds
+    speedTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      setState(() {
+        bulletSpeed *= 1.3; // increase by 30% every 30s
+      });
+    });
   }
 
   void _initInvaders() {
@@ -739,63 +631,46 @@ class _SpaceInvadersGameState extends State<SpaceInvadersGame> {
     if (gameOver) return;
 
     setState(() {
-      // Move Invaders
+      // Move invaders sideways only
       for (int i = 0; i < invaders.length; i++) {
         invaders[i] = invaders[i].translate(moveRight ? enemySpeed : -enemySpeed, 0);
       }
 
-      // Check walls
-      bool hitWall = false;
-      for (final invader in invaders) {
-        if (invader.dx > 0.92 || invader.dx < 0.05) {
-          hitWall = true;
-          break;
-        }
-      }
+      // Check walls and reverse direction
+      bool hitWall = invaders.any((invader) => invader.dx > 0.92 || invader.dx < 0.05);
+      if (hitWall) moveRight = !moveRight;
 
-      if (hitWall) {
-        moveRight = !moveRight;
-        for (int i = 0; i < invaders.length; i++) {
-          invaders[i] = invaders[i].translate(0, 0.04);
-        }
-      }
-
-      enemySpeed = 0.004 + (0.004 * (40 - invaders.length));
+      // Enemy shooting
       _enemyShoot();
 
-      // Move Player Bullets
+      // Move player bullets
       for (int i = bullets.length - 1; i >= 0; i--) {
-        bullets[i] = bullets[i].translate(0, -0.03);
+        bullets[i] = bullets[i].translate(0, -bulletSpeed);
         if (bullets[i].dy < 0) {
           bullets.removeAt(i);
           continue;
         }
-
-        // Bullet collision with invaders
+        // Collision with invaders
         for (int j = invaders.length - 1; j >= 0; j--) {
           if ((bullets[i] - invaders[j]).distance < 0.05) {
             invaders.removeAt(j);
             bullets.removeAt(i);
             score += 100;
-            GameSoundManager.playExplosionSound();
             break;
           }
         }
       }
 
-      // Enemy Bullets
+      // Enemy bullets
       for (int i = enemyBullets.length - 1; i >= 0; i--) {
         enemyBullets[i] = enemyBullets[i].translate(0, 0.02);
         if (enemyBullets[i].dy > 1.1) {
           enemyBullets.removeAt(i);
           continue;
         }
-
-        // Hit player
         if ((enemyBullets[i] - Offset(shipX, 0.90)).distance < 0.06) {
           enemyBullets.removeAt(i);
           lives--;
-          GameSoundManager.playErrorSound();
           if (lives <= 0) {
             _showGameOver();
             return;
@@ -803,36 +678,18 @@ class _SpaceInvadersGameState extends State<SpaceInvadersGame> {
         }
       }
 
-      // Invaders reached bottom
-      for (final invader in invaders) {
-        if (invader.dy > 0.8) {
-          lives--;
-          _initInvaders();
-          GameSoundManager.playErrorSound();
-          if (lives <= 0) {
-            _showGameOver();
-            return;
-          }
-          break;
-        }
-      }
-
-      // Level Complete
-      if (invaders.isEmpty) {
-        GameSoundManager.playSuccessSound();
-        _initInvaders();
-      }
+      // Level complete
+      if (invaders.isEmpty) _initInvaders();
     });
   }
 
   void _showGameOver() {
     gameOver = true;
     gameTimer?.cancel();
-    GameSoundManager.playGameOverSound();
+    speedTimer?.cancel();
 
     Future.delayed(const Duration(milliseconds: 300), () {
       if (!mounted) return;
-
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -865,13 +722,8 @@ class _SpaceInvadersGameState extends State<SpaceInvadersGame> {
                 ),
                 const SizedBox(height: 25),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pinkAccent,
-                  ),
-                  onPressed: () {
-                    GameSoundManager.playClickSound();
-                    Navigator.of(context).pop();
-                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
+                  onPressed: () => Navigator.of(context).pop(),
                   child: const Text("BACK"),
                 ),
               ],
@@ -882,97 +734,91 @@ class _SpaceInvadersGameState extends State<SpaceInvadersGame> {
     });
   }
 
-  void _fireBullet() {
-    bullets.add(Offset(shipX, 0.85));
-    GameSoundManager.playShootSound();
-  }
+  void _fireBullet() => bullets.add(Offset(shipX, 0.85));
 
   @override
   void dispose() {
     gameTimer?.cancel();
+    speedTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return _gameScaffold(
-      title: 'Neon Invaders',
-      onBack: () => Navigator.of(context).pop(),
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F23),
       body: GestureDetector(
         onHorizontalDragUpdate: (details) {
           setState(() {
-            shipX = (shipX + details.delta.dx / MediaQuery.of(context).size.width)
-                .clamp(0.05, 0.95);
+            shipX = (shipX + details.delta.dx / MediaQuery.of(context).size.width).clamp(0.05, 0.95);
           });
         },
         onTap: _fireBullet,
-        child: Container(
-          color: const Color(0xFF0F0F23),
-          child: Stack(
-            children: [
-              // Invaders
-              for (final invader in invaders)
-                Positioned(
-                  left: invader.dx * MediaQuery.of(context).size.width,
-                  top: invader.dy * MediaQuery.of(context).size.height,
-                  child: _enemySprite(),
-                ),
-
-              // Player Bullets
-              for (final bullet in bullets)
-                Positioned(
-                  left: bullet.dx * MediaQuery.of(context).size.width - 2,
-                  top: bullet.dy * MediaQuery.of(context).size.height,
-                  child: _playerBullet(),
-                ),
-
-              // Enemy Bullets
-              for (final b in enemyBullets)
-                Positioned(
-                  left: b.dx * MediaQuery.of(context).size.width - 3,
-                  top: b.dy * MediaQuery.of(context).size.height,
-                  child: _enemyBullet(),
-                ),
-
-              // Player Ship
+        child: Stack(
+          children: [
+            // Invaders
+            for (final invader in invaders)
               Positioned(
-                left: shipX * MediaQuery.of(context).size.width - 25,
-                top: MediaQuery.of(context).size.height * 0.90,
-                child: _playerShip(),
+                left: invader.dx * MediaQuery.of(context).size.width,
+                top: invader.dy * MediaQuery.of(context).size.height,
+                child: _enemySprite(),
               ),
 
-              // HUD
+            // Player Bullets
+            for (final bullet in bullets)
               Positioned(
-                top: 20,
-                left: 20,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SCORE: $score',
-                      style: const TextStyle(
-                        color: Color(0xFFBB86FC),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'LIVES: $lives',
-                      style: const TextStyle(
-                        color: Color(0xFFE040FB),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
+                left: bullet.dx * MediaQuery.of(context).size.width - 2,
+                top: bullet.dy * MediaQuery.of(context).size.height,
+                child: _playerBullet(),
               ),
-            ],
-          ),
+
+            // Enemy Bullets
+            for (final b in enemyBullets)
+              Positioned(
+                left: b.dx * MediaQuery.of(context).size.width - 3,
+                top: b.dy * MediaQuery.of(context).size.height,
+                child: _enemyBullet(),
+              ),
+
+            // Player Ship
+            Positioned(
+              left: shipX * MediaQuery.of(context).size.width - 25,
+              top: MediaQuery.of(context).size.height * 0.90,
+              child: _playerShip(),
+            ),
+
+            // HUD
+            Positioned(
+              top: 20,
+              left: 20,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SCORE: $score',
+                    style: const TextStyle(
+                      color: Color(0xFFBB86FC),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'LIVES: $lives',
+                    style: const TextStyle(
+                      color: Color(0xFFE040FB),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  // ------------------ SPRITES ------------------
   Widget _enemySprite() => Container(
         width: 24,
         height: 24,
@@ -1039,7 +885,6 @@ class _MatrixTetrisGameState extends State<MatrixTetrisGame> {
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     reset();
     timer = Timer.periodic(const Duration(milliseconds: 400), (_) => tick());
   }
@@ -1049,7 +894,6 @@ class _MatrixTetrisGameState extends State<MatrixTetrisGame> {
     current = Tetromino.random(rnd, cols ~/ 2);
     score = 0;
     gameOver = false;
-    GameSoundManager.playClickSound();
   }
 
   void tick() {
@@ -1064,32 +908,23 @@ class _MatrixTetrisGameState extends State<MatrixTetrisGame> {
             grid[r][c] = current.color;
           } else {
             gameOver = true;
-            GameSoundManager.playGameOverSound();
           }
         }
         clearLines();
         current = Tetromino.random(rnd, cols ~/ 2);
-        if (!fits(current, 0, 0)) {
-          gameOver = true;
-          GameSoundManager.playGameOverSound();
-        }
+        if (!fits(current, 0, 0)) gameOver = true;
       }
     });
   }
 
   void clearLines() {
-    int linesCleared = 0;
     for (int r = rows - 1; r >= 0; r--) {
       if (grid[r].every((c) => c != null)) {
         grid.removeAt(r);
         grid.insert(0, List<Color?>.filled(cols, null));
         score += 100;
-        linesCleared++;
         r++; // check same row again
       }
-    }
-    if (linesCleared > 0) {
-      GameSoundManager.playScoreSound();
     }
   }
 
@@ -1107,9 +942,6 @@ class _MatrixTetrisGameState extends State<MatrixTetrisGame> {
   bool move(int dr, int dc) {
     if (fits(current, dr, dc)) {
       current = current.copyWith(row: current.row + dr, col: current.col + dc);
-      if (dr != 0 || dc != 0) {
-        GameSoundManager.playMoveSound();
-      }
       return true;
     }
     return false;
@@ -1117,10 +949,7 @@ class _MatrixTetrisGameState extends State<MatrixTetrisGame> {
 
   void rotate() {
     final rotated = current.rotated();
-    if (fits(rotated, 0, 0)) {
-      current = rotated;
-      GameSoundManager.playClickSound();
-    }
+    if (fits(rotated, 0, 0)) current = rotated;
   }
 
   @override
@@ -1258,7 +1087,6 @@ class _PsychedelicBrickBreakerState extends State<PsychedelicBrickBreaker> {
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     reset();
     t = Timer.periodic(const Duration(milliseconds: 16), (_) => step());
   }
@@ -1272,7 +1100,6 @@ class _PsychedelicBrickBreakerState extends State<PsychedelicBrickBreaker> {
     vy = -0.015;
     score = 0;
     gameOver = false;
-    GameSoundManager.playClickSound();
   }
 
   void step() {
@@ -1280,21 +1107,14 @@ class _PsychedelicBrickBreakerState extends State<PsychedelicBrickBreaker> {
     setState(() {
       ballX += vx;
       ballY += vy;
-      if (ballX < 0.05 || ballX > 0.95) {
-        vx = -vx;
-        GameSoundManager.playClickSound();
-      }
-      if (ballY < 0.02) {
-        vy = -vy;
-        GameSoundManager.playClickSound();
-      }
+      if (ballX < 0.05 || ballX > 0.95) vx = -vx;
+      if (ballY < 0.02) vy = -vy;
       // paddle collision
       final paddleLeft = paddleX - 0.12;
       final paddleRight = paddleX + 0.12;
       if (ballY > 0.86 && ballX > paddleLeft && ballX < paddleRight) {
         vy = -vy.abs();
         vx += (ballX - paddleX) * 0.02;
-        GameSoundManager.playClickSound();
       }
       // bricks
       for (int r = 0; r < rows; r++) {
@@ -1306,17 +1126,14 @@ class _PsychedelicBrickBreakerState extends State<PsychedelicBrickBreaker> {
             bricks[r][c] = false;
             vy = -vy;
             score += 50;
-            GameSoundManager.playScoreSound();
           }
         }
       }
       if (ballY > 1.0) {
         gameOver = true;
-        GameSoundManager.playGameOverSound();
       }
       if (bricks.expand((e) => e).every((b) => !b)) {
         // win -> reset with more speed
-        GameSoundManager.playSuccessSound();
         vx *= 1.1;
         vy *= 1.1;
         reset();
@@ -1422,7 +1239,6 @@ class _MindPuzzleGameState extends State<MindPuzzleGame> {
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     reset();
   }
 
@@ -1435,7 +1251,6 @@ class _MindPuzzleGameState extends State<MindPuzzleGame> {
       tiles[0] = tiles[1];
       tiles[1] = a;
     }
-    GameSoundManager.playClickSound();
     setState(() {});
   }
 
@@ -1459,11 +1274,7 @@ class _MindPuzzleGameState extends State<MindPuzzleGame> {
       setState(() {
         tiles[zero] = tiles[idx];
         tiles[idx] = 0;
-        GameSoundManager.playMoveSound();
       });
-      if (solved) {
-        GameSoundManager.playSuccessSound();
-      }
     }
   }
 
@@ -1477,13 +1288,7 @@ class _MindPuzzleGameState extends State<MindPuzzleGame> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: reset, 
-            child: const Text('Shuffle'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBB86FC),
-            ),
-          ),
+          ElevatedButton(onPressed: reset, child: const Text('Shuffle')),
           const SizedBox(height: 12),
           Expanded(
             child: Center(
@@ -1547,7 +1352,6 @@ class _MemoryVortexGameState extends State<MemoryVortexGame> {
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     reset();
   }
 
@@ -1558,13 +1362,11 @@ class _MemoryVortexGameState extends State<MemoryVortexGame> {
     first = -1;
     matches = 0;
     flipBack?.cancel();
-    GameSoundManager.playClickSound();
     setState(() {});
   }
 
   void flip(int idx) {
     if (revealed[idx]) return;
-    GameSoundManager.playClickSound();
     setState(() => revealed[idx] = true);
     if (first == -1) {
       first = idx;
@@ -1572,12 +1374,9 @@ class _MemoryVortexGameState extends State<MemoryVortexGame> {
     }
     if (deck[first] == deck[idx]) {
       matches++;
-      GameSoundManager.playSuccessSound();
       first = -1;
       if (matches == 8) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          GameSoundManager.playSuccessSound();
-        });
+        // win
       }
     } else {
       flipBack?.cancel();
@@ -1605,13 +1404,7 @@ class _MemoryVortexGameState extends State<MemoryVortexGame> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: reset, 
-            child: const Text('Shuffle'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBB86FC),
-            ),
-          ),
+          ElevatedButton(onPressed: reset, child: const Text('Shuffle')),
           const SizedBox(height: 12),
           Expanded(
             child: GridView.builder(
@@ -1661,7 +1454,6 @@ class _ReflexMatrixGameState extends State<ReflexMatrixGame> {
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     start();
   }
 
@@ -1677,7 +1469,6 @@ class _ReflexMatrixGameState extends State<ReflexMatrixGame> {
         if (timeLeft <= 0) {
           gameTimer?.cancel();
           spawnTimer?.cancel();
-          GameSoundManager.playGameOverSound();
         }
       });
     });
@@ -1687,18 +1478,15 @@ class _ReflexMatrixGameState extends State<ReflexMatrixGame> {
       if (Random().nextDouble() < 0.4 && active.isNotEmpty) active.remove(active.first);
       setState(() {});
     });
-    GameSoundManager.playClickSound();
   }
 
   void tapCell(int i) {
     if (active.contains(i)) {
       score += 10;
       active.remove(i);
-      GameSoundManager.playSuccessSound();
       setState(() {});
     } else {
       score = max(0, score - 5);
-      GameSoundManager.playErrorSound();
       setState(() {});
     }
   }
@@ -1739,13 +1527,7 @@ class _ReflexMatrixGameState extends State<ReflexMatrixGame> {
               }),
             ),
           ),
-          ElevatedButton(
-            onPressed: start, 
-            child: const Text('RESTART'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBB86FC),
-            ),
-          ),
+          ElevatedButton(onPressed: start, child: const Text('RESTART')),
         ],
       ),
     );
@@ -1771,26 +1553,35 @@ class _GravityBoxesGameState extends State<GravityBoxesGame> {
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     t = Timer.periodic(const Duration(milliseconds: 50), (_) => step());
   }
 
   void step() {
     if (!running) return;
+
     setState(() {
+      // Move boxes down
       for (int i = 0; i < boxes.length; i++) {
         final b = boxes[i];
         var ny = b.dy + gravity;
-        if (ny > 0.92) {
-          ny = 0.92;
+
+        // Stop at bottom or on top of another box
+        for (final other in boxes) {
+          if (other == b) continue;
+          if ((ny - other.dy).abs() < 0.05 && (b.dx - other.dx).abs() < 0.08) {
+            ny = other.dy - 0.05;
+          }
         }
+
+        if (ny > 0.95) ny = 0.95;
         boxes[i] = Offset(b.dx, ny);
       }
-      // if many stacked -> convert to score and remove
-      if (boxes.length > 12) {
+
+      // Remove fully stacked bottom row
+      final stacked = boxes.where((b) => b.dy > 0.9).toList();
+      if (stacked.length >= 6) {
         score += 10;
-        boxes.removeRange(0, 4);
-        GameSoundManager.playScoreSound();
+        boxes.removeWhere((b) => b.dy > 0.9);
       }
     });
   }
@@ -1799,7 +1590,6 @@ class _GravityBoxesGameState extends State<GravityBoxesGame> {
     if (boxes.length > 18) return;
     final x = 0.1 + Random().nextDouble() * 0.8;
     boxes.add(Offset(x, 0.02));
-    GameSoundManager.playClickSound();
   }
 
   @override
@@ -1821,27 +1611,29 @@ class _GravityBoxesGameState extends State<GravityBoxesGame> {
           Expanded(
             child: GestureDetector(
               onTap: spawn,
-              child: Container(
-                color: Colors.black,
-                child: CustomPaint(
-                  painter: _GravityPainter(boxes),
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Container(
+                    color: Colors.black,
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    child: CustomPaint(
+                      painter: _GravityPainter(boxes),
+                    ),
+                  );
+                },
               ),
             ),
           ),
           const SizedBox(height: 12),
           ElevatedButton(
-            onPressed: () { 
-              setState(() { 
-                boxes.clear(); 
-                score = 0; 
-              }); 
-              GameSoundManager.playClickSound();
-            }, 
+            onPressed: () {
+              setState(() {
+                boxes.clear();
+                score = 0;
+              });
+            },
             child: const Text('RESET'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBB86FC),
-            ),
           ),
         ],
       ),
@@ -1852,12 +1644,17 @@ class _GravityBoxesGameState extends State<GravityBoxesGame> {
 class _GravityPainter extends CustomPainter {
   final List<Offset> boxes;
   _GravityPainter(this.boxes);
+
   @override
   void paint(Canvas canvas, Size size) {
-    final p = Paint()..color = const Color(0xFF40C4FF);
+    final paint = Paint()..color = const Color(0xFF40C4FF);
     for (final b in boxes) {
-      final rect = Rect.fromCenter(center: Offset(b.dx * size.width, b.dy * size.height), width: 28, height: 28);
-      canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(6)), p);
+      final rect = Rect.fromCenter(
+        center: Offset(b.dx * size.width, b.dy * size.height),
+        width: 28,
+        height: 28,
+      );
+      canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(6)), paint);
     }
   }
 
@@ -1882,66 +1679,67 @@ class _PatternLockGameState extends State<PatternLockGame> {
     return Offset(c.toDouble(), r.toDouble());
   });
 
-  @override
-  void initState() {
-    super.initState();
-    GameSoundManager.initialize();
-  }
-
   void restart() {
     path.clear();
-    GameSoundManager.playClickSound();
     setState(() {});
   }
 
   void onTapNode(int idx) {
     if (!path.contains(idx)) {
       path.add(idx);
-      GameSoundManager.playClickSound();
+      setState(() {});
     }
-    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    const double gridSize = 300;
     return _gameScaffold(
       title: 'Pattern Lock',
       onBack: () => Navigator.of(context).pop(),
       body: Column(
         children: [
           const SizedBox(height: 12),
-          Text('PATTERN LENGTH: ${path.length}', style: const TextStyle(color: Color(0xFFBB86FC))),
+          Text(
+            'PATTERN LENGTH: ${path.length}',
+            style: const TextStyle(color: Color(0xFFBB86FC)),
+          ),
           const SizedBox(height: 12),
           Expanded(
             child: Center(
               child: GestureDetector(
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  child: CustomPaint(
-                    painter: _PatternPainter(nodes, path),
-                  ),
-                ),
-                onTapDown: (details) {
-                  // detect which node tapped
+                onPanDown: (details) {
                   final RenderBox box = context.findRenderObject() as RenderBox;
                   final local = box.globalToLocal(details.globalPosition);
-                  final cell = 300 / 3;
+
+                  final cell = gridSize / 3;
                   final c = (local.dx / cell).clamp(0, 2).toInt();
                   final r = (local.dy / cell).clamp(0, 2).toInt();
                   final idx = r * 3 + c;
                   onTapNode(idx);
                 },
+                onPanUpdate: (details) {
+                  final RenderBox box = context.findRenderObject() as RenderBox;
+                  final local = box.globalToLocal(details.globalPosition);
+
+                  final cell = gridSize / 3;
+                  final c = (local.dx / cell).clamp(0, 2).toInt();
+                  final r = (local.dy / cell).clamp(0, 2).toInt();
+                  final idx = r * 3 + c;
+                  onTapNode(idx);
+                },
+                child: Container(
+                  width: gridSize,
+                  height: gridSize,
+                  color: Colors.transparent,
+                  child: CustomPaint(
+                    painter: _PatternPainter(nodes, path),
+                  ),
+                ),
               ),
             ),
           ),
-          ElevatedButton(
-            onPressed: restart, 
-            child: const Text('RESET'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBB86FC),
-            ),
-          ),
+          ElevatedButton(onPressed: restart, child: const Text('RESET')),
         ],
       ),
     );
@@ -1952,19 +1750,18 @@ class _PatternPainter extends CustomPainter {
   final List<Offset> nodes;
   final List<int> path;
   _PatternPainter(this.nodes, this.path);
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..strokeWidth = 6..style = PaintingStyle.stroke..color = const Color(0xFFBB86FC);
     final cell = size.width / 3;
-    for (int i = 0; i < nodes.length; i++) {
-      final nx = nodes[i].dx * cell + cell / 2;
-      final ny = nodes[i].dy * cell + cell / 2;
-      final circlePaint = Paint()..color = const Color(0xFF1A1A2E);
-      canvas.drawCircle(Offset(nx, ny), 28, circlePaint);
-      canvas.drawCircle(Offset(nx, ny), 20, Paint()..color = const Color(0xFFBB86FC));
-    }
-    if (path.isNotEmpty) {
-      final pathPainter = Paint()..color = const Color(0xFF64FFDA)..strokeWidth = 6;
+
+    // Draw connections
+    if (path.length > 1) {
+      final linePaint = Paint()
+        ..color = const Color(0xFF64FFDA)
+        ..strokeWidth = 6
+        ..strokeCap = StrokeCap.round;
+
       for (int i = 0; i < path.length - 1; i++) {
         final a = path[i];
         final b = path[i + 1];
@@ -1972,8 +1769,22 @@ class _PatternPainter extends CustomPainter {
         final ay = nodes[a].dy * cell + cell / 2;
         final bx = nodes[b].dx * cell + cell / 2;
         final by = nodes[b].dy * cell + cell / 2;
-        canvas.drawLine(Offset(ax, ay), Offset(bx, by), pathPainter);
+        canvas.drawLine(Offset(ax, ay), Offset(bx, by), linePaint);
       }
+    }
+
+    // Draw nodes
+    for (int i = 0; i < nodes.length; i++) {
+      final nx = nodes[i].dx * cell + cell / 2;
+      final ny = nodes[i].dy * cell + cell / 2;
+      final fillPaint = Paint()..color = path.contains(i) ? const Color(0xFF64FFDA) : const Color(0xFF1A1A2E);
+      final borderPaint = Paint()
+        ..color = const Color(0xFFBB86FC)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+
+      canvas.drawCircle(Offset(nx, ny), 28, fillPaint);
+      canvas.drawCircle(Offset(nx, ny), 28, borderPaint);
     }
   }
 
@@ -2003,7 +1814,6 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
   @override
   void initState() {
     super.initState();
-    GameSoundManager.initialize();
     reset();
   }
 
@@ -2014,7 +1824,6 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
     exposed = List.generate(rows, (_) => List<bool>.filled(cols, false));
     flagged = List.generate(rows, (_) => List<bool>.filled(cols, false));
     _placeMines();
-    GameSoundManager.playClickSound();
     setState(() {});
   }
 
@@ -2048,11 +1857,9 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
     exposed[r][c] = true;
     if (board[r][c] == -1) {
       lost = true;
-      GameSoundManager.playExplosionSound();
       setState(() {});
       return;
     }
-    GameSoundManager.playClickSound();
     if (board[r][c] == 0) {
       for (int dr = -1; dr <= 1; dr++) {
         for (int dc = -1; dc <= 1; dc++) {
@@ -2070,7 +1877,6 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
   void toggleFlag(int r, int c) {
     if (exposed[r][c] || lost) return;
     flagged[r][c] = !flagged[r][c];
-    GameSoundManager.playClickSound();
     setState(() {});
   }
 
@@ -2081,7 +1887,6 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
       }
     }
     won = true;
-    GameSoundManager.playSuccessSound();
   }
 
   @override
@@ -2093,13 +1898,7 @@ class _NeonSweeperGameState extends State<NeonSweeperGame> {
         children: [
           const SizedBox(height: 12),
           Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-            ElevatedButton(
-              onPressed: reset, 
-              child: const Text('RESET'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFBB86FC),
-              ),
-            ),
+            ElevatedButton(onPressed: reset, child: const Text('RESET')),
             Text(lost ? 'BOOM' : (won ? 'WIN' : 'GOOD LUCK'), style: const TextStyle(color: Color(0xFFBB86FC))),
           ]),
           const SizedBox(height: 12),

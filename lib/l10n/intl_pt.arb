@@ -114,14 +114,14 @@
   "avncResizeFactorValue": "Escala atual:",
   "avncResizeFactor": "Screen Scaling Ratio", 
   "avncResizeFactorValue": "Current scaling is",
-  "waitingGames": "Waiting Games",
-  "extrusionProcess": "Extrusion Process",
-  "gameTitleSnake": "Snake Game",
+  "waitingGames": "Jogando enquanto espera",
+  "extrusionProcess": "Processo de Extrusão",
+  "gameTitleSnake": "Jogo da Cobra",
   "gameTitleTetris": "Tetris",
   "gameTitleFlappy": "Flappy Bird",
-  "score": "Score: {score}",
-  "gameOver": "Game Over! Tap to restart",
-  "startGame": "Tap to Start",
-  "pause": "Pause",
-  "resume": "Resume"
+  "score": "Pontuação: {score}",
+  "gameOver": "Fim de jogo! Toque para reiniciar",
+  "startGame": "Toque para Iniciar",
+  "pause": "Pausa",
+  "resume": "Continuar"
 }

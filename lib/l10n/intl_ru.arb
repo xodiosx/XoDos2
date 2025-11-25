@@ -114,14 +114,14 @@
   "avncResizeFactorValue": "Текущий масштаб:",
   "avncResizeFactor": "Screen Scaling Ratio", 
   "avncResizeFactorValue": "Current scaling is",
-  "waitingGames": "Waiting Games",
-  "extrusionProcess": "Extrusion Process",
-  "gameTitleSnake": "Snake Game",
-  "gameTitleTetris": "Tetris",
+  "waitingGames": "Игра во время ожидания",
+  "extrusionProcess": "Процесс экструзии",
+  "gameTitleSnake": "Игра Змейка",
+  "gameTitleTetris": "Тетрис",
   "gameTitleFlappy": "Flappy Bird",
-  "score": "Score: {score}",
-  "gameOver": "Game Over! Tap to restart",
-  "startGame": "Tap to Start",
-  "pause": "Pause",
-  "resume": "Resume"
+  "score": "Счёт: {score}",
+  "gameOver": "Игра окончена! Нажмите, чтобы начать заново",
+  "startGame": "Нажмите, чтобы начать",
+  "pause": "Пауза",
+  "resume": "Продолжить"
 }

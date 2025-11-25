@@ -111,7 +111,7 @@
   "avncScreenResize": "Adaptive Screen Size",
   "avncResizeFactor": "Screen Scaling Ratio", 
   "avncResizeFactorValue": "Current scaling is",
-  "waitingGames": "Waiting Games",
+  "waitingGames": "gaming while Waiting",
   "extrusionProcess": "Extrusion Process",
   "gameTitleSnake": "Snake Game",
   "gameTitleTetris": "Tetris",

@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   xterm: ^4.0.0
-  flutter_midi: ^1.1.0
+  flutter_midi_pro: ^2.0.0
   audioplayers: ^5.2.0
   flutter_pty: ^0.4.2
   path_provider: ^2.1.5
