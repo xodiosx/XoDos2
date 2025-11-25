@@ -665,10 +665,10 @@ class _InfoPageState extends State<InfoPage> {
     _expandState[0] = widget.openFirstInfo;
     
     // Auto-expand games panel on first load
-    if (widget.openFirstInfo) {
-      _expandState[1] = true;
-      _startGamesMusic();
-    }
+  //  if (widget.openFirstInfo) {
+  //    _expandState[1] = true;
+//      _startGamesMusic();
+ //   }
     
     _gamesMusicPlayer = AudioPlayer();
     _setupMusicPlayer();
@@ -838,6 +838,9 @@ class _InfoPageState extends State<InfoPage> {
     );
   }
 }
+
+
+
 
 
 class LoadingPage extends StatelessWidget {
