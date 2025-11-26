@@ -665,9 +665,6 @@ class _InfoPageState extends State<InfoPage> {
     _expandState[0] = widget.openFirstInfo;
     _gamesMusicPlayer = AudioPlayer();
     _setupMusicPlayer();
-    
-    // Listen for extraction completion
-    ExtractionMonitor().addListener(_onExtractionComplete);
   }
 
   void _setupMusicPlayer() async {
@@ -677,22 +674,6 @@ class _InfoPageState extends State<InfoPage> {
     } catch (_) {
       // ignore audio errors
     }
-  }
-
-  void _onExtractionComplete() {
-    // Stop music when extraction completes
-    if (_isGamesMusicPlaying) {
-      _stopGamesMusic();
-    }
-    
-    // Show notification to user
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.extractionCompleteExitGame),
-        duration: const Duration(seconds: 3),
-      ),
-    );
   }
 
   void _startGamesMusic() async {
@@ -725,114 +706,95 @@ class _InfoPageState extends State<InfoPage> {
   void dispose() {
     _stopGamesMusic();
     _gamesMusicPlayer.dispose();
-    ExtractionMonitor().removeListener(_onExtractionComplete);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return ExpansionPanelList(
+      elevation: 1,
+      expandedHeaderPadding: const EdgeInsets.all(0),
+      expansionCallback: (panelIndex, isExpanded) {
+        // Control music based on games panel expansion
+        if (panelIndex == 1) { // Games panel is at index 1
+          if (isExpanded) {
+            _startGamesMusic();
+          } else {
+            _stopGamesMusic();
+          }
+        }
+        
+        setState(() {
+          _expandState[panelIndex] = isExpanded;
+        });
+      },
       children: [
-        // Main content
-        ExpansionPanelList(
-          elevation: 1,
-          expandedHeaderPadding: const EdgeInsets.all(0),
-          expansionCallback: (panelIndex, isExpanded) {
-            // Control music based on games panel expansion
-            if (panelIndex == 1) { // Games panel is at index 1
-              if (isExpanded) {
-                _startGamesMusic();
-              } else {
-                _stopGamesMusic();
-              }
-            }
-            
-            setState(() {
-              _expandState[panelIndex] = isExpanded;
-            });
+        ExpansionPanel(
+          headerBuilder: (context, isExpanded) {
+            return ListTile(title: Text(AppLocalizations.of(context)!.userManual));
           },
+          body: Padding(padding: const EdgeInsets.all(8), child: Column(
+            children: [
+              Text(AppLocalizations.of(context)!.firstLoadInstructions),
+              const SizedBox.square(dimension: 16),
+              Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
+                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestStoragePermission), onPressed: () {
+                  Permission.storage.request();
+                }),
+                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestAllFilesAccess), onPressed: () {
+                  Permission.manageExternalStorage.request();
+                }),
+                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.ignoreBatteryOptimization), onPressed: () {
+                  Permission.ignoreBatteryOptimizations.request();
+                }),
+              ]),
+              const SizedBox.square(dimension: 16),
+              Text(AppLocalizations.of(context)!.updateRequest),
+              const SizedBox.square(dimension: 16),
+              Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: D.links
+              .asMap().entries.map<Widget>((e) {
+                return OutlinedButton(style: D.commandButtonStyle, child: Text(Util.getl10nText(e.value["name"]!, context)), onPressed: () {
+                  launchUrl(Uri.parse(e.value["value"]!), mode: LaunchMode.externalApplication);
+                });
+              }).toList()),
+            ],
+          )),
+          isExpanded: _expandState[0],
+        ),
+        // ========== MINI GAMES SECTION ==========
+        ExpansionPanel(
+          isExpanded: _expandState[1],
+          headerBuilder: ((context, isExpanded) {
+            return ListTile(
+              title: Text(AppLocalizations.of(context)!.mindTwisterGames),
+              subtitle: Text(_isGamesMusicPlaying ? 
+                AppLocalizations.of(context)!.extractionInProgress : 
+                AppLocalizations.of(context)!.playWhileWaiting),
+            );
+          }), 
+          body: _buildGamesSection(),
+        ),
+        // ========== END MINI GAMES SECTION ==========
+        ExpansionPanel(
+          isExpanded: _expandState[2],
+          headerBuilder: ((context, isExpanded) {
+            return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
+          }), body: Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
+        ExpansionPanel(
+          isExpanded: _expandState[3],
+          headerBuilder: ((context, isExpanded) {
+            return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
+          }), body: Column(
           children: [
-            ExpansionPanel(
-              headerBuilder: (context, isExpanded) {
-                return ListTile(title: Text(AppLocalizations.of(context)!.userManual));
+            Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
+            ElevatedButton(
+              onPressed: () {
+                launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2"), mode: LaunchMode.externalApplication);
               },
-              body: Padding(padding: const EdgeInsets.all(8), child: Column(
-                children: [
-                  Text(AppLocalizations.of(context)!.firstLoadInstructions),
-                  const SizedBox.square(dimension: 16),
-                  Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
-                    OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestStoragePermission), onPressed: () {
-                      Permission.storage.request();
-                    }),
-                    OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestAllFilesAccess), onPressed: () {
-                      Permission.manageExternalStorage.request();
-                    }),
-                    OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.ignoreBatteryOptimization), onPressed: () {
-                      Permission.ignoreBatteryOptimizations.request();
-                    }),
-                  ]),
-                  const SizedBox.square(dimension: 16),
-                  Text(AppLocalizations.of(context)!.updateRequest),
-                  const SizedBox.square(dimension: 16),
-                  Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: D.links
-                  .asMap().entries.map<Widget>((e) {
-                    return OutlinedButton(style: D.commandButtonStyle, child: Text(Util.getl10nText(e.value["name"]!, context)), onPressed: () {
-                      launchUrl(Uri.parse(e.value["value"]!), mode: LaunchMode.externalApplication);
-                    });
-                  }).toList()),
-                ],
-              )),
-              isExpanded: _expandState[0],
+              child: Text(AppLocalizations.of(context)!.projectUrl),
             ),
-            // ========== MINI GAMES SECTION ==========
-            ExpansionPanel(
-              isExpanded: _expandState[1],
-              headerBuilder: ((context, isExpanded) {
-                return ListTile(
-                  title: Text(AppLocalizations.of(context)!.mindTwisterGames),
-                  subtitle: Text(_isGamesMusicPlaying ? 
-                    AppLocalizations.of(context)!.extractionInProgress : 
-                    AppLocalizations.of(context)!.playWhileWaiting),
-                );
-              }), 
-              body: _buildGamesSection(),
-            ),
-            // ========== END MINI GAMES SECTION ==========
-            ExpansionPanel(
-              isExpanded: _expandState[2],
-              headerBuilder: ((context, isExpanded) {
-                return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
-              }), body: Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
-            ExpansionPanel(
-              isExpanded: _expandState[3],
-              headerBuilder: ((context, isExpanded) {
-                return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
-              }), body: Column(
-              children: [
-                Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
-                ElevatedButton(
-                  onPressed: () {
-                    launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2"), mode: LaunchMode.externalApplication);
-                  },
-                  child: Text(AppLocalizations.of(context)!.projectUrl),
-                ),
-              ]
-            )),
-          ],
-        ),
-
-        // Global extraction progress circle - appears above everything
-        // This will be managed by the main app, not by InfoPage
-        // We'll just leave space for it in the layout
-        Positioned(
-          top: 16,
-          right: 16,
-          child: SizedBox(
-            width: 50,
-            height: 50,
-            // The actual progress circle will be drawn by the parent widget (MyHomePage)
-          ),
-        ),
+          ]
+        )),
       ],
     );
   }
@@ -843,7 +805,7 @@ class _InfoPageState extends State<InfoPage> {
       margin: const EdgeInsets.all(8),
       child: Column(
         children: [
-          // Extraction status indicator
+          // Simple status indicator without button
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -852,47 +814,13 @@ class _InfoPageState extends State<InfoPage> {
               border: Border.all(color: Colors.green),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '🎮 ${AppLocalizations.of(context)!.gameModeActive}',
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    ValueListenableBuilder<bool>(
-                      valueListenable: ExtractionMonitor().isExtractionInProgress,
-                      builder: (context, isInProgress, child) {
-                        if (!isInProgress) return const SizedBox.shrink();
-                        return ValueListenableBuilder<double>(
-                          valueListenable: ExtractionMonitor().extractionProgress,
-                          builder: (context, progress, child) {
-                            return Text(
-                              'Extraction: ${(progress * 100).toStringAsFixed(0)}%',
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontSize: 12,
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    ExtractionMonitor().notifyExtractionComplete();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
+                Text(
+                  '🎮 ${AppLocalizations.of(context)!.gameModeActive}',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: Text(AppLocalizations.of(context)!.simulateExtractionComplete),
                 ),
               ],
             ),
@@ -908,49 +836,6 @@ class _InfoPageState extends State<InfoPage> {
 }
 
 
-class ExtractionMonitor {
-  static final ExtractionMonitor _instance = ExtractionMonitor._internal();
-  factory ExtractionMonitor() => _instance;
-  ExtractionMonitor._internal();
-
-  final ValueNotifier<bool> _isExtractionComplete = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _isExtractionInProgress = ValueNotifier<bool>(false);
-  final ValueNotifier<double> _extractionProgress = ValueNotifier<double>(0.0);
-  final List<VoidCallback> _listeners = [];
-
-  ValueNotifier<bool> get isExtractionComplete => _isExtractionComplete;
-  ValueNotifier<bool> get isExtractionInProgress => _isExtractionInProgress;
-  ValueNotifier<double> get extractionProgress => _extractionProgress;
-
-  void addListener(VoidCallback listener) {
-    _listeners.add(listener);
-  }
-
-  void removeListener(VoidCallback listener) {
-    _listeners.remove(listener);
-  }
-
-  void updateExtractionProgress(double progress) {
-    _extractionProgress.value = progress;
-    _isExtractionInProgress.value = progress < 1.0;
-  }
-
-  void notifyExtractionComplete() {
-    _isExtractionComplete.value = true;
-    _isExtractionInProgress.value = false;
-    _extractionProgress.value = 1.0;
-    
-    for (final listener in _listeners) {
-      listener();
-    }
-    
-    // Reset after notification
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _isExtractionComplete.value = false;
-      _extractionProgress.value = 0.0;
-    });
-  }
-}
 
 
 
@@ -1484,6 +1369,11 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   bool bannerAdsFailedToLoad = false;
   bool isLoadingComplete = false;
+  
+  // Extraction progress variables - same logic as FakeLoadingStatus
+  double _extractionProgressT = 0;
+  Timer? _extractionTimer;
+  bool _showExtractionProgress = true; // Set to true to always show for testing
 
   @override
   void initState() {
@@ -1492,6 +1382,44 @@ class _MyHomePageState extends State<MyHomePage> {
       _initializeWorkflow();
     });
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: []);
+    
+    // Start extraction progress monitoring
+    _startExtractionProgress();
+  }
+
+  void _startExtractionProgress() {
+    _extractionProgressT = 0;
+    _showExtractionProgress = true;
+    
+    _extractionTimer?.cancel();
+    _extractionTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (mounted) {
+        setState(() {
+          _extractionProgressT += 0.1;
+          
+          // Stop when progress reaches completion (adjust threshold as needed)
+          if (_extractionProgressT >= 300) {
+            timer.cancel();
+            _showExtractionProgress = false;
+          }
+        });
+      }
+    });
+  }
+
+  void _stopExtractionProgress() {
+    _extractionTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _showExtractionProgress = false;
+        _extractionProgressT = 0;
+      });
+    }
+  }
+
+  double get _extractionProgressValue {
+    // Same calculation as FakeLoadingStatus
+    return 1 - pow(10, _extractionProgressT / -300).toDouble();
   }
 
   Future<void> _initializeWorkflow() async {
@@ -1504,6 +1432,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   @override
+  void dispose() {
+    _extractionTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     G.homePageStateContext = context;
 
@@ -1512,56 +1446,69 @@ class _MyHomePageState extends State<MyHomePage> {
         appBar: AppBar(
           title: Text(isLoadingComplete ? Util.getCurrentProp("name") : widget.title),
         ),
-        body: isLoadingComplete
-            ? ValueListenableBuilder(
-                valueListenable: G.pageIndex,
-                builder: (context, value, child) {
-                  return IndexedStack(
-                    index: G.pageIndex.value,
-                    children: const [
-                      TerminalPage(),
-                      Padding(
-                        padding: EdgeInsets.all(8),
-                        child: AspectRatioMax1To1(
-                          child: Scrollbar(
-                            child: SingleChildScrollView(
-                              restorationId: "control-scroll",
-                              child: Column(
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: FractionallySizedBox(
-                                      widthFactor: 0.4,
-                                      child: Image(image: AssetImage("images/icon.png")),
-                                    ),
-                                  ),
-                                  FastCommands(),
-                                  Padding(
-                                    padding: EdgeInsets.all(8),
-                                    child: Card(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(8),
-                                        child: Column(
-                                          children: [
-                                            SettingPage(),
-                                            SizedBox.square(dimension: 8),
-                                            InfoPage(openFirstInfo: false),
-                                          ],
+        body: Stack(
+          children: [
+            // Main content
+            isLoadingComplete
+                ? ValueListenableBuilder(
+                    valueListenable: G.pageIndex,
+                    builder: (context, value, child) {
+                      return IndexedStack(
+                        index: G.pageIndex.value,
+                        children: const [
+                          TerminalPage(),
+                          Padding(
+                            padding: EdgeInsets.all(8),
+                            child: AspectRatioMax1To1(
+                              child: Scrollbar(
+                                child: SingleChildScrollView(
+                                  restorationId: "control-scroll",
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.all(16),
+                                        child: FractionallySizedBox(
+                                          widthFactor: 0.4,
+                                          child: Image(image: AssetImage("images/icon.png")),
                                         ),
                                       ),
-                                    ),
+                                      FastCommands(),
+                                      Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: Card(
+                                          child: Padding(
+                                            padding: EdgeInsets.all(8),
+                                            child: Column(
+                                              children: [
+                                                SettingPage(),
+                                                SizedBox.square(dimension: 8),
+                                                InfoPage(openFirstInfo: false),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              )
-            : const LoadingPage(),
+                        ],
+                      );
+                    },
+                  )
+                : const LoadingPage(),
+
+            // Global floating extraction progress circle - appears above all pages
+            if (_showExtractionProgress)
+              Positioned(
+                top: 80, // Below app bar
+                right: 20,
+                child: _buildGlobalExtractionProgressCircle(),
+              ),
+          ],
+        ),
         bottomNavigationBar: ValueListenableBuilder(
           valueListenable: G.pageIndex,
           builder: (context, value, child) {
@@ -1583,8 +1530,61 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-}
 
+  Widget _buildGlobalExtractionProgressCircle() {
+    return Container(
+      width: 60, // Slightly larger for better visibility
+      height: 60,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.9),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.green, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.7),
+            blurRadius: 12,
+            spreadRadius: 3,
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Background circle
+          CircularProgressIndicator(
+            value: _extractionProgressValue,
+            backgroundColor: Colors.grey[800],
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+            strokeWidth: 4,
+          ),
+          // Percentage text
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '${(_extractionProgressValue * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Text(
+                  'EXT',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
         
         // Remove or comment out this floatingActionButton section from MyHomePage:
