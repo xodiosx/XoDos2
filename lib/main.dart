@@ -648,7 +648,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
 class InfoPage extends StatefulWidget {
   final bool openFirstInfo;
 
-  const InfoPage({super.key, this.openFirstInfo = false});
+  const InfoPage({super.key, this.openFirstInfo=false});
 
   @override
   State<InfoPage> createState() => _InfoPageState();
@@ -663,38 +663,11 @@ class _InfoPageState extends State<InfoPage> {
   void initState() {
     super.initState();
     _expandState[0] = widget.openFirstInfo;
-    
-    // Auto-expand games panel on first load
-  //  if (widget.openFirstInfo) {
-  //    _expandState[1] = true;
-//      _startGamesMusic();
- //   }
-    
     _gamesMusicPlayer = AudioPlayer();
     _setupMusicPlayer();
     
-    // Set up the extraction complete callback
-    G.onExtractionComplete = _onExtractionComplete;
-  }
-
-  void _onExtractionComplete() {
-    // Stop games music
-    _stopGamesMusic();
-    
-    // Collapse games panel
-    setState(() {
-      _expandState[1] = false;
-    });
-    
-    // Show completion message
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Container extraction complete!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    // Listen for extraction completion
+    ExtractionMonitor().addListener(_onExtractionComplete);
   }
 
   void _setupMusicPlayer() async {
@@ -706,12 +679,30 @@ class _InfoPageState extends State<InfoPage> {
     }
   }
 
+  void _onExtractionComplete() {
+    // Stop music when extraction completes
+    if (_isGamesMusicPlaying) {
+      _stopGamesMusic();
+    }
+    
+    // Show notification to user
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.extractionCompleteExitGame),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _startGamesMusic() async {
     if (_isGamesMusicPlaying) return;
     
     try {
       await _gamesMusicPlayer.play(AssetSource('music.mp3'));
-      _isGamesMusicPlaying = true;
+      setState(() {
+        _isGamesMusicPlaying = true;
+      });
     } catch (_) {
       // ignore audio errors
     }
@@ -722,7 +713,9 @@ class _InfoPageState extends State<InfoPage> {
     
     try {
       await _gamesMusicPlayer.stop();
-      _isGamesMusicPlaying = false;
+      setState(() {
+        _isGamesMusicPlaying = false;
+      });
     } catch (_) {
       // ignore audio errors
     }
@@ -730,116 +723,234 @@ class _InfoPageState extends State<InfoPage> {
 
   @override
   void dispose() {
-    // Clean up the callback
-    G.onExtractionComplete = null;
     _stopGamesMusic();
     _gamesMusicPlayer.dispose();
+    ExtractionMonitor().removeListener(_onExtractionComplete);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionPanelList(
-      elevation: 1,
-      expandedHeaderPadding: const EdgeInsets.all(0),
-      expansionCallback: (panelIndex, isExpanded) {
-        // Control music based on games panel expansion
-        if (panelIndex == 1) { // Games panel is at index 1
-          if (isExpanded) {
-            _startGamesMusic();
-          } else {
-            _stopGamesMusic();
-          }
-        }
-        
-        setState(() {
-          _expandState[panelIndex] = isExpanded;
-        });
-      },
+    return Stack(
       children: [
-        ExpansionPanel(
-          headerBuilder: (context, isExpanded) {
-            return ListTile(title: Text(AppLocalizations.of(context)!.userManual));
+        // Main content
+        ExpansionPanelList(
+          elevation: 1,
+          expandedHeaderPadding: const EdgeInsets.all(0),
+          expansionCallback: (panelIndex, isExpanded) {
+            // Control music based on games panel expansion
+            if (panelIndex == 1) { // Games panel is at index 1
+              if (isExpanded) {
+                _startGamesMusic();
+              } else {
+                _stopGamesMusic();
+              }
+            }
+            
+            setState(() {
+              _expandState[panelIndex] = isExpanded;
+            });
           },
-          body: Padding(padding: const EdgeInsets.all(8), child: Column(
-            children: [
-              Text(AppLocalizations.of(context)!.firstLoadInstructions),
-              const SizedBox.square(dimension: 16),
-              Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
-                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestStoragePermission), onPressed: () {
-                  Permission.storage.request();
-                }),
-                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestAllFilesAccess), onPressed: () {
-                  Permission.manageExternalStorage.request();
-                }),
-                OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.ignoreBatteryOptimization), onPressed: () {
-                  Permission.ignoreBatteryOptimizations.request();
-                }),
-              ]),
-              const SizedBox.square(dimension: 16),
-              Text(AppLocalizations.of(context)!.updateRequest),
-              const SizedBox.square(dimension: 16),
-              Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: D.links
-              .asMap().entries.map<Widget>((e) {
-                return OutlinedButton(style: D.commandButtonStyle, child: Text(Util.getl10nText(e.value["name"]!, context)), onPressed: () {
-                  launchUrl(Uri.parse(e.value["value"]!), mode: LaunchMode.externalApplication);
-                });
-              }).toList()),
-            ],
-          )),
-          isExpanded: _expandState[0],
-        ),
-        // ========== MINI GAMES SECTION ==========
-        ExpansionPanel(
-          isExpanded: _expandState[1],
-          headerBuilder: ((context, isExpanded) {
-            return ListTile(
-              title: Text('Mind Twister Games'),
-              subtitle: Text(_isGamesMusicPlaying ? 
-                'Playing - Extraction in progress...' : 
-                'Play while waiting for system processes'),
-              trailing: _isGamesMusicPlaying ? 
-                Icon(Icons.music_note, color: Colors.green) : 
-                Icon(Icons.games),
-            );
-          }), 
-          body: _buildGamesSection(),
-        ),
-        // ========== END MINI GAMES SECTION ==========
-        ExpansionPanel(
-          isExpanded: _expandState[2],
-          headerBuilder: ((context, isExpanded) {
-            return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
-          }), body: Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
-        ExpansionPanel(
-          isExpanded: _expandState[3],
-          headerBuilder: ((context, isExpanded) {
-            return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
-          }), body: Column(
           children: [
-            Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
-            ElevatedButton(
-              onPressed: () {
-                launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2"), mode: LaunchMode.externalApplication);
+            ExpansionPanel(
+              headerBuilder: (context, isExpanded) {
+                return ListTile(title: Text(AppLocalizations.of(context)!.userManual));
               },
-              child: Text(AppLocalizations.of(context)!.projectUrl),
+              body: Padding(padding: const EdgeInsets.all(8), child: Column(
+                children: [
+                  Text(AppLocalizations.of(context)!.firstLoadInstructions),
+                  const SizedBox.square(dimension: 16),
+                  Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
+                    OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestStoragePermission), onPressed: () {
+                      Permission.storage.request();
+                    }),
+                    OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.requestAllFilesAccess), onPressed: () {
+                      Permission.manageExternalStorage.request();
+                    }),
+                    OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.ignoreBatteryOptimization), onPressed: () {
+                      Permission.ignoreBatteryOptimizations.request();
+                    }),
+                  ]),
+                  const SizedBox.square(dimension: 16),
+                  Text(AppLocalizations.of(context)!.updateRequest),
+                  const SizedBox.square(dimension: 16),
+                  Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: D.links
+                  .asMap().entries.map<Widget>((e) {
+                    return OutlinedButton(style: D.commandButtonStyle, child: Text(Util.getl10nText(e.value["name"]!, context)), onPressed: () {
+                      launchUrl(Uri.parse(e.value["value"]!), mode: LaunchMode.externalApplication);
+                    });
+                  }).toList()),
+                ],
+              )),
+              isExpanded: _expandState[0],
             ),
-          ]
-        )),
+            // ========== MINI GAMES SECTION ==========
+            ExpansionPanel(
+              isExpanded: _expandState[1],
+              headerBuilder: ((context, isExpanded) {
+                return ListTile(
+                  title: Text(AppLocalizations.of(context)!.mindTwisterGames),
+                  subtitle: Text(_isGamesMusicPlaying ? 
+                    AppLocalizations.of(context)!.extractionInProgress : 
+                    AppLocalizations.of(context)!.playWhileWaiting),
+                );
+              }), 
+              body: _buildGamesSection(),
+            ),
+            // ========== END MINI GAMES SECTION ==========
+            ExpansionPanel(
+              isExpanded: _expandState[2],
+              headerBuilder: ((context, isExpanded) {
+                return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
+              }), body: Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
+            ExpansionPanel(
+              isExpanded: _expandState[3],
+              headerBuilder: ((context, isExpanded) {
+                return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
+              }), body: Column(
+              children: [
+                Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
+                ElevatedButton(
+                  onPressed: () {
+                    launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2"), mode: LaunchMode.externalApplication);
+                  },
+                  child: Text(AppLocalizations.of(context)!.projectUrl),
+                ),
+              ]
+            )),
+          ],
+        ),
+
+        // Global extraction progress circle - appears above everything
+        // This will be managed by the main app, not by InfoPage
+        // We'll just leave space for it in the layout
+        Positioned(
+          top: 16,
+          right: 16,
+          child: SizedBox(
+            width: 50,
+            height: 50,
+            // The actual progress circle will be drawn by the parent widget (MyHomePage)
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildGamesSection() {
     return Container(
-      height: 600, // Fixed height for the games section
+      height: 600,
       margin: const EdgeInsets.all(8),
-      child: SpiritedMiniGamesView(), // This uses the separate games file
+      child: Column(
+        children: [
+          // Extraction status indicator
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '🎮 ${AppLocalizations.of(context)!.gameModeActive}',
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: ExtractionMonitor().isExtractionInProgress,
+                      builder: (context, isInProgress, child) {
+                        if (!isInProgress) return const SizedBox.shrink();
+                        return ValueListenableBuilder<double>(
+                          valueListenable: ExtractionMonitor().extractionProgress,
+                          builder: (context, progress, child) {
+                            return Text(
+                              'Extraction: ${(progress * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontSize: 12,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    ExtractionMonitor().notifyExtractionComplete();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(AppLocalizations.of(context)!.simulateExtractionComplete),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: SpiritedMiniGamesView(),
+          ),
+        ],
+      ),
     );
   }
 }
 
 
+class ExtractionMonitor {
+  static final ExtractionMonitor _instance = ExtractionMonitor._internal();
+  factory ExtractionMonitor() => _instance;
+  ExtractionMonitor._internal();
+
+  final ValueNotifier<bool> _isExtractionComplete = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _isExtractionInProgress = ValueNotifier<bool>(false);
+  final ValueNotifier<double> _extractionProgress = ValueNotifier<double>(0.0);
+  final List<VoidCallback> _listeners = [];
+
+  ValueNotifier<bool> get isExtractionComplete => _isExtractionComplete;
+  ValueNotifier<bool> get isExtractionInProgress => _isExtractionInProgress;
+  ValueNotifier<double> get extractionProgress => _extractionProgress;
+
+  void addListener(VoidCallback listener) {
+    _listeners.add(listener);
+  }
+
+  void removeListener(VoidCallback listener) {
+    _listeners.remove(listener);
+  }
+
+  void updateExtractionProgress(double progress) {
+    _extractionProgress.value = progress;
+    _isExtractionInProgress.value = progress < 1.0;
+  }
+
+  void notifyExtractionComplete() {
+    _isExtractionComplete.value = true;
+    _isExtractionInProgress.value = false;
+    _extractionProgress.value = 1.0;
+    
+    for (final listener in _listeners) {
+      listener();
+    }
+    
+    // Reset after notification
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _isExtractionComplete.value = false;
+      _extractionProgress.value = 0.0;
+    });
+  }
+}
 
 
 
