@@ -123,5 +123,11 @@
   "gameOver": "Игра окончена! Нажмите, чтобы начать заново",
   "startGame": "Нажмите, чтобы начать",
   "pause": "Пауза",
-  "resume": "Продолжить"
+  "resume": "Продолжить",
+ "extractionCompleteExitGame": "Извлечение завершено! Выход из игрового режима.",
+  "mindTwisterGames": "Игры для Ума",
+  "extractionInProgress": "Воспроизведение - Извлечение в процессе...",
+  "playWhileWaiting": "Играйте, пока ждете системные процессы",
+  "gameModeActive": "Игровой Режим Активен",
+  "simulateExtractionComplete": "Сымитировать Завершение Извлечения"
 }

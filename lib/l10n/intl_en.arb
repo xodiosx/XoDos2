@@ -120,5 +120,11 @@
   "gameOver": "Game Over! Tap to restart",
   "startGame": "Tap to Start",
   "pause": "Pause",
-  "resume": "Resume"
+  "resume": "Resume",
+"extractionCompleteExitGame": "Extraction complete! Exiting game mode.",
+  "mindTwisterGames": "Mind Twister Games", 
+  "extractionInProgress": "Playing - Extraction in progress...",
+  "playWhileWaiting": "Play while waiting for system processes",
+  "gameModeActive": "Game Mode Active",
+  "simulateExtractionComplete": "Simulate Extraction Complete"
 }

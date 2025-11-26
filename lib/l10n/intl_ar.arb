@@ -123,5 +123,10 @@
   "gameOver": "انتهت اللعبة! اضغط لإعادة التشغيل",
   "startGame": "اضغط للبدء",
   "pause": "إيقاف مؤقت",
-  "resume": "استئناف"
+  "resume": "استئناف","extractionCompleteExitGame": "اكتمال الاستخراج! الخروج من وضع اللعبة.",
+  "mindTwisterGames": "ألعاب العقل",
+  "extractionInProgress": "جاري التشغيل - الاستخراج قيد التقدم...",
+  "playWhileWaiting": "اللعب أثناء انتظار عمليات النظام",
+  "gameModeActive": "وضع اللعبة نشط",
+  "simulateExtractionComplete": " اكتمال الاستخراج"
 }

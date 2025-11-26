@@ -123,5 +123,11 @@
   "gameOver": "खेल खत्म! फिर से शुरू करने के लिए टैप करें",
   "startGame": "शुरू करने के लिए टैप करें",
   "pause": "विराम",
-  "resume": "जारी रखें"
+  "resume": "जारी रखें",
+"extractionCompleteExitGame": "एक्सट्रैक्शन पूरा! गेम मोड से बाहर निकल रहे हैं।",
+  "mindTwisterGames": "माइंड ट्विस्टर गेम्स",
+  "extractionInProgress": "चल रहा है - एक्सट्रैक्शन प्रगति पर है...",
+  "playWhileWaiting": "सिस्टम प्रक्रियाओं की प्रतीक्षा करते हुए खेलें",
+  "gameModeActive": "गेम मोड सक्रिय",
+  "simulateExtractionComplete": "एक्सट्रैक्शन पूरा होने का अनुकरण करें"
 }

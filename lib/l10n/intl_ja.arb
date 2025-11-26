@@ -123,5 +123,11 @@
   "gameOver": "ゲームオーバー！タップして再開",
   "startGame": "タップして開始",
   "pause": "一時停止",
-  "resume": "再開"
+  "resume": "再開",
+"extractionCompleteExitGame": "抽出が完了しました！ゲームモードを終了します。",
+  "mindTwisterGames": "マインドツイスタゲーム",
+  "extractionInProgress": "再生中 - 抽出進行中...",
+  "playWhileWaiting": "システムプロセス待機中にプレイ",
+  "gameModeActive": "ゲームモードアクティブ",
+  "simulateExtractionComplete": "抽出完了をシミュレート"
 }

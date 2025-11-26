@@ -122,5 +122,11 @@
   "gameOver": "游戏结束！点击重新开始",
   "startGame": "点击开始",
   "pause": "暂停",
-  "resume": "继续"
+  "resume": "继续",
+"extractionCompleteExitGame": "提取完成！退出游戏模式。",
+  "mindTwisterGames": "脑筋急转弯游戏",
+  "extractionInProgress": "播放中 - 提取进行中...", 
+  "playWhileWaiting": "在等待系统进程时玩游戏",
+  "gameModeActive": "游戏模式激活",
+  "simulateExtractionComplete": "模拟提取完成"
 }

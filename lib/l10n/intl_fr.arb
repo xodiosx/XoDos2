@@ -123,5 +123,11 @@
   "gameOver": "Jeu terminé ! Appuyez pour recommencer",
   "startGame": "Appuyez pour démarrer",
   "pause": "Pause",
-  "resume": "Reprendre"
+  "resume": "Reprendre",
+"extractionCompleteExitGame": "Extraction terminée ! Sortie du mode jeu.",
+  "mindTwisterGames": "Jeux de Réflexion",
+  "extractionInProgress": "En cours de lecture - Extraction en cours...",
+  "playWhileWaiting": "Jouer en attendant les processus système",
+  "gameModeActive": "Mode Jeu Actif",
+  "simulateExtractionComplete": "Simuler l'Extraction Terminée"
 }

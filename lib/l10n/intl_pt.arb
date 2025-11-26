@@ -124,4 +124,10 @@
   "startGame": "Toque para Iniciar",
   "pause": "Pausa",
   "resume": "Continuar"
+"extractionCompleteExitGame": "Extração completa! Saindo do modo de jogo.",
+  "mindTwisterGames": "Jogos de Mente",
+  "extractionInProgress": "Reproduzindo - Extração em andamento...",
+  "playWhileWaiting": "Jogue enquanto espera pelos processos do sistema",
+  "gameModeActive": "Modo de Jogo Ativo", 
+  "simulateExtractionComplete": "Simular Extração Completa"
 }
