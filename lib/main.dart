@@ -645,11 +645,10 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
   }
 }
 
-
 class InfoPage extends StatefulWidget {
   final bool openFirstInfo;
 
-  const InfoPage({super.key, this.openFirstInfo=false});
+  const InfoPage({super.key, this.openFirstInfo = false});
 
   @override
   State<InfoPage> createState() => _InfoPageState();
@@ -664,8 +663,38 @@ class _InfoPageState extends State<InfoPage> {
   void initState() {
     super.initState();
     _expandState[0] = widget.openFirstInfo;
+    
+    // Auto-expand games panel on first load
+  //  if (widget.openFirstInfo) {
+  //    _expandState[1] = true;
+//      _startGamesMusic();
+ //   }
+    
     _gamesMusicPlayer = AudioPlayer();
     _setupMusicPlayer();
+    
+    // Set up the extraction complete callback
+    G.onExtractionComplete = _onExtractionComplete;
+  }
+
+  void _onExtractionComplete() {
+    // Stop games music
+    _stopGamesMusic();
+    
+    // Collapse games panel
+    setState(() {
+      _expandState[1] = false;
+    });
+    
+    // Show completion message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Container extraction complete!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _setupMusicPlayer() async {
@@ -682,9 +711,7 @@ class _InfoPageState extends State<InfoPage> {
     
     try {
       await _gamesMusicPlayer.play(AssetSource('music.mp3'));
-      setState(() {
-        _isGamesMusicPlaying = true;
-      });
+      _isGamesMusicPlaying = true;
     } catch (_) {
       // ignore audio errors
     }
@@ -695,9 +722,7 @@ class _InfoPageState extends State<InfoPage> {
     
     try {
       await _gamesMusicPlayer.stop();
-      setState(() {
-        _isGamesMusicPlaying = false;
-      });
+      _isGamesMusicPlaying = false;
     } catch (_) {
       // ignore audio errors
     }
@@ -705,6 +730,8 @@ class _InfoPageState extends State<InfoPage> {
 
   @override
   void dispose() {
+    // Clean up the callback
+    G.onExtractionComplete = null;
     _stopGamesMusic();
     _gamesMusicPlayer.dispose();
     super.dispose();
@@ -767,10 +794,13 @@ class _InfoPageState extends State<InfoPage> {
           isExpanded: _expandState[1],
           headerBuilder: ((context, isExpanded) {
             return ListTile(
-              title: Text(AppLocalizations.of(context)!.mindTwisterGames),
+              title: Text('Mind Twister Games'),
               subtitle: Text(_isGamesMusicPlaying ? 
-                AppLocalizations.of(context)!.extractionInProgress : 
-                AppLocalizations.of(context)!.playWhileWaiting),
+                'Playing - Extraction in progress...' : 
+                'Play while waiting for system processes'),
+              trailing: _isGamesMusicPlaying ? 
+                Icon(Icons.music_note, color: Colors.green) : 
+                Icon(Icons.games),
             );
           }), 
           body: _buildGamesSection(),
@@ -780,14 +810,14 @@ class _InfoPageState extends State<InfoPage> {
           isExpanded: _expandState[2],
           headerBuilder: ((context, isExpanded) {
             return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
-          }), body: Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
+          }), body: Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
         ExpansionPanel(
           isExpanded: _expandState[3],
           headerBuilder: ((context, isExpanded) {
             return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
           }), body: Column(
           children: [
-            Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
+            Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
             ElevatedButton(
               onPressed: () {
                 launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2"), mode: LaunchMode.externalApplication);
@@ -802,39 +832,13 @@ class _InfoPageState extends State<InfoPage> {
 
   Widget _buildGamesSection() {
     return Container(
-      height: 600,
+      height: 600, // Fixed height for the games section
       margin: const EdgeInsets.all(8),
-      child: Column(
-        children: [
-          // Simple status indicator without button
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '🎮 ${AppLocalizations.of(context)!.gameModeActive}',
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: SpiritedMiniGamesView(),
-          ),
-        ],
-      ),
+      child: SpiritedMiniGamesView(), // This uses the separate games file
     );
   }
 }
+
 
 
 
@@ -1357,7 +1361,6 @@ class _FastCommandsState extends State<FastCommands> {
 }
 
 
-
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -1370,11 +1373,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   bool bannerAdsFailedToLoad = false;
   bool isLoadingComplete = false;
-  
-  // Extraction progress variables
-  double _extractionProgressT = 0;
-  Timer? _extractionTimer;
-  bool _showExtractionProgress = true;
 
   @override
   void initState() {
@@ -1383,43 +1381,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _initializeWorkflow();
     });
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: []);
-    
-    // Start extraction progress monitoring
-    _startExtractionProgress();
-  }
-
-  void _startExtractionProgress() {
-    _extractionProgressT = 0;
-    _showExtractionProgress = true;
-    
-    _extractionTimer?.cancel();
-    _extractionTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (mounted) {
-        setState(() {
-          _extractionProgressT += 0.1;
-          
-          // Stop when progress reaches completion
-          if (_extractionProgressT >= 300) {
-            timer.cancel();
-            _showExtractionProgress = false;
-          }
-        });
-      }
-    });
-  }
-
-  void _stopExtractionProgress() {
-    _extractionTimer?.cancel();
-    if (mounted) {
-      setState(() {
-        _showExtractionProgress = false;
-        _extractionProgressT = 0;
-      });
-    }
-  }
-
-  double get _extractionProgressValue {
-    return 1 - pow(10, _extractionProgressT / -300).toDouble();
   }
 
   Future<void> _initializeWorkflow() async {
@@ -1432,12 +1393,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   @override
-  void dispose() {
-    _extractionTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     G.homePageStateContext = context;
 
@@ -1446,70 +1401,56 @@ class _MyHomePageState extends State<MyHomePage> {
         appBar: AppBar(
           title: Text(isLoadingComplete ? Util.getCurrentProp("name") : widget.title),
         ),
-        body: Stack(
-          children: [
-            // Main content
-            isLoadingComplete
-                ? ValueListenableBuilder(
-                    valueListenable: G.pageIndex,
-                    builder: (context, value, child) {
-                      return IndexedStack(
-                        index: G.pageIndex.value,
-                        children: const [
-                          TerminalPage(),
-                          Padding(
-                            padding: EdgeInsets.all(8),
-                            child: AspectRatioMax1To1(
-                              child: Scrollbar(
-                                child: SingleChildScrollView(
-                                  restorationId: "control-scroll",
-                                  child: Column(
-                                    children: [
-                                      Padding(
-                                        padding: EdgeInsets.all(16),
-                                        child: FractionallySizedBox(
-                                          widthFactor: 0.4,
-                                          child: Image(image: AssetImage("images/icon.png")),
-                                        ),
-                                      ),
-                                      FastCommands(),
-                                      Padding(
-                                        padding: EdgeInsets.all(8),
-                                        child: Card(
-                                          child: Padding(
-                                            padding: EdgeInsets.all(8),
-                                            child: Column(
-                                              children: [
-                                                SettingPage(),
-                                                SizedBox.square(dimension: 8),
-                                                InfoPage(openFirstInfo: false),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+        body: isLoadingComplete
+            ? ValueListenableBuilder(
+                valueListenable: G.pageIndex,
+                builder: (context, value, child) {
+                  return IndexedStack(
+                    index: G.pageIndex.value,
+                    children: const [
+                      TerminalPage(),
+                      Padding(
+                        padding: EdgeInsets.all(8),
+                        child: AspectRatioMax1To1(
+                          child: Scrollbar(
+                            child: SingleChildScrollView(
+                              restorationId: "control-scroll",
+                              child: Column(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: FractionallySizedBox(
+                                      widthFactor: 0.4,
+                                      child: Image(image: AssetImage("images/icon.png")),
+                                    ),
                                   ),
-                                ),
+                                  FastCommands(),
+                                  Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: Card(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: Column(
+                                          children: [
+                                            SettingPage(),
+                                            SizedBox.square(dimension: 8),
+                                            InfoPage(openFirstInfo: false),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ],
-                      );
-                    },
-                  )
-                : const LoadingPage(),
-
-            // Global floating extraction progress circle - FIXED VERSION
-            // This will appear above ALL content including mini games
-            if (_showExtractionProgress)
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 10, // Below status bar
-                right: 20,
-                child: _buildGlobalExtractionProgressCircle(),
-              ),
-          ],
-        ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              )
+            : const LoadingPage(),
         bottomNavigationBar: ValueListenableBuilder(
           valueListenable: G.pageIndex,
           builder: (context, value, child) {
@@ -1531,73 +1472,9 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-
-  Widget _buildGlobalExtractionProgressCircle() {
-    final progressValue = _extractionProgressValue;
-    final percentage = (progressValue * 100).toStringAsFixed(0);
-    
-    return Container(
-      width: 70, // Slightly larger for better visibility
-      height: 70,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.95), // More opaque
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.green, width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.7),
-            blurRadius: 15,
-            spreadRadius: 4,
-          ),
-        ],
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Single CircularProgressIndicator - no double circles
-          CircularProgressIndicator(
-            value: progressValue,
-            backgroundColor: Colors.grey[800],
-            valueColor: AlwaysStoppedAnimation<Color>(
-              progressValue > 0.8 ? Colors.green : 
-              progressValue > 0.5 ? Colors.blue : 
-              Colors.orange
-            ),
-            strokeWidth: 4,
-          ),
-          // Center content
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$percentage%',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'EXT',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
+
+
         
         // Remove or comment out this floatingActionButton section from MyHomePage:
 /*
