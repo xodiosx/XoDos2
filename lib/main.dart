@@ -645,6 +645,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
   }
 }
 
+
 class InfoPage extends StatefulWidget {
   final bool openFirstInfo;
 
@@ -834,7 +835,6 @@ class _InfoPageState extends State<InfoPage> {
     );
   }
 }
-
 
 
 
@@ -1357,6 +1357,7 @@ class _FastCommandsState extends State<FastCommands> {
 }
 
 
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -1370,10 +1371,10 @@ class _MyHomePageState extends State<MyHomePage> {
   bool bannerAdsFailedToLoad = false;
   bool isLoadingComplete = false;
   
-  // Extraction progress variables - same logic as FakeLoadingStatus
+  // Extraction progress variables
   double _extractionProgressT = 0;
   Timer? _extractionTimer;
-  bool _showExtractionProgress = true; // Set to true to always show for testing
+  bool _showExtractionProgress = true;
 
   @override
   void initState() {
@@ -1397,7 +1398,7 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           _extractionProgressT += 0.1;
           
-          // Stop when progress reaches completion (adjust threshold as needed)
+          // Stop when progress reaches completion
           if (_extractionProgressT >= 300) {
             timer.cancel();
             _showExtractionProgress = false;
@@ -1418,7 +1419,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   double get _extractionProgressValue {
-    // Same calculation as FakeLoadingStatus
     return 1 - pow(10, _extractionProgressT / -300).toDouble();
   }
 
@@ -1500,10 +1500,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   )
                 : const LoadingPage(),
 
-            // Global floating extraction progress circle - appears above all pages
+            // Global floating extraction progress circle - FIXED VERSION
+            // This will appear above ALL content including mini games
             if (_showExtractionProgress)
               Positioned(
-                top: 80, // Below app bar
+                top: MediaQuery.of(context).padding.top + 10, // Below status bar
                 right: 20,
                 child: _buildGlobalExtractionProgressCircle(),
               ),
@@ -1532,49 +1533,61 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildGlobalExtractionProgressCircle() {
+    final progressValue = _extractionProgressValue;
+    final percentage = (progressValue * 100).toStringAsFixed(0);
+    
     return Container(
-      width: 60, // Slightly larger for better visibility
-      height: 60,
+      width: 70, // Slightly larger for better visibility
+      height: 70,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.9),
+        color: Colors.black.withOpacity(0.95), // More opaque
         shape: BoxShape.circle,
         border: Border.all(color: Colors.green, width: 3),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.7),
-            blurRadius: 12,
-            spreadRadius: 3,
+            blurRadius: 15,
+            spreadRadius: 4,
           ),
         ],
       ),
       child: Stack(
+        fit: StackFit.expand,
         children: [
-          // Background circle
+          // Single CircularProgressIndicator - no double circles
           CircularProgressIndicator(
-            value: _extractionProgressValue,
+            value: progressValue,
             backgroundColor: Colors.grey[800],
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              progressValue > 0.8 ? Colors.green : 
+              progressValue > 0.5 ? Colors.blue : 
+              Colors.orange
+            ),
             strokeWidth: 4,
           ),
-          // Percentage text
+          // Center content
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '${(_extractionProgressValue * 100).toStringAsFixed(0)}%',
+                  '$percentage%',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
+                    height: 1.1,
                   ),
                 ),
+                const SizedBox(height: 2),
                 const Text(
                   'EXT',
                   style: TextStyle(
                     color: Colors.green,
-                    fontSize: 8,
+                    fontSize: 9,
                     fontWeight: FontWeight.bold,
+                    height: 1.1,
                   ),
                 ),
               ],
@@ -1585,7 +1598,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
-
         
         // Remove or comment out this floatingActionButton section from MyHomePage:
 /*
