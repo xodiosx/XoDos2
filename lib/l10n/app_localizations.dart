@@ -784,6 +784,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current scaling is'**
   String get avncResizeFactorValue;
+
+  /// No description provided for @waitingGames.
+  ///
+  /// In en, this message translates to:
+  /// **'gaming while Waiting'**
+  String get waitingGames;
+
+  /// No description provided for @extrusionProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'Extrusion Process'**
+  String get extrusionProcess;
+
+  /// No description provided for @gameTitleSnake.
+  ///
+  /// In en, this message translates to:
+  /// **'Snake Game'**
+  String get gameTitleSnake;
+
+  /// No description provided for @gameTitleTetris.
+  ///
+  /// In en, this message translates to:
+  /// **'Tetris'**
+  String get gameTitleTetris;
+
+  /// No description provided for @gameTitleFlappy.
+  ///
+  /// In en, this message translates to:
+  /// **'Flappy Bird'**
+  String get gameTitleFlappy;
+
+  /// No description provided for @score.
+  ///
+  /// In en, this message translates to:
+  /// **'Score: {score}'**
+  String score(Object score);
+
+  /// No description provided for @gameOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Game Over! Tap to restart'**
+  String get gameOver;
+
+  /// No description provided for @startGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to Start'**
+  String get startGame;
+
+  /// No description provided for @pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pause;
+
+  /// No description provided for @resume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get resume;
+
+  /// No description provided for @extractionCompleteExitGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Extraction complete! Exiting game mode.'**
+  String get extractionCompleteExitGame;
+
+  /// No description provided for @mindTwisterGames.
+  ///
+  /// In en, this message translates to:
+  /// **'Mind Twister Games'**
+  String get mindTwisterGames;
+
+  /// No description provided for @extractionInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing - Extraction in progress...'**
+  String get extractionInProgress;
+
+  /// No description provided for @playWhileWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Play while waiting for system processes'**
+  String get playWhileWaiting;
+
+  /// No description provided for @gameModeActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Game Mode Active'**
+  String get gameModeActive;
+
+  /// No description provided for @simulateExtractionComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate Extraction Complete'**
+  String get simulateExtractionComplete;
 }
 
 class _AppLocalizationsDelegate

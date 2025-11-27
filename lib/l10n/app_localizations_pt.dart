@@ -353,8 +353,60 @@ class AppLocalizationsPt extends AppLocalizations {
   String get avncScreenResize => 'Tamanho adaptável';
 
   @override
-  String get avncResizeFactor => 'Fator de escala';
+  String get avncResizeFactor => 'Screen Scaling Ratio';
 
   @override
-  String get avncResizeFactorValue => 'Escala atual:';
+  String get avncResizeFactorValue => 'Current scaling is';
+
+  @override
+  String get waitingGames => 'Jogando enquanto espera';
+
+  @override
+  String get extrusionProcess => 'Processo de Extrusão';
+
+  @override
+  String get gameTitleSnake => 'Jogo da Cobra';
+
+  @override
+  String get gameTitleTetris => 'Tetris';
+
+  @override
+  String get gameTitleFlappy => 'Flappy Bird';
+
+  @override
+  String score(Object score) {
+    return 'Pontuação: $score';
+  }
+
+  @override
+  String get gameOver => 'Fim de jogo! Toque para reiniciar';
+
+  @override
+  String get startGame => 'Toque para Iniciar';
+
+  @override
+  String get pause => 'Pausa';
+
+  @override
+  String get resume => 'Continuar';
+
+  @override
+  String get extractionCompleteExitGame =>
+      'Extração completa! Saindo do modo de jogo.';
+
+  @override
+  String get mindTwisterGames => 'Jogos de Mente';
+
+  @override
+  String get extractionInProgress => 'Reproduzindo - Extração em andamento...';
+
+  @override
+  String get playWhileWaiting =>
+      'Jogue enquanto espera pelos processos do sistema';
+
+  @override
+  String get gameModeActive => 'Modo de Jogo Ativo';
+
+  @override
+  String get simulateExtractionComplete => 'Simular Extração Completa';
 }

@@ -354,8 +354,60 @@ class AppLocalizationsRu extends AppLocalizations {
   String get avncScreenResize => 'Адаптивный размер экрана';
 
   @override
-  String get avncResizeFactor => 'Масштаб экрана';
+  String get avncResizeFactor => 'Screen Scaling Ratio';
 
   @override
-  String get avncResizeFactorValue => 'Текущий масштаб:';
+  String get avncResizeFactorValue => 'Current scaling is';
+
+  @override
+  String get waitingGames => 'Игра во время ожидания';
+
+  @override
+  String get extrusionProcess => 'Процесс экструзии';
+
+  @override
+  String get gameTitleSnake => 'Игра Змейка';
+
+  @override
+  String get gameTitleTetris => 'Тетрис';
+
+  @override
+  String get gameTitleFlappy => 'Flappy Bird';
+
+  @override
+  String score(Object score) {
+    return 'Счёт: $score';
+  }
+
+  @override
+  String get gameOver => 'Игра окончена! Нажмите, чтобы начать заново';
+
+  @override
+  String get startGame => 'Нажмите, чтобы начать';
+
+  @override
+  String get pause => 'Пауза';
+
+  @override
+  String get resume => 'Продолжить';
+
+  @override
+  String get extractionCompleteExitGame =>
+      'Извлечение завершено! Выход из игрового режима.';
+
+  @override
+  String get mindTwisterGames => 'Игры для Ума';
+
+  @override
+  String get extractionInProgress =>
+      'Воспроизведение - Извлечение в процессе...';
+
+  @override
+  String get playWhileWaiting => 'Играйте, пока ждете системные процессы';
+
+  @override
+  String get gameModeActive => 'Игровой Режим Активен';
+
+  @override
+  String get simulateExtractionComplete => 'Сымитировать Завершение Извлечения';
 }

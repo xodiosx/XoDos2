@@ -349,8 +349,58 @@ class AppLocalizationsJa extends AppLocalizations {
   String get avncScreenResize => '画面サイズを自動調整';
 
   @override
-  String get avncResizeFactor => '画面スケーリング比';
+  String get avncResizeFactor => 'Screen Scaling Ratio';
 
   @override
-  String get avncResizeFactorValue => '現在のスケールは';
+  String get avncResizeFactorValue => 'Current scaling is';
+
+  @override
+  String get waitingGames => '待機中にゲームをプレイ';
+
+  @override
+  String get extrusionProcess => '押出プロセス';
+
+  @override
+  String get gameTitleSnake => 'スネークゲーム';
+
+  @override
+  String get gameTitleTetris => 'テトリス';
+
+  @override
+  String get gameTitleFlappy => 'フラッピーバード';
+
+  @override
+  String score(Object score) {
+    return 'スコア: $score';
+  }
+
+  @override
+  String get gameOver => 'ゲームオーバー！タップして再開';
+
+  @override
+  String get startGame => 'タップして開始';
+
+  @override
+  String get pause => '一時停止';
+
+  @override
+  String get resume => '再開';
+
+  @override
+  String get extractionCompleteExitGame => '抽出が完了しました！ゲームモードを終了します。';
+
+  @override
+  String get mindTwisterGames => 'マインドツイスタゲーム';
+
+  @override
+  String get extractionInProgress => '再生中 - 抽出進行中...';
+
+  @override
+  String get playWhileWaiting => 'システムプロセス待機中にプレイ';
+
+  @override
+  String get gameModeActive => 'ゲームモードアクティブ';
+
+  @override
+  String get simulateExtractionComplete => '抽出完了をシミュレート';
 }

@@ -26,6 +26,7 @@ import 'package:xodos/l10n/app_localizations.dart';
 
 import 'package:avnc_flutter/avnc_flutter.dart';
 import 'package:x11_flutter/x11_flutter.dart';
+import 'x11_view.dart';
 
 // Import the mini games
 import 'spirited_mini_games.dart';
@@ -1224,7 +1225,9 @@ clear""");
   }
 
   static Future<void> launchX11() async {
-    await X11Flutter.launchX11Page();
+    if (G.homePageStateContext.mounted) {
+      Navigator.of(G.homePageStateContext).push(MaterialPageRoute(builder: (_) => X11View()));
+    }
   }
 
   static Future<void> workflow() async {

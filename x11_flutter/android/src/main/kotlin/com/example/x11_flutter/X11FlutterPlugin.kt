@@ -3,6 +3,7 @@ package com.example.x11_flutter
 import android.system.Os.setenv
 
 import android.content.Intent
+import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -74,6 +75,21 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                 }
             }
             "setScale" -> {
+            }
+            "injectInputEvent" -> {
+              try {
+                val args = call.arguments as Map<String, Any>
+                val type = args["type"] as String
+                val x = args["x"] as Double
+                val y = args["y"] as Double
+                val button = args["button"] as? Int ?: 1
+
+                injectInput(type, x, y, button)
+                result.success(0)
+              } catch (e: Exception) {
+                result.error("INJECT_INPUT_FAILED", "Failed to inject input: ${e.message}", e.stackTraceToString())
+              }
+            }
                 try {
                     val scale = call.argument<Double>("scale")
                     if (scale == null) {
@@ -116,4 +132,10 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         activity = null
     }
 
+}
+
+private fun injectInput(type: String, x: Double, y: Double, button: Int) {
+  Log.d("X11Flutter", "Inject input event: type=$type, x=$x, y=$y, button=$button")
+  // TODO: Implement real input injection using Xlib/XTest via JNI
+  // Connect to unix socket /tmp/.X11-unix/X4, XOpenDisplay, XTestFakeMotionEvent, XTestFakeButtonEvent
 }

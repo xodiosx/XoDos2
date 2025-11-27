@@ -50,7 +50,7 @@ jobs:
             "platforms;android-36" \
             "build-tools;36.0.0" \
             "platform-tools" \
-            "ndk;27.1.12297006"
+            "ndk;29.0.13846066"
 
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 

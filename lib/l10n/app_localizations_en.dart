@@ -358,4 +358,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get avncResizeFactorValue => 'Current scaling is';
+
+  @override
+  String get waitingGames => 'gaming while Waiting';
+
+  @override
+  String get extrusionProcess => 'Extrusion Process';
+
+  @override
+  String get gameTitleSnake => 'Snake Game';
+
+  @override
+  String get gameTitleTetris => 'Tetris';
+
+  @override
+  String get gameTitleFlappy => 'Flappy Bird';
+
+  @override
+  String score(Object score) {
+    return 'Score: $score';
+  }
+
+  @override
+  String get gameOver => 'Game Over! Tap to restart';
+
+  @override
+  String get startGame => 'Tap to Start';
+
+  @override
+  String get pause => 'Pause';
+
+  @override
+  String get resume => 'Resume';
+
+  @override
+  String get extractionCompleteExitGame =>
+      'Extraction complete! Exiting game mode.';
+
+  @override
+  String get mindTwisterGames => 'Mind Twister Games';
+
+  @override
+  String get extractionInProgress => 'Playing - Extraction in progress...';
+
+  @override
+  String get playWhileWaiting => 'Play while waiting for system processes';
+
+  @override
+  String get gameModeActive => 'Game Mode Active';
+
+  @override
+  String get simulateExtractionComplete => 'Simulate Extraction Complete';
 }

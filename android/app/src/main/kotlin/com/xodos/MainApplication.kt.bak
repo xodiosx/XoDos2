@@ -1,4 +1,4 @@
-package com.com.xodos
+package com.xodos.mondo
 
 import android.app.Application
 import android.content.Context

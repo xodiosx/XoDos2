@@ -43,8 +43,8 @@ android:requestLegacyExternalStorage="true"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
         <provider
-            android:name="com.com.xodos.filepicker.XDocumentsProvider"
-            android:authorities="com.com.xodos.documents"
+            android:name="com.xodos.mondo.filepicker.XDocumentsProvider"
+            android:authorities="com.xodos.mondo.documents"
             android:exported="true"
             android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">

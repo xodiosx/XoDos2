@@ -354,8 +354,61 @@ class AppLocalizationsHi extends AppLocalizations {
   String get avncScreenResize => 'अनुकूली स्क्रीन आकार';
 
   @override
-  String get avncResizeFactor => 'स्क्रीन स्केलिंग अनुपात';
+  String get avncResizeFactor => 'Screen Scaling Ratio';
 
   @override
-  String get avncResizeFactorValue => 'वर्तमान स्केल है';
+  String get avncResizeFactorValue => 'Current scaling is';
+
+  @override
+  String get waitingGames => 'इंतजार के दौरान खेलना';
+
+  @override
+  String get extrusionProcess => 'एक्सट्रूज़न प्रक्रिया';
+
+  @override
+  String get gameTitleSnake => 'सांप खेल';
+
+  @override
+  String get gameTitleTetris => 'टेर्टिस';
+
+  @override
+  String get gameTitleFlappy => 'फ्लैपी बर्ड';
+
+  @override
+  String score(Object score) {
+    return 'स्कोर: $score';
+  }
+
+  @override
+  String get gameOver => 'खेल खत्म! फिर से शुरू करने के लिए टैप करें';
+
+  @override
+  String get startGame => 'शुरू करने के लिए टैप करें';
+
+  @override
+  String get pause => 'विराम';
+
+  @override
+  String get resume => 'जारी रखें';
+
+  @override
+  String get extractionCompleteExitGame =>
+      'एक्सट्रैक्शन पूरा! गेम मोड से बाहर निकल रहे हैं।';
+
+  @override
+  String get mindTwisterGames => 'माइंड ट्विस्टर गेम्स';
+
+  @override
+  String get extractionInProgress => 'चल रहा है - एक्सट्रैक्शन प्रगति पर है...';
+
+  @override
+  String get playWhileWaiting =>
+      'सिस्टम प्रक्रियाओं की प्रतीक्षा करते हुए खेलें';
+
+  @override
+  String get gameModeActive => 'गेम मोड सक्रिय';
+
+  @override
+  String get simulateExtractionComplete =>
+      'एक्सट्रैक्शन पूरा होने का अनुकरण करें';
 }

@@ -30,7 +30,7 @@ android {
     compileSdk 35
 
 //    
-    ndkVersion '27.1.12297006' 
+    ndkVersion '29.0.13846066' 
     
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

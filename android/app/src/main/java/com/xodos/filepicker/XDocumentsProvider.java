@@ -1,4 +1,4 @@
-package com.com.xodos.filepicker;
+package com.xodos.mondo.filepicker;
 
 import android.annotation.TargetApi;
 import android.content.res.AssetFileDescriptor;
@@ -13,7 +13,7 @@ import android.provider.DocumentsContract.Root;
 import android.provider.DocumentsProvider;
 import android.webkit.MimeTypeMap;
 
-import com.com.xodos.R;
+import com.xodos.mondo.R;
 
 import java.io.File;
 import java.io.FileNotFoundException;

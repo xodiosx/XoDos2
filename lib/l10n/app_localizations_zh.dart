@@ -348,10 +348,60 @@ class AppLocalizationsZh extends AppLocalizations {
   String get avncScreenResize => '自适应屏幕尺寸';
 
   @override
-  String get avncResizeFactor => '屏幕缩放比';
+  String get avncResizeFactor => 'Screen Scaling Ratio';
 
   @override
-  String get avncResizeFactorValue => '当前缩放为';
+  String get avncResizeFactorValue => 'Current scaling is';
+
+  @override
+  String get waitingGames => '等待时玩游戏';
+
+  @override
+  String get extrusionProcess => '挤出过程';
+
+  @override
+  String get gameTitleSnake => '贪吃蛇';
+
+  @override
+  String get gameTitleTetris => '俄罗斯方块';
+
+  @override
+  String get gameTitleFlappy => '飞翔小鸟';
+
+  @override
+  String score(Object score) {
+    return '得分: $score';
+  }
+
+  @override
+  String get gameOver => '游戏结束！点击重新开始';
+
+  @override
+  String get startGame => '点击开始';
+
+  @override
+  String get pause => '暂停';
+
+  @override
+  String get resume => '继续';
+
+  @override
+  String get extractionCompleteExitGame => '提取完成！退出游戏模式。';
+
+  @override
+  String get mindTwisterGames => '脑筋急转弯游戏';
+
+  @override
+  String get extractionInProgress => '播放中 - 提取进行中...';
+
+  @override
+  String get playWhileWaiting => '在等待系统进程时玩游戏';
+
+  @override
+  String get gameModeActive => '游戏模式激活';
+
+  @override
+  String get simulateExtractionComplete => '模拟提取完成';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -698,8 +748,58 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get avncScreenResize => '自適應螢幕尺寸';
 
   @override
-  String get avncResizeFactor => '螢幕縮放比';
+  String get avncResizeFactor => 'Screen Scaling Ratio';
 
   @override
-  String get avncResizeFactorValue => '目前縮放為';
+  String get avncResizeFactorValue => 'Current scaling is';
+
+  @override
+  String get waitingGames => '等待时玩游戏';
+
+  @override
+  String get extrusionProcess => '挤出过程';
+
+  @override
+  String get gameTitleSnake => '贪吃蛇';
+
+  @override
+  String get gameTitleTetris => '俄罗斯方块';
+
+  @override
+  String get gameTitleFlappy => '飞翔小鸟';
+
+  @override
+  String score(Object score) {
+    return '得分: $score';
+  }
+
+  @override
+  String get gameOver => '游戏结束！点击重新开始';
+
+  @override
+  String get startGame => '点击开始';
+
+  @override
+  String get pause => '暂停';
+
+  @override
+  String get resume => '继续';
+
+  @override
+  String get extractionCompleteExitGame => '提取完成！退出游戏模式。';
+
+  @override
+  String get mindTwisterGames => '脑筋急转弯游戏';
+
+  @override
+  String get extractionInProgress => '播放中 - 提取进行中...';
+
+  @override
+  String get playWhileWaiting => '在等待系统进程时玩游戏';
+
+  @override
+  String get gameModeActive => '游戏模式激活';
+
+  @override
+  String get simulateExtractionComplete => '模拟提取完成';
 }

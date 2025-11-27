@@ -1,6 +1,34 @@
 import 'package:flutter/services.dart';
 
 class X11Flutter {
+  /// Envoie un événement de mouvement de souris/doigt
+  static Future<void> sendPointerMove(double x, double y) async {
+    await _channel.invokeMethod('injectInputEvent', {
+      'type': 'move',
+      'x': x,
+      'y': y,
+    });
+  }
+
+  /// Envoie un clic (appui)
+  static Future<void> sendPointerDown(double x, double y, int button) async {
+    await _channel.invokeMethod('injectInputEvent', {
+      'type': 'down',
+      'x': x,
+      'y': y,
+      'button': button, // 1 = gauche, 2 = milieu, 3 = droit
+    });
+  }
+
+  /// Envoie un relâchement
+  static Future<void> sendPointerUp(double x, double y, int button) async {
+    await _channel.invokeMethod('injectInputEvent', {
+      'type': 'up',
+      'x': x,
+      'y': y,
+      'button': button,
+    });
+  }
   static const MethodChannel _channel = MethodChannel('x11_flutter');
 
   /// 启动X11服务器

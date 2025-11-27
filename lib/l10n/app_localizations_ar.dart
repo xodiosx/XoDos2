@@ -354,8 +354,59 @@ class AppLocalizationsAr extends AppLocalizations {
   String get avncScreenResize => 'تكيف حجم الشاشة';
 
   @override
-  String get avncResizeFactor => 'نسبة تحجيم الشاشة';
+  String get avncResizeFactor => 'Screen Scaling Ratio';
 
   @override
-  String get avncResizeFactorValue => 'التحجيم الحالي هو';
+  String get avncResizeFactorValue => 'Current scaling is';
+
+  @override
+  String get waitingGames => 'اللعب أثناء الانتظار';
+
+  @override
+  String get extrusionProcess => 'عملية البثق';
+
+  @override
+  String get gameTitleSnake => 'لعبة الثعبان';
+
+  @override
+  String get gameTitleTetris => 'تتريس';
+
+  @override
+  String get gameTitleFlappy => 'فلاپي بيرد';
+
+  @override
+  String score(Object score) {
+    return 'النتيجة: $score';
+  }
+
+  @override
+  String get gameOver => 'انتهت اللعبة! اضغط لإعادة التشغيل';
+
+  @override
+  String get startGame => 'اضغط للبدء';
+
+  @override
+  String get pause => 'إيقاف مؤقت';
+
+  @override
+  String get resume => 'استئناف';
+
+  @override
+  String get extractionCompleteExitGame =>
+      'اكتمال الاستخراج! الخروج من وضع اللعبة.';
+
+  @override
+  String get mindTwisterGames => 'ألعاب العقل';
+
+  @override
+  String get extractionInProgress => 'جاري التشغيل - الاستخراج قيد التقدم...';
+
+  @override
+  String get playWhileWaiting => 'اللعب أثناء انتظار عمليات النظام';
+
+  @override
+  String get gameModeActive => 'وضع اللعبة نشط';
+
+  @override
+  String get simulateExtractionComplete => ' اكتمال الاستخراج';
 }
