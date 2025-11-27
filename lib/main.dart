@@ -161,6 +161,7 @@ class AspectRatioMax1To1 extends StatelessWidget {
 }
 
 
+// In main.dart - Update the FakeLoadingStatus class
 class FakeLoadingStatus extends StatefulWidget {
   const FakeLoadingStatus({super.key});
 
@@ -169,9 +170,9 @@ class FakeLoadingStatus extends StatefulWidget {
 }
 
 class _FakeLoadingStatusState extends State<FakeLoadingStatus> {
-
   double _progressT = 0;
   Timer? _timer;
+  bool _extractionComplete = false;
 
   @override
   void initState() {
@@ -180,6 +181,15 @@ class _FakeLoadingStatusState extends State<FakeLoadingStatus> {
       setState(() {
         _progressT += 0.1;
       });
+      
+      // Update the global extraction progress state
+      final progress = 1 - pow(10, _progressT / -300).toDouble();
+      if (progress >= 0.999 && !_extractionComplete) {
+        _extractionComplete = true;
+        ExtractionProgressState.updateProgress(_progressT, true);
+      } else {
+        ExtractionProgressState.updateProgress(_progressT, false);
+      }
     });
   }
 
@@ -1374,6 +1384,37 @@ class _FastCommandsState extends State<FastCommands> {
     }, child: Text(AppLocalizations.of(context)!.addShortcutCommand))));
   }
 }
+
+// Add this to your main.dart file, near the top with other global variables
+class ExtractionProgressState {
+  static double _progressT = 0.0;
+  static bool _extractionComplete = false;
+  static final List<VoidCallback> _listeners = [];
+
+  static double get progressT => _progressT;
+  static bool get extractionComplete => _extractionComplete;
+
+  static void updateProgress(double progressT, bool complete) {
+    _progressT = progressT;
+    _extractionComplete = complete;
+    _notifyListeners();
+  }
+
+  static void addListener(VoidCallback listener) {
+    _listeners.add(listener);
+  }
+
+  static void removeListener(VoidCallback listener) {
+    _listeners.remove(listener);
+  }
+
+  static void _notifyListeners() {
+    for (final listener in _listeners) {
+      listener();
+    }
+  }
+}
+
 
 
 class MyHomePage extends StatefulWidget {
