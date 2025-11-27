@@ -26,6 +26,9 @@ import 'package:xodos/workflow.dart';
 import 'package:avnc_flutter/avnc_flutter.dart';
 import 'package:x11_flutter/x11_flutter.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+
 void main() {
   runApp(const MyApp());
 }
@@ -162,6 +165,7 @@ class AspectRatioMax1To1 extends StatelessWidget {
 
 
 // In main.dart - Update the FakeLoadingStatus class
+// In main.dart - Update FakeLoadingStatus
 class FakeLoadingStatus extends StatefulWidget {
   const FakeLoadingStatus({super.key});
 
@@ -177,20 +181,45 @@ class _FakeLoadingStatusState extends State<FakeLoadingStatus> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    _loadInitialProgress();
+  }
+
+  void _loadInitialProgress() async {
+    // Load any existing progress
+    final savedProgressT = await ExtractionManager.getExtractionProgressT();
+    final savedComplete = await ExtractionManager.isExtractionComplete();
+    
+    if (mounted) {
       setState(() {
-        _progressT += 0.1;
+        _progressT = savedProgressT;
+        _extractionComplete = savedComplete;
       });
-      
-      // Update the global extraction progress state
-      final progress = 1 - pow(10, _progressT / -300).toDouble();
-      if (progress >= 0.999 && !_extractionComplete) {
-        _extractionComplete = true;
-        ExtractionProgressState.updateProgress(_progressT, true);
-      } else {
-        ExtractionProgressState.updateProgress(_progressT, false);
-      }
-    });
+    }
+
+    // Only start timer if not already complete
+    if (!_extractionComplete) {
+      _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+        if (_extractionComplete) {
+          timer.cancel();
+          return;
+        }
+
+        setState(() {
+          _progressT += 0.1;
+        });
+        
+        // Save progress to SharedPreferences
+        await ExtractionManager.setExtractionProgressT(_progressT);
+        
+        // Check if complete
+        final progress = 1 - pow(10, _progressT / -300).toDouble();
+        if (progress >= 0.999 && !_extractionComplete) {
+          _extractionComplete = true;
+          await ExtractionManager.setExtractionComplete();
+          timer.cancel();
+        }
+      });
+    }
   }
 
   @override
@@ -204,6 +233,7 @@ class _FakeLoadingStatusState extends State<FakeLoadingStatus> {
     super.dispose();
   }
 }
+
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});

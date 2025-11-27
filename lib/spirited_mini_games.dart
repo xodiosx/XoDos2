@@ -8,19 +8,14 @@ import 'package:flutter/material.dart';
 
 
 // extraction_manager.dart
-import 'package:shared_preferences/shared_preferences.dart';
-
-
-// extraction_manager.dart - Simplified to use global state
+// extraction_manager.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ExtractionManager {
   static const String _extractionCompleteKey = 'extraction_complete';
+  static const String _extractionProgressTKey = 'extraction_progress_t';
 
   static Future<bool> isExtractionComplete() async {
-    // Check both global state and persistence
-    if (ExtractionProgressState.extractionComplete) return true;
-    
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_extractionCompleteKey) ?? false;
   }
@@ -30,10 +25,20 @@ class ExtractionManager {
     await prefs.setBool(_extractionCompleteKey, true);
   }
 
+  static Future<double> getExtractionProgressT() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_extractionProgressTKey) ?? 0.0;
+  }
+
+  static Future<void> setExtractionProgressT(double progressT) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_extractionProgressTKey, progressT);
+  }
+
   static Future<double> getExtractionProgress() async {
     if (await isExtractionComplete()) return 1.0;
     
-    final progressT = ExtractionProgressState.progressT;
+    final progressT = await getExtractionProgressT();
     final progress = 1 - pow(10, progressT / -300).toDouble();
     
     return progress.clamp(0.0, 1.0);
@@ -42,7 +47,6 @@ class ExtractionManager {
 
 // In spirited_mini_games.dart - Updated ExtractionProgressCircle
 // Updated ExtractionProgressCircle 
-
 
 // Updated ExtractionProgressCircle in spirited_mini_games.dart
 class ExtractionProgressCircle extends StatefulWidget {
@@ -54,6 +58,7 @@ class ExtractionProgressCircle extends StatefulWidget {
 
 class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
   double _progress = 0;
+  Timer? _progressTimer;
   bool _showCircle = false;
   bool _extractionComplete = false;
 
@@ -61,8 +66,6 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
   void initState() {
     super.initState();
     _initializeExtraction();
-    // Listen to global progress updates
-    ExtractionProgressState.addListener(_updateFromGlobalState);
   }
 
   void _initializeExtraction() async {
@@ -74,43 +77,40 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
       return;
     }
 
-    // Show circle immediately
+    // Show circle and start progress updates
     setState(() {
       _showCircle = true;
     });
 
-    // Initial update from global state
-    _updateFromGlobalState();
-  }
-
-  void _updateFromGlobalState() async {
-    if (_extractionComplete) return;
-
-    final progress = await ExtractionManager.getExtractionProgress();
-    final complete = await ExtractionManager.isExtractionComplete();
-
-    if (mounted) {
-      setState(() {
-        _progress = progress;
-        _extractionComplete = complete;
-      });
-
-      // Auto-complete when progress reaches 100%
-      if (complete && _showCircle) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            setState(() {
-              _showCircle = false;
-            });
-          }
+    // Start checking progress updates
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      final progress = await ExtractionManager.getExtractionProgress();
+      final complete = await ExtractionManager.isExtractionComplete();
+      
+      if (mounted) {
+        setState(() {
+          _progress = progress;
+          _extractionComplete = complete;
         });
+        
+        // Hide circle when complete
+        if (complete && _showCircle) {
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                _showCircle = false;
+              });
+            }
+          });
+          _progressTimer?.cancel();
+        }
       }
-    }
+    });
   }
 
   @override
   void dispose() {
-    ExtractionProgressState.removeListener(_updateFromGlobalState);
+    _progressTimer?.cancel();
     super.dispose();
   }
 
@@ -185,6 +185,10 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
     );
   }
 }
+
+
+
+
 class SpiritedMiniGamesView extends StatefulWidget {
   const SpiritedMiniGamesView({super.key});
 
