@@ -63,6 +63,7 @@ class ExtractionManager {
 
 
 // In spirited_mini_games.dart - Updated ExtractionProgressCircle
+// Updated ExtractionProgressCircle to match FakeLoadingStatus behavior
 class ExtractionProgressCircle extends StatefulWidget {
   const ExtractionProgressCircle({super.key});
 
@@ -75,6 +76,7 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
   Timer? _progressTimer;
   bool _showCircle = false;
   bool _extractionComplete = false;
+  double _progressT = 0; // Added for exponential progress calculation
 
   @override
   void initState() {
@@ -99,18 +101,21 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
       _showCircle = true;
     });
 
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
-      final progress = await ExtractionManager.getExtractionProgress();
+    // Use the same timer interval and calculation as FakeLoadingStatus
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 100), (_) async {
+      if (_extractionComplete) {
+        _progressTimer?.cancel();
+        return;
+      }
+
       final complete = await ExtractionManager.isExtractionComplete();
-      
-      if (mounted) {
-        setState(() {
-          _progress = progress;
-          _extractionComplete = complete;
-        });
-        
-        // Hide circle when complete
-        if (complete && _showCircle) {
+      if (complete) {
+        if (mounted) {
+          setState(() {
+            _extractionComplete = true;
+          });
+          
+          // Hide circle when complete
           Future.delayed(const Duration(seconds: 2), () {
             if (mounted) {
               setState(() {
@@ -119,6 +124,35 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
             }
           });
         }
+        _progressTimer?.cancel();
+        return;
+      }
+
+      // Use the same exponential progress calculation as FakeLoadingStatus
+      setState(() {
+        _progressT += 0.1;
+        _progress = 1 - pow(10, _progressT / -300).toDouble();
+      });
+
+      // Auto-complete when progress reaches near 100%
+      if (_progress >= 0.999) {
+        await ExtractionManager.setExtractionComplete();
+        if (mounted) {
+          setState(() {
+            _extractionComplete = true;
+            _progress = 1.0;
+          });
+          
+          // Hide circle when complete
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                _showCircle = false;
+              });
+            }
+          });
+        }
+        _progressTimer?.cancel();
       }
     });
   }
@@ -183,10 +217,10 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
                     ),
                   ),
                   const Text(
-                    'EXT',
+                    'loading,,',
                     style: TextStyle(
                       color: Colors.green,
-                      fontSize: 8,
+                      fontSize: 5,
                       fontWeight: FontWeight.bold,
                       height: 1.1,
                     ),
@@ -200,8 +234,6 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
     );
   }
 }
-
-
 
 class SpiritedMiniGamesView extends StatefulWidget {
   const SpiritedMiniGamesView({super.key});
