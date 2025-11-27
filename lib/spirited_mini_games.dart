@@ -10,9 +10,14 @@ import 'package:flutter/material.dart';
 // extraction_manager.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
+
+// extraction_manager.dart
+import 'package:shared_preferences/shared_preferences.dart';
+
 class ExtractionManager {
   static const String _extractionCompleteKey = 'extraction_complete';
   static const String _extractionStartTimeKey = 'extraction_start_time';
+  static const String _extractionProgressTKey = 'extraction_progress_t'; // NEW
 
   static Future<bool> isExtractionComplete() async {
     final prefs = await SharedPreferences.getInstance();
@@ -22,6 +27,8 @@ class ExtractionManager {
   static Future<void> setExtractionComplete() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_extractionCompleteKey, true);
+    // Also clear the progress T when complete
+    await prefs.remove(_extractionProgressTKey);
   }
 
   static Future<DateTime?> getExtractionStartTime() async {
@@ -35,6 +42,18 @@ class ExtractionManager {
     await prefs.setString(_extractionStartTimeKey, time.toIso8601String());
   }
 
+  // NEW: Get the current progress T value
+  static Future<double> getExtractionProgressT() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_extractionProgressTKey) ?? 0.0;
+  }
+
+  // NEW: Save the current progress T value
+  static Future<void> setExtractionProgressT(double progressT) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_extractionProgressTKey, progressT);
+  }
+
   static Future<void> startExtraction() async {
     if (await getExtractionStartTime() == null) {
       await setExtractionStartTime(DateTime.now());
@@ -44,26 +63,19 @@ class ExtractionManager {
   static Future<double> getExtractionProgress() async {
     if (await isExtractionComplete()) return 1.0;
     
-    final startTime = await getExtractionStartTime();
-    if (startTime == null) return 0.0;
+    final progressT = await getExtractionProgressT();
+    final progress = 1 - pow(10, progressT / -300).toDouble();
     
-    final elapsed = DateTime.now().difference(startTime).inSeconds;
-    final progress = (elapsed / 30).clamp(0.0, 1.0); // 30 seconds total
-    
-    // Auto-complete when progress reaches 100%
-    if (progress >= 1.0) {
-      await setExtractionComplete();
-      return 1.0;
-    }
-    
-    return progress;
+    return progress.clamp(0.0, 1.0);
   }
 }
 
 
-
 // In spirited_mini_games.dart - Updated ExtractionProgressCircle
-// Updated ExtractionProgressCircle to match FakeLoadingStatus behavior
+// Updated ExtractionProgressCircle 
+
+
+// Updated ExtractionProgressCircle
 class ExtractionProgressCircle extends StatefulWidget {
   const ExtractionProgressCircle({super.key});
 
@@ -76,7 +88,7 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
   Timer? _progressTimer;
   bool _showCircle = false;
   bool _extractionComplete = false;
-  double _progressT = 0; // Added for exponential progress calculation
+  double _progressT = 0;
 
   @override
   void initState() {
@@ -96,6 +108,12 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
     // Start extraction process
     await ExtractionManager.startExtraction();
     
+    // Load the current progress T from storage
+    _progressT = await ExtractionManager.getExtractionProgressT();
+    
+    // Calculate initial progress
+    _progress = 1 - pow(10, _progressT / -300).toDouble();
+
     // Show circle and start progress updates
     setState(() {
       _showCircle = true;
@@ -133,6 +151,9 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
         _progressT += 0.1;
         _progress = 1 - pow(10, _progressT / -300).toDouble();
       });
+
+      // Save progress T to storage so it persists across game instances
+      await ExtractionManager.setExtractionProgressT(_progressT);
 
       // Auto-complete when progress reaches near 100%
       if (_progress >= 0.999) {
@@ -217,10 +238,10 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
                     ),
                   ),
                   const Text(
-                    'loading,,',
+                    'EXT',
                     style: TextStyle(
                       color: Colors.green,
-                      fontSize: 5,
+                      fontSize: 8,
                       fontWeight: FontWeight.bold,
                       height: 1.1,
                     ),
