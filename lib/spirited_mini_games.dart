@@ -217,10 +217,10 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
                     ),
                   ),
                   const Text(
-                    'EXT',
+                    'loading,,',
                     style: TextStyle(
                       color: Colors.green,
-                      fontSize: 8,
+                      fontSize: 5,
                       fontWeight: FontWeight.bold,
                       height: 1.1,
                     ),
