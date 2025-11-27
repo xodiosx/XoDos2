@@ -3,6 +3,206 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 
+
+
+
+
+// extraction_manager.dart
+import 'package:shared_preferences/shared_preferences.dart';
+
+class ExtractionManager {
+  static const String _extractionCompleteKey = 'extraction_complete';
+  static const String _extractionStartTimeKey = 'extraction_start_time';
+
+  static Future<bool> isExtractionComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_extractionCompleteKey) ?? false;
+  }
+
+  static Future<void> setExtractionComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_extractionCompleteKey, true);
+  }
+
+  static Future<DateTime?> getExtractionStartTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final timeString = prefs.getString(_extractionStartTimeKey);
+    return timeString != null ? DateTime.parse(timeString) : null;
+  }
+
+  static Future<void> setExtractionStartTime(DateTime time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_extractionStartTimeKey, time.toIso8601String());
+  }
+
+  static Future<void> startExtraction() async {
+    if (await getExtractionStartTime() == null) {
+      await setExtractionStartTime(DateTime.now());
+    }
+  }
+
+  static Future<double> getExtractionProgress() async {
+    if (await isExtractionComplete()) return 1.0;
+    
+    final startTime = await getExtractionStartTime();
+    if (startTime == null) return 0.0;
+    
+    final elapsed = DateTime.now().difference(startTime).inSeconds;
+    final progress = (elapsed / 30).clamp(0.0, 1.0); // 30 seconds total
+    
+    // Auto-complete when progress reaches 100%
+    if (progress >= 1.0) {
+      await setExtractionComplete();
+      return 1.0;
+    }
+    
+    return progress;
+  }
+}
+
+
+
+// In spirited_mini_games.dart - Updated ExtractionProgressCircle
+class ExtractionProgressCircle extends StatefulWidget {
+  const ExtractionProgressCircle({super.key});
+
+  @override
+  State<ExtractionProgressCircle> createState() => _ExtractionProgressCircleState();
+}
+
+class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
+  double _progress = 0;
+  Timer? _progressTimer;
+  bool _showCircle = false;
+  bool _extractionComplete = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeExtraction();
+  }
+
+  void _initializeExtraction() async {
+    // Check if extraction is already complete
+    _extractionComplete = await ExtractionManager.isExtractionComplete();
+    
+    if (_extractionComplete) {
+      // Don't show circle if already completed
+      return;
+    }
+
+    // Start extraction process
+    await ExtractionManager.startExtraction();
+    
+    // Show circle and start progress updates
+    setState(() {
+      _showCircle = true;
+    });
+
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      final progress = await ExtractionManager.getExtractionProgress();
+      final complete = await ExtractionManager.isExtractionComplete();
+      
+      if (mounted) {
+        setState(() {
+          _progress = progress;
+          _extractionComplete = complete;
+        });
+        
+        // Hide circle when complete
+        if (complete && _showCircle) {
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                _showCircle = false;
+              });
+            }
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _progressTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_showCircle || _extractionComplete) {
+      return const SizedBox.shrink();
+    }
+
+    final percentage = (_progress * 100).toStringAsFixed(0);
+    
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 10,
+      right: 20,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.9),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.green, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.7),
+              blurRadius: 12,
+              spreadRadius: 3,
+            ),
+          ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CircularProgressIndicator(
+              value: _progress,
+              backgroundColor: Colors.grey[800],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                _progress > 0.8 ? Colors.green : 
+                _progress > 0.5 ? Colors.blue : 
+                Colors.orange
+              ),
+              strokeWidth: 3,
+            ),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$percentage%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      height: 1.1,
+                    ),
+                  ),
+                  const Text(
+                    'EXT',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
 class SpiritedMiniGamesView extends StatefulWidget {
   const SpiritedMiniGamesView({super.key});
 
@@ -235,6 +435,7 @@ class _NeonGameCard extends StatelessWidget {
 }
 
 // Utility function for game scaffolds
+// Updated _gameScaffold function in spirited_mini_games.dart
 Widget _gameScaffold({
   required String title,
   required Widget body,
@@ -263,15 +464,21 @@ Widget _gameScaffold({
         onPressed: onBack,
       ),
     ),
-    body: Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF0F0F23), Color(0xFF1A1A2E)],
+    body: Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF0F0F23), Color(0xFF1A1A2E)],
+            ),
+          ),
+          child: body,
         ),
-      ),
-      child: body,
+        // Add the extraction progress circle to every game
+        const ExtractionProgressCircle(),
+      ],
     ),
   );
 }
