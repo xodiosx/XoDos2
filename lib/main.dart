@@ -648,7 +648,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
 class InfoPage extends StatefulWidget {
   final bool openFirstInfo;
 
-  const InfoPage({super.key, this.openFirstInfo = false});
+  const InfoPage({super.key, this.openFirstInfo=false});
 
   @override
   State<InfoPage> createState() => _InfoPageState();
@@ -663,38 +663,8 @@ class _InfoPageState extends State<InfoPage> {
   void initState() {
     super.initState();
     _expandState[0] = widget.openFirstInfo;
-    
-    // Auto-expand games panel on first load
-  //  if (widget.openFirstInfo) {
-  //    _expandState[1] = true;
-//      _startGamesMusic();
- //   }
-    
     _gamesMusicPlayer = AudioPlayer();
     _setupMusicPlayer();
-    
-    // Set up the extraction complete callback
-    G.onExtractionComplete = _onExtractionComplete;
-  }
-
-  void _onExtractionComplete() {
-    // Stop games music
-    _stopGamesMusic();
-    
-    // Collapse games panel
-    setState(() {
-      _expandState[1] = false;
-    });
-    
-    // Show completion message
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Container extraction complete!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   void _setupMusicPlayer() async {
@@ -711,9 +681,14 @@ class _InfoPageState extends State<InfoPage> {
     
     try {
       await _gamesMusicPlayer.play(AssetSource('music.mp3'));
-      _isGamesMusicPlaying = true;
+      setState(() {
+        _isGamesMusicPlaying = true;
+      });
     } catch (_) {
       // ignore audio errors
+      setState(() {
+        _isGamesMusicPlaying = true;
+      });
     }
   }
 
@@ -722,16 +697,18 @@ class _InfoPageState extends State<InfoPage> {
     
     try {
       await _gamesMusicPlayer.stop();
-      _isGamesMusicPlaying = false;
+      setState(() {
+        _isGamesMusicPlaying = false;
+      });
     } catch (_) {
-      // ignore audio errors
+      setState(() {
+        _isGamesMusicPlaying = false;
+      });
     }
   }
 
   @override
   void dispose() {
-    // Clean up the callback
-    G.onExtractionComplete = null;
     _stopGamesMusic();
     _gamesMusicPlayer.dispose();
     super.dispose();
@@ -744,7 +721,7 @@ class _InfoPageState extends State<InfoPage> {
       expandedHeaderPadding: const EdgeInsets.all(0),
       expansionCallback: (panelIndex, isExpanded) {
         // Control music based on games panel expansion
-        if (panelIndex == 1) { // Games panel is at index 1
+        if (panelIndex == 1) {
           if (isExpanded) {
             _startGamesMusic();
           } else {
@@ -794,13 +771,10 @@ class _InfoPageState extends State<InfoPage> {
           isExpanded: _expandState[1],
           headerBuilder: ((context, isExpanded) {
             return ListTile(
-              title: Text('Mind Twister Games'),
-              subtitle: Text(_isGamesMusicPlaying ? 
-                'Playing - Extraction in progress...' : 
-                'Play while waiting for system processes'),
-              trailing: _isGamesMusicPlaying ? 
-                Icon(Icons.music_note, color: Colors.green) : 
-                Icon(Icons.games),
+              title: Text(AppLocalizations.of(context)!.mindTwisterGames),
+              subtitle: Text(_isGamesMusicPlaying 
+                ? AppLocalizations.of(context)!.extractionInProgress 
+                : AppLocalizations.of(context)!.playWhileWaiting),
             );
           }), 
           body: _buildGamesSection(),
@@ -810,14 +784,14 @@ class _InfoPageState extends State<InfoPage> {
           isExpanded: _expandState[2],
           headerBuilder: ((context, isExpanded) {
             return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
-          }), body: Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
+          }), body: Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
         ExpansionPanel(
           isExpanded: _expandState[3],
           headerBuilder: ((context, isExpanded) {
             return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
           }), body: Column(
           children: [
-            Padding(padding: EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
+            Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.recommendApp)),
             ElevatedButton(
               onPressed: () {
                 launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2"), mode: LaunchMode.externalApplication);
@@ -832,9 +806,50 @@ class _InfoPageState extends State<InfoPage> {
 
   Widget _buildGamesSection() {
     return Container(
-      height: 600, // Fixed height for the games section
+      height: 600,
       margin: const EdgeInsets.all(8),
-      child: SpiritedMiniGamesView(), // This uses the separate games file
+      child: Column(
+        children: [
+          // Status indicator
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '🎮 ${AppLocalizations.of(context)!.gameModeActive}',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(
+                    _isGamesMusicPlaying ? Icons.music_note : Icons.music_off,
+                    color: _isGamesMusicPlaying ? const Color(0xFFBB86FC) : Colors.grey,
+                  ),
+                  onPressed: () {
+                    if (_isGamesMusicPlaying) {
+                      _stopGamesMusic();
+                    } else {
+                      _startGamesMusic();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: SpiritedMiniGamesView(),
+          ),
+        ],
+      ),
     );
   }
 }
