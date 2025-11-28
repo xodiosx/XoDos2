@@ -17,38 +17,36 @@ class ExtractionManager {
 
   static Future<bool> isExtractionComplete() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_extractionCompleteKey) ?? false;
+    return prefs.getBool(_/storage/emulated/0/Documents/ractionCompleteKey) ?? false;
   }
 
-  static Future<void> setExtractionComplete() async {
+  static Future<void> set/storage/emulated/0/Documents/ractionComplete() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_extractionCompleteKey, true);
+    await prefs.setBool(_/storage/emulated/0/Documents/ractionCompleteKey, true);
   }
 
-  static Future<double> getExtractionProgressT() async {
+  static Future<double> get/storage/emulated/0/Documents/ractionProgressT() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_extractionProgressTKey) ?? 0.0;
+    return prefs.getDouble(_/storage/emulated/0/Documents/ractionProgressTKey) ?? 0.0;
   }
 
-  static Future<void> setExtractionProgressT(double progressT) async {
+  static Future<void> set/storage/emulated/0/Documents/ractionProgressT(double progressT) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_extractionProgressTKey, progressT);
+    await prefs.setDouble(_/storage/emulated/0/Documents/ractionProgressTKey, progressT);
   }
 
-  static Future<double> getExtractionProgress() async {
-    if (await isExtractionComplete()) return 1.0;
+  static Future<double> get/storage/emulated/0/Documents/ractionProgress() async {
+    if (await is/storage/emulated/0/Documents/ractionComplete()) return 1.0;
     
-    final progressT = await getExtractionProgressT();
+    final progressT = await get/storage/emulated/0/Documents/ractionProgressT();
     final progress = 1 - pow(10, progressT / -300).toDouble();
     
     return progress.clamp(0.0, 1.0);
   }
 }
 
-// In spirited_mini_games.dart - Updated ExtractionProgressCircle
-// Updated ExtractionProgressCircle 
-
-// Updated ExtractionProgressCircle in spirited_mini_games.dart
+// In spirited_mini_games.dart - Updated /storage/emulated/0/Documents/ractionProgressCircle
+// 
 class ExtractionProgressCircle extends StatefulWidget {
   const ExtractionProgressCircle({super.key});
 
@@ -168,10 +166,10 @@ class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
                     ),
                   ),
                   const Text(
-                    'EXT',
+                    'loading,,',
                     style: TextStyle(
                       color: Colors.green,
-                      fontSize: 8,
+                      fontSize: 6,
                       fontWeight: FontWeight.bold,
                       height: 1.1,
                     ),
