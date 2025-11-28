@@ -628,11 +628,11 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
           const SizedBox.square(dimension: 8),
           Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
             OutlinedButton(style: D.commandButtonStyle, child: Text("${AppLocalizations.of(context)!.installHangoverStable}（10.14）"), onPressed: () async {
-              Util.termWrite("bash ~/.local/share/tiny/extra/install-hangover-stable");
+              Util.termWrite("bash /hone/.local/share/tiny/extra/install-hangover-stable");
               G.pageIndex.value = 0;
             }),
             OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.installHangoverLatest), onPressed: () async {
-              Util.termWrite("bash ~/.local/share/tiny/extra/install-hangover");
+              Util.termWrite("bash /home/.local/share/tiny/extra/install-hangover");
               G.pageIndex.value = 0;
             }),
             OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.uninstallHangover), onPressed: () async {
