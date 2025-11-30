@@ -328,42 +328,49 @@ rm /tmp/wps.deb"""},
     {"name":"Wine設定", "command":"winecfg"},
     {"name":"文字化け修正", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"スタートメニューフォルダ", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Wineを削除", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _arabicWineCommands = [
     {"name":"إعدادات Wine", "command":"winecfg"},
     {"name":"إصلاح الأحرف", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"مجلد قائمة ابدأ", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"إزالة Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _hindiWineCommands = [
     {"name":"Wine सेटिंग्स", "command":"winecfg"},
     {"name":"वर्ण सुधार", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"स्टार्ट मेनू फोल्डर", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Wine हटाएं", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _spanishWineCommands = [
     {"name":"Configuración de Wine", "command":"winecfg"},
     {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Carpeta del menú Inicio", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Eliminar Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _portugueseWineCommands = [
     {"name":"Configurações do Wine", "command":"winecfg"},
     {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Pasta do menu Iniciar", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Remover Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _frenchWineCommands = [
     {"name":"Paramètres Wine", "command":"winecfg"},
     {"name":"Réparer les caractères", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Dossier du menu Démarrer", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Supprimer Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _russianWineCommands = [
     {"name":"Настройки Wine", "command":"winecfg"},
     {"name":"Исправить символы", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Папка меню Пуск", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Удалить Wine", "command":"rm -rf /opt/wine"},
   ];
 }
 
@@ -659,6 +666,105 @@ class TermPty{
   }
 }
 
+// New List View Widget for Commands
+class CommandListView extends StatelessWidget {
+  final List<Map<String, String>> commands;
+  final String title;
+
+  const CommandListView({
+    super.key,
+    required this.commands,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.cardDark,
+      margin: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ...commands.map((command) {
+            return ListTile(
+              title: Text(
+                command['name']!,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.textSecondary,
+                size: 16,
+              ),
+              onTap: () {
+                Util.termWrite(command['command']!);
+              },
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+}
+
+// New List View Widget for Terminal Commands
+class TerminalCommandListView extends StatelessWidget {
+  const TerminalCommandListView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.cardDark,
+      margin: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Terminal Controls',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: D.termCommands.map((command) {
+              return ElevatedButton(
+                style: D.controlButtonStyle,
+                onPressed: () {
+                  G.termPtys[G.currentContainer]!.terminal
+                      .keyInput(command['key'] as TerminalKey);
+                },
+                child: Text(command['name']!),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // default values
 class D {
 
@@ -731,6 +837,7 @@ rm /tmp/wps.deb"""},
   static const wineCommands = [{"name":"Wine Configuration", "command":"winecfg"},
     {"name":"Fix square characters", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Start Menu folder", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
     {"name":"Enable DXVK", "command":"""WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d9 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d10core /d native /f >/dev/null 2>&1
@@ -756,6 +863,7 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
   static const wineCommands4En = [{"name":"Wine Configuration", "command":"winecfg"},
     {"name":"Fix CJK Characters", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Start Menu Dir", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
     {"name":"Enable DXVK", "command":"""WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d9 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d10core /d native /f >/dev/null 2>&1
@@ -1245,4 +1353,3 @@ clear""");
     }
   }
 }
-
