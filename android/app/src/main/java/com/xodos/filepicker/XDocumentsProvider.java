@@ -271,7 +271,8 @@ public class XDocumentsProvider extends DocumentsProvider {
             }
         } else {
             if (file.canRead()) {
-                flags |= Document.FLAG_SUPPORTS_COPY | Document.FLAG_SUPPORTS_MOVE;
+                // Reading is always supported for files that exist
+                // No specific flag needed for read support
             }
             if (file.canWrite()) {
                 flags |= Document.FLAG_SUPPORTS_WRITE | Document.FLAG_SUPPORTS_DELETE | 
@@ -279,8 +280,10 @@ public class XDocumentsProvider extends DocumentsProvider {
             }
         }
 
-        // Always allow reading
-        flags |= Document.FLAG_SUPPORTS_READ;
+        // Add copy and move support for both files and directories
+        if (file.canRead()) {
+            flags |= Document.FLAG_SUPPORTS_COPY | Document.FLAG_SUPPORTS_MOVE;
+        }
 
         String displayName;
         String path = file.getPath();
