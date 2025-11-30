@@ -1,205 +1,444 @@
 package com.com.xodos.filepicker;
 
-import android.annotation.TargetApi;
-import android.content.ContentValues;
-import android.content.res.AssetFileDescriptor;
+import static android.provider.DocumentsContract.Document.MIME_TYPE_DIR;
+import static android.system.OsConstants.S_IFLNK;
+import static android.system.OsConstants.S_IFMT;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.database.MatrixCursor;
-import android.os.Build;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
+import android.provider.DocumentsContract.Document;
+import android.provider.DocumentsContract.Root;
 import android.provider.DocumentsProvider;
+import android.system.ErrnoException;
+import android.system.Os;
+import android.system.StructStat;
 import android.webkit.MimeTypeMap;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
 
-@TargetApi(Build.VERSION_CODES.KITKAT)
+/**
+ * Enhanced DocumentsProvider with full control including permissions and symlink support
+ * Based on MTDataFilesProvider with Wine app data folder access
+ */
 public class XDocumentsProvider extends DocumentsProvider {
+    private static final String[] DEFAULT_ROOT_PROJECTION = {
+        Root.COLUMN_ROOT_ID,
+        Root.COLUMN_MIME_TYPES,
+        Root.COLUMN_FLAGS,
+        Root.COLUMN_ICON,
+        Root.COLUMN_TITLE,
+        Root.COLUMN_SUMMARY,
+        Root.COLUMN_DOCUMENT_ID,
+        Root.COLUMN_AVAILABLE_BYTES
+    };
 
-private static final String[] DEFAULT_ROOT_PROJECTION = new String[]{
-        DocumentsContract.Root.COLUMN_ROOT_ID,
-        DocumentsContract.Root.COLUMN_TITLE,
-        DocumentsContract.Root.COLUMN_FLAGS,
-        DocumentsContract.Root.COLUMN_DOCUMENT_ID,
-        DocumentsContract.Root.COLUMN_ICON,
-        DocumentsContract.Root.COLUMN_AVAILABLE_BYTES
-};
+    private static final String[] DEFAULT_DOCUMENT_PROJECTION = {
+        Document.COLUMN_DOCUMENT_ID,
+        Document.COLUMN_MIME_TYPE,
+        Document.COLUMN_DISPLAY_NAME,
+        Document.COLUMN_LAST_MODIFIED,
+        Document.COLUMN_FLAGS,
+        Document.COLUMN_SIZE,
+        "mt_extras"
+    };
 
-private static final String[] DEFAULT_DOCUMENT_PROJECTION = new String[]{
-        DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-        DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-        DocumentsContract.Document.COLUMN_SIZE,
-        DocumentsContract.Document.COLUMN_MIME_TYPE,
-        DocumentsContract.Document.COLUMN_LAST_MODIFIED,
-        DocumentsContract.Document.COLUMN_FLAGS
-};
+    private String pkgName;
+    private File dataDir;
+    private File wineDataDir;
 
-@Override
-public boolean onCreate() {
-    return true;
-}
+    /**
+     * Delete files in directory or soft link
+     */
+    private static boolean deleteFileOrDirectory(File file) {
+        if (file.isDirectory()) {
+            // Check if it's a symlink
+            boolean isSymlink = false;
+            try {
+                isSymlink = (Os.lstat(file.getPath()).st_mode & S_IFMT) == S_IFLNK;
+            } catch (ErrnoException e) {
+                e.printStackTrace();
+            }
 
-@Override
-public Cursor queryRoots(String[] projection) {
-    MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_ROOT_PROJECTION);
-    MatrixCursor.RowBuilder row = result.newRow();
+            File[] subFiles = file.listFiles();
+            if (!isSymlink && subFiles != null) {
+                for (File sub : subFiles) {
+                    if (!deleteFileOrDirectory(sub)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return file.delete();
+    }
 
-    row.add(DocumentsContract.Root.COLUMN_ROOT_ID, "home");
-    row.add(DocumentsContract.Root.COLUMN_DOCUMENT_ID, "home");
-    row.add(DocumentsContract.Root.COLUMN_TITLE, "XoDos App Data");
-    row.add(DocumentsContract.Root.COLUMN_FLAGS, DocumentsContract.Root.FLAG_SUPPORTS_CREATE);
-    row.add(DocumentsContract.Root.COLUMN_ICON, android.R.drawable.ic_menu_manage);
+    private static String getMimeType(File file) {
+        if (file.isDirectory()) {
+            return MIME_TYPE_DIR;
+        }
 
-    File home = getContext().getFilesDir();
-    row.add(DocumentsContract.Root.COLUMN_AVAILABLE_BYTES, home.getUsableSpace());
+        String name = file.getName();
+        int lastDot = name.lastIndexOf('.');
+        if (lastDot >= 0) {
+            String extension = name.substring(lastDot + 1).toLowerCase();
+            String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+            if (mime != null) return mime;
+        }
+        return "application/octet-stream";
+    }
 
-    return result;
-}
-
-@Override
-public Cursor queryChildDocuments(String parentDocumentId, String[] projection, String sortOrder) throws FileNotFoundException {
-    MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
-    File parent = getFileForDocId(parentDocumentId);
-
-    File[] files = parent.listFiles();
-    if (files != null) {
-        for (File file : files) {
-            includeFile(result, file);
+    @SuppressLint("SdCardPath")
+    @Override
+    public final void attachInfo(Context context, ProviderInfo info) {
+        super.attachInfo(context, info);
+        this.pkgName = Objects.requireNonNull(getContext()).getPackageName();
+        this.dataDir = Objects.requireNonNull(context.getFilesDir().getParentFile());
+        
+        // Initialize Wine data directory - you can modify this path as needed
+        this.wineDataDir = new File("/data/data/com.wine.app");
+        if (!wineDataDir.exists() || !wineDataDir.canRead()) {
+            // Fallback to alternative Wine paths
+            wineDataDir = new File("/data/data/com.winehq.wine");
+            if (!wineDataDir.exists() || !wineDataDir.canRead()) {
+                wineDataDir = null;
+            }
         }
     }
-    return result;
-}
 
-@Override
-public ParcelFileDescriptor openDocument(String documentId, String mode, CancellationSignal signal) throws FileNotFoundException {
-    File file = getFileForDocId(documentId);
-    int accessMode = ParcelFileDescriptor.MODE_READ_ONLY;
-    if (mode.contains("w")) accessMode = ParcelFileDescriptor.MODE_WRITE_ONLY | ParcelFileDescriptor.MODE_TRUNCATE;
-    if (mode.contains("rw")) accessMode = ParcelFileDescriptor.MODE_READ_WRITE;
-    return ParcelFileDescriptor.open(file, accessMode);
-}
+    /**
+     * Get file object by documentId
+     */
+    private final File getFileForDocId(String documentId, boolean lsFileState) throws FileNotFoundException {
+        String realPath;
+        if (!documentId.startsWith(this.pkgName)) {
+            throw new FileNotFoundException(documentId.concat(" not found"));
+        }
 
-@Override
-public void deleteDocument(String documentId) throws FileNotFoundException {
-    File file = getFileForDocId(documentId);
-    if (!file.delete()) throw new FileNotFoundException("Failed to delete: " + documentId);
-}
+        // Get virtual name after package name
+        String virtualName = documentId.substring(this.pkgName.length());
+        if (virtualName.startsWith("/")) {
+            virtualName = virtualName.substring(1);
+        }
+        
+        // Self (root)
+        if (virtualName.isEmpty()) {
+            return null;
+        }
+        
+        String[] split = virtualName.split("/", 2);
+        virtualName = split[0];
+        realPath = split.length > 1 ? split[1] : "";
 
-@Override
-public String createDocument(String parentDocumentId, String mimeType, String displayName) throws FileNotFoundException {
-    File parent = getFileForDocId(parentDocumentId);
-    File newFile = new File(parent, displayName);
-    try {
-        if ("application/octet-stream".equals(mimeType)) {
-            if (!newFile.createNewFile()) throw new IOException("Failed to create file");
+        File targetFile;
+        if (virtualName.equalsIgnoreCase("data")) {
+            targetFile = new File(this.dataDir, realPath);
+        } else if (virtualName.equalsIgnoreCase("wine_data") && this.wineDataDir != null) {
+            targetFile = new File(this.wineDataDir, realPath);
         } else {
-            if (!newFile.mkdir()) throw new IOException("Failed to create folder");
+            throw new FileNotFoundException(documentId.concat(" not found"));
         }
-    } catch (IOException e) {
-        throw new FileNotFoundException(e.getMessage());
+
+        if (lsFileState) {
+            try {
+                Os.lstat(targetFile.getPath());
+            } catch (Exception unused) {
+                throw new FileNotFoundException(documentId.concat(" not found"));
+            }
+        }
+        return targetFile;
     }
-    return getDocIdForFile(newFile);
-}
 
-@Override
-public String renameDocument(String documentId, String displayName) throws FileNotFoundException {
-    File file = getFileForDocId(documentId);
-    File renamed = new File(file.getParentFile(), displayName);
-    if (!file.renameTo(renamed)) throw new FileNotFoundException("Failed to rename file");
-    return getDocIdForFile(renamed);
-}
+    @Override
+    public final Bundle call(String method, String arg, Bundle extras) {
+        Bundle call = super.call(method, arg, extras);
+        if (call != null) {
+            return call;
+        }
 
-@Override
-public String getDocumentType(String documentId) throws FileNotFoundException {
-    File file = getFileForDocId(documentId);
-    if (file.isDirectory()) return DocumentsContract.Document.MIME_TYPE_DIR;
-    String ext = MimeTypeMap.getFileExtensionFromUrl(file.getName());
-    String mime = ext != null ? MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) : null;
-    return mime != null ? mime : "application/octet-stream";
-}
+        if (!method.startsWith("mt:")) {
+            return null;
+        }
 
-@Override
-public Cursor queryDocument(String documentId, String[] projection) throws FileNotFoundException {
-    MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
-    includeFile(result, getFileForDocId(documentId));
-    return result;
-}
-
-/** New: Support changing permissions */
-//@Override
-public void updateDocument(String documentId, ContentValues values) throws FileNotFoundException {
-    File file = getFileForDocId(documentId);
-    if (values.containsKey("chmod")) {
-        String mode = values.getAsString("chmod");
-        applyChmod(file, mode);
+        Bundle customBundle = new Bundle();
+        customBundle.putBoolean("result", false);
+        try {
+            List<String> pathSegments = ((Uri) extras.getParcelable("uri")).getPathSegments();
+            String documentId = pathSegments.size() >= 4 ? pathSegments.get(3) : pathSegments.get(1);
+            switch (method) {
+                case "mt:setPermissions": {
+                    File file = getFileForDocId(documentId, true);
+                    if (file != null) {
+                        Os.chmod(file.getPath(), extras.getInt("permissions"));
+                        customBundle.putBoolean("result", true);
+                    }
+                    return customBundle;
+                }
+                case "mt:createSymlink": {
+                    File file = getFileForDocId(documentId, false);
+                    if (file != null) {
+                        Os.symlink(extras.getString("path"), file.getPath());
+                        customBundle.putBoolean("result", true);
+                    }
+                    return customBundle;
+                }
+                case "mt:setLastModified": {
+                    File file = getFileForDocId(documentId, true);
+                    if (file != null) {
+                        customBundle.putBoolean("result", file.setLastModified(extras.getLong("time")));
+                    }
+                    return customBundle;
+                }
+                default:
+                    throw new RuntimeException("Unsupported method: ".concat(method));
+            }
+        } catch (Exception e) {
+            customBundle.putBoolean("result", false);
+            customBundle.putString("message", e.toString());
+            return customBundle;
+        }
     }
-    if (values.containsKey("executable")) {
-        boolean exec = values.getAsBoolean("executable");
-        file.setExecutable(exec, false);
+
+    @Override
+    public final String createDocument(String parentDocumentId, String mimeType, String displayName) throws FileNotFoundException {
+        File parentFile = getFileForDocId(parentDocumentId, true);
+        if (parentFile != null) {
+            File newFile = new File(parentFile, displayName);
+            int noConflictId = 2;
+            while (newFile.exists()) {
+                newFile = new File(parentFile, displayName + " (" + noConflictId + ")");
+                noConflictId++;
+            }
+            try {
+                boolean succeeded = MIME_TYPE_DIR.equals(mimeType)
+                    ? newFile.mkdir()
+                    : newFile.createNewFile();
+
+                if (succeeded) {
+                    return parentDocumentId +
+                        (parentDocumentId.endsWith("/") ? "" : "/") +
+                        newFile.getName();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        throw new FileNotFoundException("Failed to create document in " + parentDocumentId + " with name " + displayName);
     }
-    if (values.containsKey("readable")) {
-        boolean read = values.getAsBoolean("readable");
-        file.setReadable(read, false);
+
+    /**
+     * Add a representation of a file to a cursor
+     */
+    private void includeFile(MatrixCursor result, String docId, File file) throws FileNotFoundException {
+        if (file == null) {
+            file = getFileForDocId(docId, true);
+        }
+
+        // Root directory
+        if (file == null) {
+            Context ctx = getContext();
+            String title = ctx == null ? "XoDos" : ctx.getApplicationInfo().loadLabel(getContext().getPackageManager()).toString();
+
+            MatrixCursor.RowBuilder row = result.newRow();
+            row.add(Document.COLUMN_DOCUMENT_ID, this.pkgName);
+            row.add(Document.COLUMN_DISPLAY_NAME, title);
+            row.add(Document.COLUMN_SIZE, 0);
+            row.add(Document.COLUMN_MIME_TYPE, MIME_TYPE_DIR);
+            row.add(Document.COLUMN_LAST_MODIFIED, 0);
+            row.add(Document.COLUMN_FLAGS, 
+                Document.FLAG_DIR_SUPPORTS_CREATE | 
+                Document.FLAG_SUPPORTS_DELETE |
+                Document.FLAG_SUPPORTS_RENAME);
+            return;
+        }
+
+        int flags = 0;
+        if (file.isDirectory()) {
+            flags |= Document.FLAG_DIR_SUPPORTS_CREATE;
+            if (file.canWrite()) {
+                flags |= Document.FLAG_SUPPORTS_DELETE | Document.FLAG_SUPPORTS_RENAME;
+            }
+        } else {
+            if (file.canRead()) {
+                flags |= Document.FLAG_SUPPORTS_COPY | Document.FLAG_SUPPORTS_MOVE;
+            }
+            if (file.canWrite()) {
+                flags |= Document.FLAG_SUPPORTS_WRITE | Document.FLAG_SUPPORTS_DELETE | 
+                         Document.FLAG_SUPPORTS_RENAME;
+            }
+        }
+
+        // Always allow reading
+        flags |= Document.FLAG_SUPPORTS_READ;
+
+        String displayName;
+        String path = file.getPath();
+        boolean isNormalFile = true;
+
+        // Virtual directories
+        if (path.equals(this.dataDir.getPath())) {
+            displayName = "App Data";
+            isNormalFile = false;
+        } else if (wineDataDir != null && path.equals(wineDataDir.getPath())) {
+            displayName = "Wine Data";
+            isNormalFile = false;
+        } else {
+            displayName = file.getName();
+        }
+
+        MatrixCursor.RowBuilder row = result.newRow();
+        row.add(DocumentsContract.Document.COLUMN_DOCUMENT_ID, docId);
+        row.add(DocumentsContract.Document.COLUMN_DISPLAY_NAME, displayName);
+        row.add(DocumentsContract.Document.COLUMN_SIZE, file.length());
+        row.add(DocumentsContract.Document.COLUMN_MIME_TYPE, getMimeType(file));
+        row.add(DocumentsContract.Document.COLUMN_LAST_MODIFIED, file.lastModified());
+        row.add(DocumentsContract.Document.COLUMN_FLAGS, flags);
+        row.add("mt_path", file.getAbsolutePath());
+        
+        if (isNormalFile) {
+            try {
+                StructStat lstat = Os.lstat(path);
+                StringBuilder sb = new StringBuilder()
+                    .append(lstat.st_mode)
+                    .append("|").append(lstat.st_uid)
+                    .append("|").append(lstat.st_gid);
+                if ((lstat.st_mode & S_IFMT) == S_IFLNK) {
+                    sb.append("|").append(Os.readlink(path));
+                }
+                row.add("mt_extras", sb.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
-    if (values.containsKey("writable")) {
-        boolean write = values.getAsBoolean("writable");
-        file.setWritable(write, false);
+
+    @Override
+    public final void deleteDocument(String documentId) throws FileNotFoundException {
+        File file = getFileForDocId(documentId, true);
+        if (file == null || !deleteFileOrDirectory(file)) {
+            throw new FileNotFoundException("Failed to delete document ".concat(documentId));
+        }
     }
-}
 
-private void applyChmod(File file, String mode) {
-    if (mode.length() != 3) return;
-    try {
-        int owner = Character.getNumericValue(mode.charAt(0));
-        int group = Character.getNumericValue(mode.charAt(1));
-        int other = Character.getNumericValue(mode.charAt(2));
+    @Override
+    public final String getDocumentType(String documentId) throws FileNotFoundException {
+        File file = getFileForDocId(documentId, true);
+        return file == null ? MIME_TYPE_DIR : getMimeType(file);
+    }
 
-        file.setReadable((owner & 4) != 0, true);
-        file.setWritable((owner & 2) != 0, true);
-        file.setExecutable((owner & 1) != 0, true);
+    @Override
+    public final boolean isChildDocument(String parentDocumentId, String documentId) {
+        return documentId.startsWith(parentDocumentId);
+    }
 
-        file.setReadable((group & 4) != 0, false);
-        file.setWritable((group & 2) != 0, false);
-        file.setExecutable((group & 1) != 0, false);
+    @Override
+    public final String moveDocument(String sourceDocumentId, String sourceParentDocumentId, String targetParentDocumentId) throws FileNotFoundException {
+        File sourceFile = getFileForDocId(sourceDocumentId, true);
+        File targetParentFile = getFileForDocId(targetParentDocumentId, true);
+        if (sourceFile != null && targetParentFile != null) {
+            File targetFile = new File(targetParentFile, sourceFile.getName());
+            if (!targetFile.exists() && sourceFile.renameTo(targetFile)) {
+                return targetParentDocumentId
+                    + (targetParentDocumentId.endsWith("/") ? "" : "/")
+                    + targetFile.getName();
+            }
+        }
+        throw new FileNotFoundException("Failed to move document " + sourceDocumentId + " to " + targetParentDocumentId);
+    }
 
-        file.setReadable((other & 4) != 0, false);
-        file.setWritable((other & 2) != 0, false);
-        file.setExecutable((other & 1) != 0, false);
+    @Override
+    public final boolean onCreate() {
+        return true;
+    }
 
-    } catch (Exception ignored) {}
-}
+    @Override
+    public final ParcelFileDescriptor openDocument(String documentId, String mode, CancellationSignal cancellationSignal) throws FileNotFoundException {
+        File file = getFileForDocId(documentId, false);
+        if (file != null) {
+            return ParcelFileDescriptor.open(file, ParcelFileDescriptor.parseMode(mode));
+        } else {
+            throw new FileNotFoundException(documentId + " not found");
+        }
+    }
 
-/** Helper Methods **/
+    @Override
+    public final Cursor queryChildDocuments(String parentDocumentId, String[] projection, String sortOrder) throws FileNotFoundException {
+        if (parentDocumentId.endsWith("/")) {
+            parentDocumentId = parentDocumentId.substring(0, parentDocumentId.length() - 1);
+        }
+        
+        MatrixCursor cursor = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
+        File parent = getFileForDocId(parentDocumentId, true);
+        
+        // Virtual root - list available data directories
+        if (parent == null) {
+            includeFile(cursor, parentDocumentId.concat("/data"), this.dataDir);
+            if (wineDataDir != null && wineDataDir.exists()) {
+                includeFile(cursor, parentDocumentId.concat("/wine_data"), this.wineDataDir);
+            }
+        } else {
+            File[] children = parent.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    includeFile(cursor, parentDocumentId + "/" + child.getName(), child);
+                }
+            }
+        }
+        return cursor;
+    }
 
-private void includeFile(MatrixCursor result, File file) {
-    MatrixCursor.RowBuilder row = result.newRow();
-    row.add(DocumentsContract.Document.COLUMN_DOCUMENT_ID, getDocIdForFile(file));
-    row.add(DocumentsContract.Document.COLUMN_DISPLAY_NAME, file.getName());
-    row.add(DocumentsContract.Document.COLUMN_SIZE, file.isFile() ? file.length() : 0);
-    row.add(DocumentsContract.Document.COLUMN_MIME_TYPE, file.isDirectory() ? DocumentsContract.Document.MIME_TYPE_DIR : getMimeType(file));
-    row.add(DocumentsContract.Document.COLUMN_LAST_MODIFIED, file.lastModified());
-    int flags = DocumentsContract.Document.FLAG_SUPPORTS_DELETE
-            | DocumentsContract.Document.FLAG_SUPPORTS_WRITE
-            | DocumentsContract.Document.FLAG_SUPPORTS_RENAME;
-    row.add(DocumentsContract.Document.COLUMN_FLAGS, flags);
-}
+    @Override
+    public final Cursor queryDocument(String documentId, String[] projection) throws FileNotFoundException {
+        MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
+        includeFile(result, documentId, null);
+        return result;
+    }
 
-private File getFileForDocId(String docId) {
-    return new File(getContext().getFilesDir(), docId);
-}
+    @Override
+    public final Cursor queryRoots(String[] projection) {
+        ApplicationInfo appInfo = Objects.requireNonNull(getContext()).getApplicationInfo();
+        String title = appInfo.loadLabel(getContext().getPackageManager()).toString();
 
-private String getDocIdForFile(File file) {
-    return file.getName();
-}
+        MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_ROOT_PROJECTION);
+        MatrixCursor.RowBuilder row = result.newRow();
+        row.add(Root.COLUMN_ROOT_ID, this.pkgName);
+        row.add(Root.COLUMN_DOCUMENT_ID, this.pkgName);
+        row.add(Root.COLUMN_SUMMARY, "Full control file manager with Wine support");
+        row.add(Root.COLUMN_FLAGS, 
+            Root.FLAG_SUPPORTS_CREATE | 
+            Root.FLAG_SUPPORTS_SEARCH | 
+            Root.FLAG_SUPPORTS_IS_CHILD |
+            Root.FLAG_LOCAL_ONLY);
+        row.add(Root.COLUMN_TITLE, title);
+        row.add(Root.COLUMN_MIME_TYPES, "*/*");
+        row.add(Root.COLUMN_AVAILABLE_BYTES, dataDir.getFreeSpace());
+        row.add(Root.COLUMN_ICON, appInfo.icon);
+        return result;
+    }
 
-private String getMimeType(File file) {
-    if (file.isDirectory()) return DocumentsContract.Document.MIME_TYPE_DIR;
-    String ext = MimeTypeMap.getFileExtensionFromUrl(file.getName());
-    String mime = ext != null ? MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) : null;
-    return mime != null ? mime : "application/octet-stream";
-}
+    @Override
+    public final void removeDocument(String documentId, String parentDocumentId) throws FileNotFoundException {
+        deleteDocument(documentId);
+    }
 
+    @Override
+    public final String renameDocument(String documentId, String displayName) throws FileNotFoundException {
+        File file = getFileForDocId(documentId, true);
+        if (file == null || !file.renameTo(new File(file.getParentFile(), displayName))) {
+            throw new FileNotFoundException("Failed to rename document " + documentId + " to " + displayName);
+        }
+        int parentIdx = documentId.lastIndexOf('/', documentId.length() - 2);
+        return documentId.substring(0, parentIdx) + "/" + displayName;
+    }
 }
