@@ -200,6 +200,21 @@ public class XDocumentsProvider extends DocumentsProvider {
                     }
                     return customBundle;
                 }
+                case "mt:getPermissions": {
+                    File file = getFileForDocId(documentId, true);
+                    if (file != null) {
+                        try {
+                            StructStat stat = Os.lstat(file.getPath());
+                            customBundle.putBoolean("result", true);
+                            customBundle.putInt("permissions", stat.st_mode & 0777);
+                            customBundle.putInt("uid", stat.st_uid);
+                            customBundle.putInt("gid", stat.st_gid);
+                        } catch (ErrnoException e) {
+                            customBundle.putString("message", e.getMessage());
+                        }
+                    }
+                    return customBundle;
+                }
                 default:
                     throw new RuntimeException("Unsupported method: ".concat(method));
             }
@@ -259,7 +274,8 @@ public class XDocumentsProvider extends DocumentsProvider {
             row.add(Document.COLUMN_FLAGS, 
                 Document.FLAG_DIR_SUPPORTS_CREATE | 
                 Document.FLAG_SUPPORTS_DELETE |
-                Document.FLAG_SUPPORTS_RENAME);
+                Document.FLAG_SUPPORTS_RENAME |
+                Document.FLAG_SUPPORTS_SETTINGS); // Add settings flag for root
             return;
         }
 
@@ -272,7 +288,6 @@ public class XDocumentsProvider extends DocumentsProvider {
         } else {
             if (file.canRead()) {
                 // Reading is always supported for files that exist
-                // No specific flag needed for read support
             }
             if (file.canWrite()) {
                 flags |= Document.FLAG_SUPPORTS_WRITE | Document.FLAG_SUPPORTS_DELETE | 
@@ -284,6 +299,9 @@ public class XDocumentsProvider extends DocumentsProvider {
         if (file.canRead()) {
             flags |= Document.FLAG_SUPPORTS_COPY | Document.FLAG_SUPPORTS_MOVE;
         }
+
+        // ADD THIS CRITICAL FLAG FOR PERMISSION CONTROL
+        flags |= Document.FLAG_SUPPORTS_SETTINGS;
 
         String displayName;
         String path = file.getPath();
