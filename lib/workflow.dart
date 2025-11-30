@@ -723,6 +723,7 @@ class CommandListView extends StatelessWidget {
 }
 
 // New List View Widget for Terminal Commands
+// More robust version with proper type handling
 class TerminalCommandListView extends StatelessWidget {
   const TerminalCommandListView({super.key});
 
@@ -749,13 +750,15 @@ class TerminalCommandListView extends StatelessWidget {
             spacing: 8.0,
             runSpacing: 8.0,
             children: D.termCommands.map((command) {
+              final String name = command['name'] as String;
+              final TerminalKey key = command['key'] as TerminalKey;
+              
               return ElevatedButton(
                 style: D.controlButtonStyle,
                 onPressed: () {
-                  G.termPtys[G.currentContainer]!.terminal
-                      .keyInput(command['key'] as TerminalKey);
+                  G.termPtys[G.currentContainer]!.terminal.keyInput(key);
                 },
-                child: Text(command['name']!),
+                child: Text(name),
               );
             }).toList(),
           ),
@@ -764,7 +767,6 @@ class TerminalCommandListView extends StatelessWidget {
     );
   }
 }
-
 // default values
 class D {
 
