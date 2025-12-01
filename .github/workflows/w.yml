@@ -1,0 +1,98 @@
+name: Build Wine-Staging WoW64
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Update apt
+      run: sudo apt update
+
+    - name: Install build dependencies
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt update
+        sudo apt install -y \
+          git wget build-essential flex bison \
+          gcc g++ g++-multilib \
+          gcc-multilib \
+          libfaudio-dev libfaudio-dev:i386 \
+          libudev-dev libudev-dev:i386 \
+          libx11-dev libx11-dev:i386 \
+          libxext-dev libxext-dev:i386 \
+          libxinerama-dev libxinerama-dev:i386 \
+          libxcursor-dev libxcursor-dev:i386 \
+          libxi-dev libxi-dev:i386 \
+          libxxf86vm-dev libxxf86vm-dev:i386 \
+          libxrandr-dev libxrandr-dev:i386 \
+          libxrender-dev libxrender-dev:i386 \
+          libxfixes-dev libxfixes-dev:i386 \
+          libxcomposite-dev libxcomposite-dev:i386 \
+          libxkbcommon-dev libxkbcommon-dev:i386 \
+          libxshmfence-dev libxshmfence-dev:i386 \
+          libwayland-dev libwayland-dev:i386 \
+          libavcodec-dev libavcodec-dev:i386 \
+          libavformat-dev libavformat-dev:i386 \
+          libswresample-dev libswresample-dev:i386 \
+          libgsm1-dev libgsm1-dev:i386 \
+          libjpeg-dev libjpeg-dev:i386 \
+          libpng-dev libpng-dev:i386 \
+          libosmesa6-dev libosmesa6-dev:i386 \
+          libvulkan-dev libvulkan-dev:i386 \
+          libgl1-mesa-dev libgl1-mesa-dev:i386 \
+          libglu1-mesa-dev libglu1-mesa-dev:i386 \
+          libkrb5-dev libkrb5-dev:i386 \
+          libldap2-dev libldap2-dev:i386 \
+          libxml2-dev libxml2-dev:i386 \
+          libxslt1-dev libxslt1-dev:i386 \
+          libgettextpo-dev libgettextpo-dev:i386 \
+          libcups2-dev libcups2-dev:i386
+
+    - name: Clone Wine source
+      run: |
+        git clone https://github.com/wine-mirror/wine.git
+        cd wine
+        git checkout wine-9.0
+
+    - name: Download Wine-Staging patches
+      run: |
+        wget https://github.com/wine-staging/wine-staging/archive/refs/heads/master.zip -O staging.zip
+        unzip staging.zip
+        cd wine-staging-master/patches
+        ./patchinstall.sh DEST=../../wine --all || true
+
+    - name: Build 64-bit wine
+      run: |
+        mkdir wine64-build
+        cd wine64-build
+        ../wine/configure --enable-win64
+        make -j$(nproc)
+
+    - name: Build 32-bit wine
+      run: |
+        mkdir wine32-build
+        cd wine32-build
+        ../wine/configure --with-wine64=../wine64-build
+        make -j$(nproc)
+
+    - name: Install Wine WoW64 into /opt/wine
+      run: |
+        sudo mkdir -p /opt/wine-staging-wow64
+        cd wine64-build
+        sudo make install DESTDIR=/opt/wine-staging-wow64
+        cd ../wine32-build
+        sudo make install DESTDIR=/opt/wine-staging-wow64
+
+    - name: Create final tar.xz
+      run: |
+        cd /opt
+        sudo tar -cJf wine-staging-wow64.tar.xz wine-staging-wow64
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: wine-staging-wow64
+        path: /opt/wine-staging-wow64.tar.xz
