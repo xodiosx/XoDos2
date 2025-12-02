@@ -1,76 +1,86 @@
 name: Build Wine Staging ARM64 WoW64
 
 on:
-push:
-branches: [ main ]
-workflow_dispatch:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-build:
-runs-on: ubuntu-latest
-env:
-BUILD_DIR: ${{ github.workspace }}/wine-build
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BUILD_DIR: ${{ github.workspace }}/wine-build
 
-steps:
-  - name: Checkout Wine
-    run: |
-      mkdir -p $BUILD_DIR
-      cd $BUILD_DIR
-      git clone --depth 1 https://gitlab.winehq.org/wine/wine.git wine
-      cd wine
-      git submodule update --init --recursive
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Checkout Wine Staging
-    run: |
-      cd $BUILD_DIR
-      git clone --depth 1 https://github.com/wine-staging/wine-staging.git wine-staging
-      cd wine-staging
-      git submodule update --init --recursive
+      - name: Checkout Wine
+        run: |
+          mkdir -p $BUILD_DIR
+          cd $BUILD_DIR
+          git clone --depth 1 https://gitlab.winehq.org/wine/wine.git wine
+          cd wine
+          git submodule update --init --recursive
 
-  - name: Apply Wine Staging patches
-    run: |
-      cd $BUILD_DIR/wine-staging
-      python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
+      - name: Checkout Wine Staging
+        run: |
+          cd $BUILD_DIR
+          git clone --depth 1 https://github.com/wine-staging/wine-staging.git wine-staging
+          cd wine-staging
+          git submodule update --init --recursive
 
-  - name: Install dependencies
-    run: |
-      sudo dpkg --add-architecture armhf
-      sudo dpkg --add-architecture i386
-      sudo apt-get update
-      sudo apt-get install -y \
-        build-essential \
-        flex bison \
-        python3-mako \
-        mingw-w64 \
-        libfreetype6-dev \
-        libxcursor-dev \
-        libxinerama-dev \
-        libxrandr-dev \
-        libx11-dev \
-        libxext-dev \
-        libxrender-dev \
-        libxi-dev \
-        libvulkan-dev \
-        libvulkan1 \
-        pkg-config \
-        libasound2-dev \
-        libc6-dev:arm64 libc6-dev-i386 \
-        libx11-dev:arm64 libx11-dev:i386
+      - name: Apply Wine Staging patches
+        run: |
+          cd $BUILD_DIR/wine-staging
+          python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
 
-  - name: Configure Wine (WoW64)
-    run: |
-      cd $BUILD_DIR/wine
-      mkdir -p build
-      cd build
-      ../configure --enable-win64 --enable-wow64
+      - name: Install dependencies
+        run: |
+          sudo dpkg --add-architecture armhf
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            flex bison \
+            python3-mako \
+            mingw-w64 \
+            libfreetype6-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrender-dev \
+            libxi-dev \
+            libvulkan-dev \
+            libvulkan1 \
+            pkg-config \
+            libasound2-dev \
+            libc6-dev:arm64 libc6-dev-i386 \
+            libx11-dev:arm64 libx11-dev:i386 \
+            gcc-12-aarch64-linux-gnu g++-12-aarch64-linux-gnu \
+            gcc-12-arm-linux-gnueabihf g++-12-arm-linux-gnueabihf
 
-  - name: Build Wine
-    run: |
-      cd $BUILD_DIR/wine/build
-      make -j$(nproc)
+      - name: Configure Wine (WoW64)
+        run: |
+          cd $BUILD_DIR/wine
+          mkdir -p build
+          cd build
+          ../configure \
+            --host=aarch64-linux-gnu \
+            --enable-win64 \
+            --enable-wow64 \
+            CC=aarch64-linux-gnu-gcc-12 \
+            CXX=aarch64-linux-gnu-g++-12
 
-  - name: Upload Wine artifacts
-    uses: actions/upload-artifact@v4
-    with:
-      name: wine-staging-arm64
-      path: $BUILD_DIR/wine/build/
+      - name: Build Wine
+        run: |
+          cd $BUILD_DIR/wine/build
+          make -j$(nproc)
+
+      - name: Upload Wine artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wine-staging-arm64
+          path: $BUILD_DIR/wine/build/
