@@ -45,8 +45,6 @@ jobs:
           libgstreamer-plugins-base1.0-dev \
           libfaudio-dev:i386 \
           libfaudio-dev \
-          libudev-dev \
-          libdbus-1-dev \
           python3 \
           python3-distutils \
           git \
@@ -60,12 +58,9 @@ jobs:
 
     - name: Apply Staging patches
       run: |
-        cd wine-staging
-        ./patchinstall.sh DESTDIR=../wine --all
+        cd wine
+        ../wine-staging/patches/patchinstall.sh DESTDIR=. --all
 
-    # -----------------------------
-    # Build 64-bit Wine first
-    # -----------------------------
     - name: Build Wine64
       run: |
         mkdir wine64-build
@@ -73,9 +68,6 @@ jobs:
         ../wine/configure --enable-win64
         make -j$(nproc)
 
-    # -----------------------------
-    # Build 32-bit Wine
-    # -----------------------------
     - name: Build Wine32
       run: |
         mkdir wine32-build
@@ -83,28 +75,19 @@ jobs:
         ../wine/configure --with-wine64=../wine64-build
         make -j$(nproc)
 
-    # -----------------------------
-    # Install both into prefix
-    # -----------------------------
-    - name: Install Wine WOW64
+    - name: Install WOW64
       run: |
-        mkdir -p AppDir
+        mkdir AppDir
         cd wine64-build
         make install DESTDIR=$(pwd)/../AppDir
         cd ../wine32-build
         make install DESTDIR=$(pwd)/../AppDir
 
-    # -----------------------------
-    # Package for release
-    # -----------------------------
     - name: Pack artifacts
       run: |
         cd AppDir
         tar -cJf ../wine-wow64.tar.xz .
 
-    # -----------------------------
-    # Upload Artifacts (v4)
-    # -----------------------------
     - name: Upload wine-wow64.tar.xz
       uses: actions/upload-artifact@v4
       with:
