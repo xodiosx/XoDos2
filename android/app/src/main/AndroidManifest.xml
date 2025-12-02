@@ -1,14 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions -->
-    <uses-permission android:name="android.permission.MANAGE_DOCUMENTS" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:remove="maxSdkVersion"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.MANAGE_DOCUMENTS" />
 
     <application
         android:requestLegacyExternalStorage="true"
@@ -20,7 +18,6 @@
         android:theme="@style/App.Theme"
         android:extractNativeLibs="true">
 
-        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -29,34 +26,37 @@
             android:configChanges="navigation|orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
+
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
-        <!-- Signal9 Activity -->
         <activity
             android:name=".Signal9Activity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
 
-        <!-- XDocumentsProvider - CORRECTED SECTION -->
+        <!-- ✅ FIXED Xodos Data Files Provider -->
         <provider
-            android:name=".filepicker.XDocumentsProvider"
-            android:authorities="${applicationId}.documents"
+            android:name="com.xodos.filepicker.XodosDataFilesProvider"
+            android:authorities="com.xodos.documents"
             android:exported="true"
-            android:grantUriPermissions="true"
-            android:permission="android.permission.MANAGE_DOCUMENTS">
+            android:permission="android.permission.MANAGE_DOCUMENTS"
+            android:grantUriPermissions="true">
+
             <intent-filter>
-                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER"/>
             </intent-filter>
+
         </provider>
 
-        <!-- Flutter metadata -->
+        <!-- Flutter plugin system -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

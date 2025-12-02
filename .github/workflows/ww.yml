@@ -1,125 +1,65 @@
-name: Build x86_64 Wine Staging WoW64
+name: Build x86_64 Wine WoW64
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    env:
-      BUILD_DIR: ${{ github.workspace }}/wine-build
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Checkout Wine
-        run: |
-          mkdir -p $BUILD_DIR
-          cd $BUILD_DIR
-          git clone --depth 1 https://gitlab.winehq.org/wine/wine.git wine
-          cd wine
-          git submodule update --init --recursive
-
-      - name: Checkout Wine Staging
-        run: |
-          cd $BUILD_DIR
-          git clone --depth 1 https://github.com/wine-staging/wine-staging.git wine-staging
-          cd wine-staging
-          git submodule update --init --recursive
-
-      - name: Apply Wine Staging patches
-        run: |
-          cd $BUILD_DIR/wine-staging
-          python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
-
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          
           sudo apt-get install -y \
-            build-essential \
-            git \
-            python3 \
-            python3-mako \
-            flex \
-            bison \
-            pkg-config \
-            libx11-dev \
-            libxext-dev \
-            libxrender-dev \
-            libxrandr-dev \
-            libxinerama-dev \
-            libxcursor-dev \
-            libxi-dev \
-            libfreetype6-dev \
-            libfontconfig1-dev \
-            libasound2-dev \
-            libpulse-dev \
-            libsdl2-dev \
-            libvulkan-dev \
-            libcups2-dev \
-            libgnutls28-dev \
-            libldap2-dev \
-            libxml2-dev \
-            libpng-dev \
-            libjpeg-dev \
-            libtiff-dev \
-            libgif-dev \
-            libwebp-dev \
-            libfreetype6-dev:i386 \
-            libfontconfig1-dev:i386 \
-            libx11-dev:i386 \
-            libxext-dev:i386 \
-            libxrender-dev:i386 \
-            libasound2-dev:i386 \
-            libpulse-dev:i386 \
-            libpng-dev:i386 \
-            libjpeg-dev:i386 \
-            gcc-multilib \
-            g++-multilib
+            build-essential git python3 flex bison pkg-config \
+            libx11-dev libxext-dev libxrender-dev libfreetype6-dev \
+            libasound2-dev libpulse-dev libcups2-dev libvulkan-dev \
+            libfreetype6-dev:i386 libx11-dev:i386 libasound2-dev:i386 \
+            libpng-dev:i386 libjpeg-dev:i386 \
+            gcc-multilib g++-multilib
 
-      - name: Fix dmsynth compilation issue
+      - name: Checkout Wine
         run: |
-          cd $BUILD_DIR/wine
-          # Apply a fix for the dmsynth.c compilation error
-          # This replaces the problematic static initialization with a constant
-          sed -i '1790s/default_note_on,/\/\/ default_note_on,/' dlls/dmsynth/tests/dmsynth.c || true
+          git clone --depth 1 https://gitlab.winehq.org/wine/wine.git wine-src
+          cd wine-src
+          git submodule update --init --recursive
 
       - name: Build 64-bit Wine
         run: |
-          cd $BUILD_DIR/wine
+          cd wine-src
           mkdir -p build64
           cd build64
-          ../configure --enable-win64 --prefix=/usr/local/wine --disable-tests
+          ../configure --enable-win64 --disable-tests
           make -j$(nproc)
 
       - name: Build 32-bit Wine (WoW64)
         run: |
-          cd $BUILD_DIR/wine
+          cd wine-src
           mkdir -p build32
           cd build32
-          ../configure --with-wine64=../build64 --prefix=/usr/local/wine --disable-tests
+          ../configure --with-wine64=../build64 --disable-tests
           make -j$(nproc)
 
       - name: Install to temporary directory
         run: |
-          mkdir -p $BUILD_DIR/wine-install
-          cd $BUILD_DIR/wine/build64
-          make install DESTDIR=$BUILD_DIR/wine-install
-          cd $BUILD_DIR/wine/build32
-          make install DESTDIR=$BUILD_DIR/wine-install
+          mkdir -p wine-install/usr/local
+          cd wine-src/build64
+          make install DESTDIR=../../wine-install
+          cd ../build32
+          make install DESTDIR=../../wine-install
 
       - name: Create tarball
         run: |
-          cd $BUILD_DIR
-          tar -czf wine-x86_64-wow64.tar.gz -C wine-install/usr/local .
+          cd wine-install/usr/local
+          tar -czf ../../../wine-x86_64-wow64.tar.gz .
+          cd ../..
+          echo "Tarball created at:"
+          ls -lh wine-x86_64-wow64.tar.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: wine-x86_64-wow64
-          path: $BUILD_DIR/wine-x86_64-wow64.tar.gz
+          path: wine-x86_64-wow64.tar.gz
