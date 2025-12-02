@@ -1,13 +1,12 @@
 name: Build Wine Staging ARM64 WoW64
 
 on:
-  push:
-    branches: [ main ]
+  
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Use 22.04 instead of latest for better ARM support
     env:
       BUILD_DIR: ${{ github.workspace }}/wine-build
 
@@ -35,52 +34,100 @@ jobs:
           cd $BUILD_DIR/wine-staging
           python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
-          sudo dpkg --add-architecture armhf
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
+            gcc-10-aarch64-linux-gnu \
+            g++-10-aarch64-linux-gnu \
+            gcc-10-arm-linux-gnueabihf \
+            g++-10-arm-linux-gnueabihf \
             flex bison \
-            python3-mako \
+            python3 python3-mako \
             mingw-w64 \
             libfreetype6-dev \
-            libxcursor-dev \
-            libxinerama-dev \
-            libxrandr-dev \
             libx11-dev \
             libxext-dev \
             libxrender-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
             libxi-dev \
             libvulkan-dev \
-            libvulkan1 \
             pkg-config \
             libasound2-dev \
-            libc6-dev:arm64 libc6-dev-i386 \
-            libx11-dev:arm64 libx11-dev:i386 \
-            gcc-12-aarch64-linux-gnu g++-12-aarch64-linux-gnu \
-            gcc-12-arm-linux-gnueabihf g++-12-arm-linux-gnueabihf
+            libpulse-dev \
+            libsdl2-dev \
+            gettext \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libfaudio-dev \
+            libfaudio-dev:i386 \
+            llvm \
+            cmake \
+            ninja-build \
+            git \
+            tar \
+            xz-utils
+
+      - name: Setup cross-compilation environment
+        run: |
+          # Set up cross-compilation paths
+          export CC="aarch64-linux-gnu-gcc-10"
+          export CXX="aarch64-linux-gnu-g++-10"
+          export PKG_CONFIG_PATH="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/pkgconfig"
+          
+          # Create symlinks for 32-bit ARM libraries
+          sudo ln -sf /usr/arm-linux-gnueabihf/lib/ld-linux-armhf.so.3 /lib/ld-linux-armhf.so.3
+          
+          # Update pkg-config for cross-compilation
+          echo "export CC=\"$CC\"" >> $GITHUB_ENV
+          echo "export CXX=\"$CXX\"" >> $GITHUB_ENV
+          echo "export PKG_CONFIG_PATH=\"$PKG_CONFIG_PATH\"" >> $GITHUB_ENV
 
       - name: Configure Wine (WoW64)
         run: |
           cd $BUILD_DIR/wine
           mkdir -p build
           cd build
+          
+          # Configure for ARM64 with WoW64 support
           ../configure \
             --host=aarch64-linux-gnu \
+            --with-wine64=../wine64 \
+            --with-wine32=../wine32 \
             --enable-win64 \
             --enable-wow64 \
-            CC=aarch64-linux-gnu-gcc-12 \
-            CXX=aarch64-linux-gnu-g++-12
+            --prefix=/usr/local/wine-arm64 \
+            --with-x \
+            --with-gstreamer \
+            --with-pulse \
+            --with-sdl \
+            --with-vulkan \
+            --with-xattr \
+            --disable-tests \
+            PKG_CONFIG="aarch64-linux-gnu-pkg-config"
 
       - name: Build Wine
         run: |
           cd $BUILD_DIR/wine/build
-          make -j$(nproc)
+          make -j$(nproc) 2>&1 | tee build.log || (cat build.log && exit 1)
+
+      - name: Package Wine
+        run: |
+          cd $BUILD_DIR/wine/build
+          make install DESTDIR=$BUILD_DIR/wine-install
+          
+          # Create a tarball for distribution
+          cd $BUILD_DIR
+          tar -czf wine-arm64-woW64.tar.gz -C wine-install/usr/local .
 
       - name: Upload Wine artifacts
         uses: actions/upload-artifact@v4
         with:
           name: wine-staging-arm64
-          path: $BUILD_DIR/wine/build/
+          path: |
+            $BUILD_DIR/wine-arm64-woW64.tar.gz
+            $BUILD_DIR/wine/build/build.log
