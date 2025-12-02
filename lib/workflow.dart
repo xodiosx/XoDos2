@@ -1,5 +1,3 @@
-// workflow.dart  
-
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
@@ -29,6 +27,353 @@ import 'package:xodos/l10n/app_localizations.dart';
 import 'package:avnc_flutter/avnc_flutter.dart';
 import 'package:x11_flutter/x11_flutter.dart';
 
+// Import the mini games
+import 'spirited_mini_games.dart';
+
+// Modern color scheme with dark purple theme
+class AppColors {
+  static const Color primaryPurple = Color(0xFFBB86FC);
+  static const Color primaryDark = Color(0xFF121212);
+  static const Color surfaceDark = Color(0xFF1E1E1E);
+  static const Color cardDark = Color(0xFF252525);
+  static const Color accentPurple = Color(0xFF9C27B0);
+  static const Color textPrimary = Color(0xFFE1E1E1);
+  static const Color textSecondary = Color(0xFFA0A0A0);
+  static const Color divider = Color(0xFF333333);
+}
+
+class LanguageManager {
+  static const Map<String, Map<String, String>> _languageConfigs = {
+    'en': {
+      'lang': 'en_US.UTF-8',
+      'public': 'Public',
+      'pictures': 'Pictures',
+      'music': 'Music',
+      'videos': 'Videos',
+      'downloads': 'Downloads',
+      'documents': 'Documents',
+      'photos': 'Photos',
+    },
+    'zh': {
+      'lang': 'zh_CN.UTF-8',
+      'public': '公共',
+      'pictures': '图片',
+      'music': '音乐',
+      'videos': '视频',
+      'downloads': '下载',
+      'documents': '文档',
+      'photos': '照片',
+    },
+    'ja': {
+      'lang': 'ja_JP.UTF-8',
+      'public': '公開',
+      'pictures': '画像',
+      'music': '音楽',
+      'videos': 'ビデオ',
+      'downloads': 'ダウンロード',
+      'documents': '書類',
+      'photos': '写真',
+    },
+    'ar': {
+      'lang': 'ar_SA.UTF-8',
+      'public': 'عام',
+      'pictures': 'الصور',
+      'music': 'الموسيقى',
+      'videos': 'الفيديو',
+      'downloads': 'التنزيلات',
+      'documents': 'المستندات',
+      'photos': 'الصور',
+    },
+    'hi': {
+      'lang': 'hi_IN.UTF-8',
+      'public': 'सार्वजनिक',
+      'pictures': 'चित्र',
+      'music': 'संगीत',
+      'videos': 'वीडियो',
+      'downloads': 'डाउनलोड',
+      'documents': 'दस्तावेज़',
+      'photos': 'तस्वीरें',
+    },
+    'es': {
+      'lang': 'es_ES.UTF-8',
+      'public': 'Público',
+      'pictures': 'Imágenes',
+      'music': 'Música',
+      'videos': 'Vídeos',
+      'downloads': 'Descargas',
+      'documents': 'Documentos',
+      'photos': 'Fotos',
+    },
+    'pt': {
+      'lang': 'pt_BR.UTF-8',
+      'public': 'Público',
+      'pictures': 'Imagens',
+      'music': 'Música',
+      'videos': 'Vídeos',
+      'downloads': 'Downloads',
+      'documents': 'Documentos',
+      'photos': 'Fotos',
+    },
+    'fr': {
+      'lang': 'fr_FR.UTF-8',
+      'public': 'Public',
+      'pictures': 'Images',
+      'music': 'Musique',
+      'videos': 'Vidéos',
+      'downloads': 'Téléchargements',
+      'documents': 'Documents',
+      'photos': 'Photos',
+    },
+    'ru': {
+      'lang': 'ru_RU.UTF-8',
+      'public': 'Общедоступные',
+      'pictures': 'Изображения',
+      'music': 'Музыка',
+      'videos': 'Видео',
+      'downloads': 'Загрузки',
+      'documents': 'Документы',
+      'photos': 'Фотографии',
+    },
+  };
+
+  static String getBootCommandForLanguage(String languageCode) {
+    final config = _languageConfigs[languageCode] ?? _languageConfigs['en']!;
+    
+    String baseBoot = D.boot;
+    
+    // Replace the LANG environment variable
+    baseBoot = baseBoot.replaceFirst('LANG=zh_CN.UTF-8', 'LANG=${config['lang']}');
+    
+    // Replace folder names
+    baseBoot = baseBoot.replaceFirst('公共', config['public']!);
+    baseBoot = baseBoot.replaceFirst('图片', config['pictures']!);
+    baseBoot = baseBoot.replaceFirst('音乐', config['music']!);
+    baseBoot = baseBoot.replaceFirst('视频', config['videos']!);
+    baseBoot = baseBoot.replaceFirst('下载', config['downloads']!);
+    baseBoot = baseBoot.replaceFirst('文档', config['documents']!);
+    baseBoot = baseBoot.replaceFirst('照片', config['photos']!);
+    
+    return baseBoot;
+  }
+
+  static List<Map<String, String>> getCommandsForLanguage(String languageCode) {
+    switch (languageCode) {
+      case 'zh':
+        return D.commands;
+      case 'ja':
+        return _japaneseCommands;
+      case 'ar':
+        return _arabicCommands;
+      case 'hi':
+        return _hindiCommands;
+      case 'es':
+        return _spanishCommands;
+      case 'pt':
+        return _portugueseCommands;
+      case 'fr':
+        return _frenchCommands;
+      case 'ru':
+        return _russianCommands;
+      default:
+        return D.commands4En;
+    }
+  }
+
+  static List<Map<String, String>> getWineCommandsForLanguage(String languageCode) {
+    switch (languageCode) {
+      case 'zh':
+        return D.wineCommands;
+      case 'ja':
+        return _japaneseWineCommands;
+      case 'ar':
+        return _arabicWineCommands;
+      case 'hi':
+        return _hindiWineCommands;
+      case 'es':
+        return _spanishWineCommands;
+      case 'pt':
+        return _portugueseWineCommands;
+      case 'fr':
+        return _frenchWineCommands;
+      case 'ru':
+        return _russianWineCommands;
+      default:
+        return D.wineCommands4En;
+    }
+  }
+
+  // Japanese commands
+  static const List<Map<String, String>> _japaneseCommands = [
+    {"name":"パッケージの更新とアップグレード", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"システム情報を表示", "command":"neofetch -L && neofetch --off"},
+    {"name":"画面をクリア", "command":"clear"},
+    {"name":"タスクを中断", "command":"\x03"},
+    {"name":"グラフィックソフトKritaをインストール", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"Kritaをアンインストール", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"動画編集ソフトKdenliveをインストール", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"Kdenliveをアンインストール", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"LibreOfficeをインストール", "command":"sudo apt update && sudo apt install -y libreoffice"},
+    {"name":"LibreOfficeをアンインストール", "command":"sudo apt autoremove --purge -y libreoffice"},
+    {"name":"WPSをインストール", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+EOF
+rm /tmp/wps.deb"""},
+    {"name":"WPSをアンインストール", "command":"sudo apt autoremove --purge -y wps-office"},
+    {"name":"ごみ箱を有効にする", "command":"sudo apt update && sudo apt install -y gvfs && echo 'インストール完了、アプリを再起動してごみ箱を使用してください。'"},
+    {"name":"パッケージキャッシュをクリーン", "command":"sudo apt clean"},
+    {"name":"シャットダウン", "command":"stopvnc\nexit\nexit"},
+    {"name":"???", "command":"timeout 8 cmatrix"}
+  ];
+
+  // Arabic commands
+  static const List<Map<String, String>> _arabicCommands = [
+    {"name":"تحديث الحزم والترقية", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"معلومات النظام", "command":"neofetch -L && neofetch --off"},
+    {"name":"مسح الشاشة", "command":"clear"},
+    {"name":"مقاطعة المهمة", "command":"\x03"},
+    {"name":"تثبيت برنامج الرسم كريتا", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"إزالة كريتا", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"تثبيت برنامج تحرير الفيديو كدينلايف", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"إزالة كدينلايف", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"تثبيت ليبر أوفيس", "command":"sudo apt update && sudo apt install -y libreoffice"},
+    {"name":"إزالة ليبر أوفيس", "command":"sudo apt autoremove --purge -y libreoffice"},
+    {"name":"تفعيل سلة المهملات", "command":"sudo apt update && sudo apt install -y gvfs && echo 'تم التثبيت، أعد تشغيل التطبيق لاستخدام سلة المهملات.'"},
+    {"name":"تنظيف ذاكرة التخزين المؤقت", "command":"sudo apt clean"},
+    {"name":"إيقاف التشغيل", "command":"stopvnc\nexit\nexit"},
+    {"name":"???", "command":"timeout 8 cmatrix"}
+  ];
+
+  // Hindi commands
+  static const List<Map<String, String>> _hindiCommands = [
+    {"name":"पैकेज अपडेट और अपग्रेड", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"सिस्टम जानकारी", "command":"neofetch -L && neofetch --off"},
+    {"name":"स्क्रीन साफ करें", "command":"clear"},
+    {"name":"कार्य बाधित करें", "command":"\x03"},
+    {"name":"ग्राफिक सॉफ्टवेयर क्रिता इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"क्रिता अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"वीडियो एडिटिंग सॉफ्टवेयर केडेनलाइव इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"केडेनलाइव अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"रीसाइकिल बिन सक्षम करें", "command":"sudo apt update && sudo apt install -y gvfs && echo 'इंस्टॉलेशन पूर्ण, रीसाइकिल बिन का उपयोग करने के लिए ऐप को पुनरारंभ करें।'"},
+    {"name":"पैकेज कैश साफ करें", "command":"sudo apt clean"},
+    {"name":"शटडाउन", "command":"stopvnc\nexit\nexit"},
+    {"name":"???", "command":"timeout 8 cmatrix"}
+  ];
+
+  // Spanish commands
+  static const List<Map<String, String>> _spanishCommands = [
+    {"name":"Actualizar y mejorar paquetes", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"Información del sistema", "command":"neofetch -L && neofetch --off"},
+    {"name":"Limpiar pantalla", "command":"clear"},
+    {"name":"Interrumpir tarea", "command":"\x03"},
+    {"name":"Instalar software gráfico Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"Desinstalar Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"Instalar editor de video Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"Desinstalar Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"Habilitar papelera de reciclaje", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Instalación completa, reinicie la aplicación para usar la papelera de reciclaje.'"},
+    {"name":"Limpiar caché de paquetes", "command":"sudo apt clean"},
+    {"name":"Apagar", "command":"stopvnc\nexit\nexit"},
+    {"name":"???", "command":"timeout 8 cmatrix"}
+  ];
+
+  // Portuguese commands
+  static const List<Map<String, String>> _portugueseCommands = [
+    {"name":"Atualizar y mejorar pacotes", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"Informações do sistema", "command":"neofetch -L && neofetch --off"},
+    {"name":"Limpar tela", "command":"clear"},
+    {"name":"Interromper tarefa", "command":"\x03"},
+    {"name":"Instalar software gráfico Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"Desinstalar Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"Instalar editor de vídeo Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"Desinstalar Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"Habilitar lixeira", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Instalação completa, reinicie o aplicativo para usar a lixeira.'"},
+    {"name":"Limpar cache de pacotes", "command":"sudo apt clean"},
+    {"name":"Desligar", "command":"stopvnc\nexit\nexit"},
+    {"name":"???", "command":"timeout 8 cmatrix"}
+  ];
+
+  // French commands
+  static const List<Map<String, String>> _frenchCommands = [
+    {"name":"Mettre à jour et améliorer les paquets", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"Informations système", "command":"neofetch -L && neofetch --off"},
+    {"name":"Effacer l'écran", "command":"clear"},
+    {"name":"Interrompre la tâche", "command":"\x03"},
+    {"name":"Installer le logiciel graphique Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"Désinstaller Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"Installer l'éditeur vidéo Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"Désinstaller Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"Activer la corbeille", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Installation terminée, redémarrez l\\'application pour utiliser la corbeille.'"},
+    {"name":"Nettoyer le cache des paquets", "command":"sudo apt clean"},
+    {"name":"Éteindre", "command":"stopvnc\nexit\nexit"},
+    {"name":"???", "command":"timeout 8 cmatrix"}
+  ];
+
+  // Russian commands
+  static const List<Map<String, String>> _russianCommands = [
+    {"name":"Обновить и улучшить пакеты", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"Информация о системе", "command":"neofetch -L && neofetch --off"},
+    {"name":"Очистить экран", "command":"clear"},
+    {"name":"Прервать задачу", "command":"\x03"},
+    {"name":"Установить графическое ПО Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"Удалить Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"Установить видеоредактор Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"Удалить Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"Включить корзину", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Установка завершена, перезапустите приложение для использования корзины.'"},
+    {"name":"Очистить кэш пакетов", "command":"sudo apt clean"},
+    {"name":"Выключить", "command":"stopvnc\nexit\nexit"},
+    {"name":"???", "command":"timeout 8 cmatrix"}
+  ];
+
+  // Wine commands for different languages (simplified versions)
+  static const List<Map<String, String>> _japaneseWineCommands = [
+    {"name":"Wine設定", "command":"winecfg"},
+    {"name":"文字化け修正", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"スタートメニューフォルダ", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Wineを削除", "command":"rm -rf /opt/wine"},
+  ];
+
+  static const List<Map<String, String>> _arabicWineCommands = [
+    {"name":"إعدادات Wine", "command":"winecfg"},
+    {"name":"إصلاح الأحرف", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"مجلد قائمة ابدأ", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"إزالة Wine", "command":"rm -rf /opt/wine"},
+  ];
+
+  static const List<Map<String, String>> _hindiWineCommands = [
+    {"name":"Wine सेटिंग्स", "command":"winecfg"},
+    {"name":"वर्ण सुधार", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"स्टार्ट मेनू फोल्डर", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Wine हटाएं", "command":"rm -rf /opt/wine"},
+  ];
+
+  static const List<Map<String, String>> _spanishWineCommands = [
+    {"name":"Configuración de Wine", "command":"winecfg"},
+    {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"Carpeta del menú Inicio", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Eliminar Wine", "command":"rm -rf /opt/wine"},
+  ];
+
+  static const List<Map<String, String>> _portugueseWineCommands = [
+    {"name":"Configurações do Wine", "command":"winecfg"},
+    {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"Pasta do menu Iniciar", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Remover Wine", "command":"rm -rf /opt/wine"},
+  ];
+
+  static const List<Map<String, String>> _frenchWineCommands = [
+    {"name":"Paramètres Wine", "command":"winecfg"},
+    {"name":"Réparer les caractères", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"Dossier du menu Démarrer", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Supprimer Wine", "command":"rm -rf /opt/wine"},
+  ];
+
+  static const List<Map<String, String>> _russianWineCommands = [
+    {"name":"Настройки Wine", "command":"winecfg"},
+    {"name":"Исправить символы", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"Папка меню Пуск", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Удалить Wine", "command":"rm -rf /opt/wine"},
+  ];
+}
+
 class Util {
 
   static Future<void> copyAsset(String src, String dst) async {
@@ -53,8 +398,6 @@ class Util {
   static void termWrite(String str) {
     G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert("$str\n"));
   }
-
-
 
   // All keys
   // int defaultContainer = 0: Default start the 0th container
@@ -118,15 +461,6 @@ class Util {
       case "containersInfo" : return G.prefs.getStringList(key)!;
     }
   }
-
-//     await G.prefs.setStringList("containersInfo", ["""{
-// "name":"Debian Bookworm",
-// "boot":"${D.boot}",
-// "vnc":"startnovnc &",
-// "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
-// "commands":${jsonEncode(D.commands)}
-// }"""]);
-// case "lastDate" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("1970-01-01");
 
   static dynamic getCurrentProp(String key) {
     dynamic m = jsonDecode(Util.getGlobal("containersInfo")[G.currentContainer]);
@@ -281,12 +615,17 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
 }
 
 // A class combining terminal and pty
-class TermPty {
+class TermPty{
   late final Terminal terminal;
   late final Pty pty;
+  late final TerminalController controller; // Add this line
 
   TermPty() {
-    terminal = Terminal(inputHandler: G.keyboard, maxLines: Util.getGlobal("termMaxLines") as int);
+    controller = TerminalController(); // Initialize the controller
+    terminal = Terminal(
+      inputHandler: G.keyboard, 
+      maxLines: Util.getGlobal("termMaxLines") as int,
+    );
     pty = Pty.start(
       "/system/bin/sh",
       workingDirectory: G.dataPath,
@@ -294,9 +633,9 @@ class TermPty {
       rows: terminal.viewHeight,
     );
     pty.output
-        .cast<List<int>>()
-        .transform(const Utf8Decoder())
-        .listen(terminal.write);
+      .cast<List<int>>()
+      .transform(const Utf8Decoder())
+      .listen(terminal.write);
     pty.exitCode.then((code) {
       terminal.write('the process exited with exit code $code');
       if (code == 0) {
@@ -325,9 +664,109 @@ class TermPty {
       pty.resize(h, w);
     };
   }
-
 }
 
+// New List View Widget for Commands
+class CommandListView extends StatelessWidget {
+  final List<Map<String, String>> commands;
+  final String title;
+
+  const CommandListView({
+    super.key,
+    required this.commands,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.cardDark,
+      margin: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ...commands.map((command) {
+            return ListTile(
+              title: Text(
+                command['name']!,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.textSecondary,
+                size: 16,
+              ),
+              onTap: () {
+                Util.termWrite(command['command']!);
+              },
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+}
+
+// New List View Widget for Terminal Commands
+// More robust version with proper type handling
+class TerminalCommandListView extends StatelessWidget {
+  const TerminalCommandListView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.cardDark,
+      margin: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Terminal Controls',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: D.termCommands.map((command) {
+              final String name = command['name'] as String;
+              final TerminalKey key = command['key'] as TerminalKey;
+              
+              return ElevatedButton(
+                style: D.controlButtonStyle,
+                onPressed: () {
+                  G.termPtys[G.currentContainer]!.terminal.keyInput(key);
+                },
+                child: Text(name),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
 // default values
 class D {
 
@@ -352,7 +791,7 @@ class D {
     {"name":"Install scientific computing software Octave", "command":"sudo apt update && sudo apt install -y octave"},
     {"name":"Uninstall Octave", "command":"sudo apt autoremove --purge -y octave"},
     {"name":"Install WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.akams.cn/https://github.com/tiny-computer/third-party-archives/releases/download/archives/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
 EOF
 rm /tmp/wps.deb"""},
     {"name":"Uninstall WPS", "command":"sudo apt autoremove --purge -y wps-office"},
@@ -362,7 +801,7 @@ rm /tmp/wps.deb"""},
     {"name":"Uninstall EdrawMax", "command":"sudo apt autoremove --purge -y edrawmax libldap-2.4-2"},
     {"name":"Install QQ", "command":"""wget \$(curl -s https://im.qq.com/rainbow/linuxQQDownload | grep -oP '"armDownloadUrl":{[^}]*"deb":"\\K[^"]+') -O /tmp/qq.deb && sudo apt update && sudo apt install -y /tmp/qq.deb && sed -i 's#Exec=/opt/QQ/qq %U#Exec=/opt/QQ/qq --no-sandbox %U#g' /usr/share/applications/qq.desktop; rm /tmp/qq.deb"""},
     {"name":"Uninstall QQ", "command":"sudo apt autoremove --purge -y linuxqq"},
-    {"name":"Install WeChat", "command":"wget https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb -O /tmp/wechat.deb && sudo apt update && sudo apt install -y /tmp/wechat.deb && echo 'Installation complete. If you only use WeChat for file transfer, consider using a file manager that supports SAF (e.g., Material Files) to directly access all files in Tiny Computer.'; rm /tmp/wechat.deb"},
+    {"name":"Install WeChat", "command":"wget https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb -O /tmp/wechat.deb && sudo apt update && sudo apt install -y /tmp/wechat.deb && echo 'Installation complete. If you only use WeChat for file transfer, consider using a file manager that supports SAF (e.g., Material Files) to directly access all files in xodos.'; rm /tmp/wechat.deb"},
     {"name":"Uninstall WeChat", "command":"sudo apt autoremove --purge -y wechat"},
     {"name":"Install DingTalk", "command":"""wget \$(curl -sw %{redirect_url} https://www.dingtalk.com/win/d/qd=linux_arm64) -O /tmp/dingtalk.deb && sudo apt update && sudo apt install -y /tmp/dingtalk.deb libglut3.12 libglu1-mesa && sed -i 's#\\./com.alibabainc.dingtalk#\\./com.alibabainc.dingtalk --no-sandbox#g' /opt/apps/com.alibabainc.dingtalk/files/Elevator.sh; rm /tmp/dingtalk.deb"""},
     {"name":"Uninstall DingTalk", "command":"sudo apt autoremove --purge -y com.alibabainc.dingtalk"},
@@ -384,7 +823,7 @@ rm /tmp/wps.deb"""},
     {"name":"Install LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
     {"name":"Uninstall LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
     {"name":"Install WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/tiny-computer/third-party-archives/releases/download/archives/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
 EOF
 rm /tmp/wps.deb"""},
     {"name":"Uninstall WPS", "command":"sudo apt autoremove --purge -y wps-office"},
@@ -400,6 +839,7 @@ rm /tmp/wps.deb"""},
   static const wineCommands = [{"name":"Wine Configuration", "command":"winecfg"},
     {"name":"Fix square characters", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Start Menu folder", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
     {"name":"Enable DXVK", "command":"""WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d9 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d10core /d native /f >/dev/null 2>&1
@@ -425,6 +865,7 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
   static const wineCommands4En = [{"name":"Wine Configuration", "command":"winecfg"},
     {"name":"Fix CJK Characters", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Start Menu Dir", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
     {"name":"Enable DXVK", "command":"""WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d9 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d10core /d native /f >/dev/null 2>&1
@@ -473,21 +914,62 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
     {"name": "F12", "key": TerminalKey.f12},
   ];
 
-  static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=/home/tiny --rootfs=\$CONTAINER_DIR --mount=/system --mount=/apex --mount=/sys --mount=/data --kill-on-exit --mount=/storage --sysvipc -L --link2symlink --mount=/proc --mount=/dev --mount=\$CONTAINER_DIR/tmp:/dev/shm --mount=/dev/urandom:/dev/random --mount=/proc/self/fd:/dev/fd --mount=/proc/self/fd/0:/dev/stdin --mount=/proc/self/fd/1:/dev/stdout --mount=/proc/self/fd/2:/dev/stderr --mount=/dev/null:/dev/tty0 --mount=/dev/null:/proc/sys/kernel/cap_last_cap --mount=/storage/self/primary:/media/sd --mount=\$DATA_DIR/share:/home/tiny/Public --mount=\$DATA_DIR/tiny:/home/tiny/.local/share/tiny --mount=/storage/self/primary/Fonts:/usr/share/fonts/wpsm --mount=/storage/self/primary/AppFiles/Fonts:/usr/share/fonts/yozom --mount=/system/fonts:/usr/share/fonts/androidm --mount=/storage/self/primary/Pictures:/home/tiny/Pictures --mount=/storage/self/primary/Music:/home/tiny/Music --mount=/storage/self/primary/Movies:/home/tiny/Videos --mount=/storage/self/primary/Download:/home/tiny/Downloads --mount=/storage/self/primary/DCIM:/home/tiny/Photos --mount=/storage/self/primary/Documents:/home/tiny/Documents --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.stat:/proc/stat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.version:/proc/version --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/bus:/proc/bus --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/buddyinfo:/proc/buddyinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/cgroups:/proc/cgroups --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/consoles:/proc/consoles --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/crypto:/proc/crypto --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/devices:/proc/devices --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/diskstats:/proc/diskstats --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/execdomains:/proc/execdomains --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/fb:/proc/fb --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/filesystems:/proc/filesystems --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/interrupts:/proc/interrupts --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/iomem:/proc/iomem --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/ioports:/proc/ioports --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kallsyms:/proc/kallsyms --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/keys:/proc/keys --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/key-users:/proc/key-users --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kpageflags:/proc/kpageflags --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/loadavg:/proc/loadavg --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/locks:/proc/locks --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/misc:/proc/misc --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/modules:/proc/modules --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/pagetypeinfo:/proc/pagetypeinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/partitions:/proc/partitions --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/sched_debug:/proc/sched_debug --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/softirqs:/proc/softirqs --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/timer_list:/proc/timer_list --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/uptime:/proc/uptime --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmallocinfo:/proc/vmallocinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmstat:/proc/vmstat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/zoneinfo:/proc/zoneinfo \$EXTRA_MOUNT /usr/bin/env -i HOSTNAME=TINY HOME=/home/tiny USER=tiny TERM=xterm-256color SDL_IM_MODULE=fcitx XMODIFIERS=@im=fcitx QT_IM_MODULE=fcitx GTK_IM_MODULE=fcitx TMOE_CHROOT=false TMOE_PROOT=true TMPDIR=/tmp MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 DISPLAY=:4 PULSE_SERVER=tcp:127.0.0.1:4718 LANG=zh_CN.UTF-8 SHELL=/bin/bash PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games \$EXTRA_OPT /bin/bash -l";
+  // Add this missing boot constant
+  static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=/home/xodos --rootfs=\$CONTAINER_DIR --mount=/system --mount=/apex --mount=/sys --mount=/data --kill-on-exit --mount=/storage --sysvipc -L --link2symlink --mount=/proc --mount=/dev --mount=\$CONTAINER_DIR/tmp:/dev/shm --mount=/dev/urandom:/dev/random --mount=/proc/self/fd:/dev/fd --mount=/proc/self/fd/0:/dev/stdin --mount=/proc/self/fd/1:/dev/stdout --mount=/proc/self/fd/2:/dev/stderr --mount=/dev/null:/dev/tty0 --mount=/dev/null:/proc/sys/kernel/cap_last_cap --mount=/storage/self/primary:/media/sd --mount=\$DATA_DIR/share:/home/xodos/Public --mount=\$DATA_DIR/tiny:/home/tiny/.local/share/tiny --mount=/storage/self/primary/Fonts:/usr/share/fonts/wpsm --mount=/storage/self/primary/AppFiles/Fonts:/usr/share/fonts/yozom --mount=/system/fonts:/usr/share/fonts/androidm --mount=/storage/self/primary/Pictures:/home/xodos/Pictures --mount=/storage/self/primary/Music:/home/xodos/Music --mount=/storage/self/primary/Movies:/home/xodos/Videos --mount=/storage/self/primary/Download:/home/xodos/Downloads --mount=/storage/self/primary/DCIM:/home/xodos/Photos --mount=/storage/self/primary/Documents:/home/xodos/Documents --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.stat:/proc/stat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.version:/proc/version --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/bus:/proc/bus --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/buddyinfo:/proc/buddyinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/cgroups:/proc/cgroups --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/consoles:/proc/consoles --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/crypto:/proc/crypto --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/devices:/proc/devices --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/diskstats:/proc/diskstats --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/execdomains:/proc/execdomains --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/fb:/proc/fb --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/filesystems:/proc/filesystems --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/interrupts:/proc/interrupts --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/iomem:/proc/iomem --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/ioports:/proc/ioports --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kallsyms:/proc/kallsyms --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/keys:/proc/keys --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/key-users:/proc/key-users --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kpageflags:/proc/kpageflags --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/loadavg:/proc/loadavg --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/locks:/proc/locks --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/misc:/proc/misc --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/modules:/proc/modules --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/pagetypeinfo:/proc/pagetypeinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/partitions:/proc/partitions --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/sched_debug:/proc/sched_debug --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/softirqs:/proc/softirqs --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/timer_list:/proc/timer_list --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/uptime:/proc/uptime --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmallocinfo:/proc/vmallocinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmstat:/proc/vmstat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/zoneinfo:/proc/zoneinfo \$EXTRA_MOUNT /usr/bin/env -i HOSTNAME=xodos HOME=/home/xodos USER=xodos TERM=xterm-256color SDL_IM_MODULE=fcitx XMODIFIERS=@im=fcitx QT_IM_MODULE=fcitx GTK_IM_MODULE=fcitx TMOE_CHROOT=false TMOE_PROOT=true TMPDIR=/tmp MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 DISPLAY=:4 PULSE_SERVER=tcp:127.0.0.1:4718 LANG=zh_CN.UTF-8 SHELL=/bin/bash PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games \$EXTRA_OPT /bin/bash -l";
 
-  static final ButtonStyle commandButtonStyle = OutlinedButton.styleFrom(
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    minimumSize: const Size(0, 0),
-    padding: const EdgeInsets.fromLTRB(4, 2, 4, 2)
+    // Termux-style button themes - FIXED SIZES
+  static final ButtonStyle commandButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.cardDark,
+    foregroundColor: AppColors.textPrimary,
+    elevation: 0,
+    shadowColor: Colors.transparent,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+      side: const BorderSide(color: AppColors.divider, width: 1),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced padding
+    textStyle: const TextStyle(
+      fontSize: 12, // Smaller font size
+      fontWeight: FontWeight.w500,
+    ),
+    minimumSize: const Size(0, 36), // Fixed minimum height
   );
 
+  static final ButtonStyle controlButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.surfaceDark,
+    foregroundColor: AppColors.textPrimary,
+    elevation: 0,
+    shadowColor: Colors.transparent,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(6),
+      side: const BorderSide(color: AppColors.divider, width: 1),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Reduced padding
+    textStyle: const TextStyle(
+      fontSize: 10, // Even smaller font size for control buttons
+      fontWeight: FontWeight.w500,
+    ),
+    minimumSize: const Size(0, 28), // Fixed minimum height
+  );
   
-  static final ButtonStyle controlButtonStyle = OutlinedButton.styleFrom(
-    textStyle: const TextStyle(fontWeight: FontWeight.w400),
-    side: const BorderSide(color: Color(0x1F000000)),
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    minimumSize: const Size(0, 0),
-    padding: const EdgeInsets.fromLTRB(8, 4, 8, 4)
+  
+  // Android-style list tile theme
+  static final ListTileThemeData listTileTheme = ListTileThemeData(
+    tileColor: AppColors.cardDark,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    titleTextStyle: const TextStyle(
+      color: AppColors.textPrimary,
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+    ),
+    subtitleTextStyle: const TextStyle(
+      color: AppColors.textSecondary,
+      fontSize: 14,
+    ),
+    iconColor: AppColors.primaryPurple,
   );
 
   static const MethodChannel androidChannel = MethodChannel("android");
@@ -496,6 +978,9 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
 
 // Global variables
 class G {
+
+static VoidCallback? onExtractionComplete;
+  
   static late final String dataPath;
   static Pty? audioPty;
   static late WebViewController controller;
@@ -514,12 +999,11 @@ class G {
   static ValueNotifier<int> pageIndex = ValueNotifier(0); // Main interface index
   static ValueNotifier<bool> terminalPageChange = ValueNotifier(true); // Change value, used to refresh numpad
   static ValueNotifier<bool> bootTextChange = ValueNotifier(true); // Change value, used to refresh boot command
-  static ValueNotifier<String> updateText = ValueNotifier("Tiny Computer"); // Description text on loading screen
+  static ValueNotifier<String> updateText = ValueNotifier("xodos"); // Description text on loading screen
   static String postCommand = ""; // Additional command to run when first entering the container
   
   static bool wasAvncEnabled = false;
   static bool wasX11Enabled = false;
-
 
   static late SharedPreferences prefs;
 }
@@ -551,7 +1035,7 @@ class Workflow {
     "assets/assets.zip",
     "${G.dataPath}/assets.zip",
     );
-    // patch.tar.gz contains the tiny folder
+    // patch.tar.gz contains the xodos folder
     // These are some patches that will be mounted to ~/.local/share/tiny
     await Util.copyAsset(
     "assets/patch.tar.gz",
@@ -594,49 +1078,23 @@ chmod 1777 tmp
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
     await setupBootstrap();
     
- //   G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
+    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
     // Folder 0 for storing containers and folder .l2s for storing hard links
- //   Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+    Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
     // This is the container rootfs, split into xa* by split command, placed in assets
     // On first startup, use this, don't let the user choose another one
- //   for (String name in jsonDecode(await rootBundle.loadString('AssetManifest.json')).keys.where((String e) => e.startsWith("assets/xa")).map((String e) => e.split("/").last).toList()) {
-   //   await Util.copyAsset("assets/$name", "${G.dataPath}/$name");
-  //  }
-    //-J
-/*
-G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
-// Folder 0 for storing containers and folder .l2s for storing hard links
-Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
-// This is the container rootfs, split into xa* by split command, placed in assets
-// On first startup, use this, don't let the user choose another one
 
-// Hardcoded list of split container files
-List<String> xaFiles = ['xaa', 'xab', 'xac', 'xad', 'xae', 'xaf', 'xag', 'xah', 'xai', 'xaj'];
+    // Load custom manifest for container files
+    final manifestString = await rootBundle.loadString('assets/container_manifest.json');
+    final Map<String, dynamic> manifest = json.decode(manifestString);
 
-for (String name in xaFiles) {
-  await Util.copyAsset("assets/$name", "${G.dataPath}/$name");
-}
-*/
+    // Get the list of xa files
+    final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
 
-
-G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
-// Folder 0 for storing containers and folder .l2s for storing hard links
-Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
-// This is the container rootfs, split into xa* by split command, placed in assets
-// On first startup, use this, don't let the user choose another one
-
-// Load custom manifest for container files
-final manifestString = await rootBundle.loadString('assets/container_manifest.json');
-final Map<String, dynamic> manifest = json.decode(manifestString);
-
-// Get the list of xa files
-final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
-
-for (String assetPath in xaFiles) {
-  final fileName = assetPath.split('/').last;
-  await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
-}
-
+    for (String assetPath in xaFiles) {
+      final fileName = assetPath.split('/').last;
+      await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
+    }
 
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
@@ -668,19 +1126,28 @@ cat tmp3 | while read -r group_name group_id; do
 	fi
 done
 \$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
-${Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? "" : "echo 'LANG=en_US.UTF-8' > \$CONTAINER_DIR/usr/local/etc/tmoe-linux/locale.txt"}
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
-    // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of 💩 code :P
+    // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of stuff code :P
+    
+    // Use LanguageManager for proper language support
+    final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
     await G.prefs.setStringList("containersInfo", ["""{
 "name":"Debian Bookworm",
-"boot":"${Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? D.boot : D.boot.replaceFirst('LANG=zh_CN.UTF-8', 'LANG=en_US.UTF-8').replaceFirst('公共', 'Public').replaceFirst('图片', 'Pictures').replaceFirst('音乐', 'Music').replaceFirst('视频', 'Videos').replaceFirst('下载', 'Downloads').replaceFirst('文档', 'Documents').replaceFirst('照片', 'Photos')}",
+"boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
 "vnc":"startnovnc &",
 "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
-"commands":${jsonEncode(Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? D.commands : D.commands4En)}
+"commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))}
 }"""]);
+    
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
+    
+       if (G.onExtractionComplete != null) {
+      G.onExtractionComplete!();
+    }
+    
+     
   }
 
   static Future<void> initData() async {
@@ -704,9 +1171,11 @@ ${Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? "" : "ec
       final String h = (min(s.width, s.height) * 0.75).round().toString();
       G.postCommand = """sed -i -E "s@(geometry)=.*@\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
 sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""";
-      if (Localizations.localeOf(G.homePageStateContext).languageCode != 'zh') {
+      
+      final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
+      if (languageCode != 'zh') {
         G.postCommand += "\nlocaledef -c -i en_US -f UTF-8 en_US.UTF-8";
-        // For English users, assume they need to enable terminal write
+        // For non-Chinese users, assume they need to enable terminal write
         await G.prefs.setBool("isTerminalWriteEnabled", true);
         await G.prefs.setBool("isTerminalCommandsEnabled", true);
         await G.prefs.setBool("isStickyKey", false);
