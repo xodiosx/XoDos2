@@ -30,7 +30,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * XoDos DocumentsProvider - Works exactly like Termux MTFile provider
+ * Enhanced DocumentsProvider with full control including permissions and symlink support
+ * Based on MTDataFilesProvider with Wine app data folder access
  */
 public class XDocumentsProvider extends DocumentsProvider {
     private static final String[] DEFAULT_ROOT_PROJECTION = {
@@ -55,8 +56,8 @@ public class XDocumentsProvider extends DocumentsProvider {
     };
 
     private String pkgName;
-    private File dataDir;      // /data/data/com.xodos
-    private File filesDir;     // /data/data/com.xodos/files
+    private File dataDir;
+    private File wineDataDir;
 
     /**
      * Delete files in directory or soft link
@@ -104,50 +105,52 @@ public class XDocumentsProvider extends DocumentsProvider {
         super.attachInfo(context, info);
         this.pkgName = Objects.requireNonNull(getContext()).getPackageName();
         this.dataDir = Objects.requireNonNull(context.getFilesDir().getParentFile());
-        this.filesDir = context.getFilesDir();
+        
+        // Initialize Wine data directory - you can modify this path as needed
+        this.wineDataDir = new File("/data/data/com.wine.app");
+        if (!wineDataDir.exists() || !wineDataDir.canRead()) {
+            // Fallback to alternative Wine paths
+            wineDataDir = new File("/data/data/com.winehq.wine");
+            if (!wineDataDir.exists() || !wineDataDir.canRead()) {
+                wineDataDir = null;
+            }
+        }
     }
 
     /**
-     * Get file object by documentId - This is the KEY function that creates the virtual mapping
+     * Get file object by documentId
      */
     private final File getFileForDocId(String documentId, boolean lsFileState) throws FileNotFoundException {
-        // Document ID format: com.xodos/files/path/to/file
-        // or: com.xodos/data/path/to/file
-        
+        String realPath;
         if (!documentId.startsWith(this.pkgName)) {
             throw new FileNotFoundException(documentId.concat(" not found"));
         }
 
-        // Get the part after package name
-        String virtualPath = documentId.substring(this.pkgName.length());
-        if (virtualPath.startsWith("/")) {
-            virtualPath = virtualPath.substring(1);
+        // Get virtual name after package name
+        String virtualName = documentId.substring(this.pkgName.length());
+        if (virtualName.startsWith("/")) {
+            virtualName = virtualName.substring(1);
         }
         
-        // Root directory - return null to indicate virtual root
-        if (virtualPath.isEmpty()) {
+        // Self (root)
+        if (virtualName.isEmpty()) {
             return null;
         }
         
-        // Split into virtual directory and rest of path
-        String[] parts = virtualPath.split("/", 2);
-        String virtualDir = parts[0];
-        String restPath = parts.length > 1 ? parts[1] : "";
+        String[] split = virtualName.split("/", 2);
+        virtualName = split[0];
+        realPath = split.length > 1 ? split[1] : "";
 
         File targetFile;
-        
-        // Map virtual directories to real paths - EXACTLY like Termux
-        if (virtualDir.equals("files")) {
-            // This maps to com.xodos/files
-            targetFile = new File(this.filesDir, restPath);
-        } else if (virtualDir.equals("data")) {
-            // This maps to com.xodos (the entire data directory)
-            targetFile = new File(this.dataDir, restPath);
+        if (virtualName.equalsIgnoreCase("data")) {
+            targetFile = new File(this.dataDir, realPath);
+        } else if (virtualName.equalsIgnoreCase("wine_data") && this.wineDataDir != null) {
+            targetFile = new File(this.wineDataDir, realPath);
         } else {
             throw new FileNotFoundException(documentId.concat(" not found"));
         }
 
-        if (lsFileState && targetFile != null) {
+        if (lsFileState) {
             try {
                 Os.lstat(targetFile.getPath());
             } catch (Exception unused) {
@@ -171,69 +174,29 @@ public class XDocumentsProvider extends DocumentsProvider {
         Bundle customBundle = new Bundle();
         customBundle.putBoolean("result", false);
         try {
-            Uri uri = extras.getParcelable("uri");
-            if (uri == null) {
-                return customBundle;
-            }
-            
-            List<String> pathSegments = uri.getPathSegments();
+            List<String> pathSegments = ((Uri) extras.getParcelable("uri")).getPathSegments();
             String documentId = pathSegments.size() >= 4 ? pathSegments.get(3) : pathSegments.get(1);
-            
             switch (method) {
                 case "mt:setPermissions": {
-                    // Change file permissions (chmod)
                     File file = getFileForDocId(documentId, true);
                     if (file != null) {
-                        int permissions = extras.getInt("permissions");
-                        Os.chmod(file.getPath(), permissions);
+                        Os.chmod(file.getPath(), extras.getInt("permissions"));
                         customBundle.putBoolean("result", true);
                     }
                     return customBundle;
                 }
                 case "mt:createSymlink": {
-                    // Create symbolic link
                     File file = getFileForDocId(documentId, false);
                     if (file != null) {
-                        String targetPath = extras.getString("path");
-                        Os.symlink(targetPath, file.getPath());
+                        Os.symlink(extras.getString("path"), file.getPath());
                         customBundle.putBoolean("result", true);
                     }
                     return customBundle;
                 }
                 case "mt:setLastModified": {
-                    // Set file modification time
                     File file = getFileForDocId(documentId, true);
                     if (file != null) {
                         customBundle.putBoolean("result", file.setLastModified(extras.getLong("time")));
-                    }
-                    return customBundle;
-                }
-                case "mt:getPermissions": {
-                    // Get current file permissions
-                    File file = getFileForDocId(documentId, true);
-                    if (file != null) {
-                        try {
-                            StructStat stat = Os.lstat(file.getPath());
-                            customBundle.putBoolean("result", true);
-                            customBundle.putInt("permissions", stat.st_mode & 0777); // Only permissions bits
-                            customBundle.putInt("uid", stat.st_uid);
-                            customBundle.putInt("gid", stat.st_gid);
-                        } catch (ErrnoException e) {
-                            customBundle.putString("message", e.getMessage());
-                        }
-                    }
-                    return customBundle;
-                }
-                case "mt:setOwner": {
-                    // Change file owner (chown)
-                    File file = getFileForDocId(documentId, true);
-                    if (file != null) {
-                        try {
-                            Os.chown(file.getPath(), extras.getInt("uid"), extras.getInt("gid"));
-                            customBundle.putBoolean("result", true);
-                        } catch (ErrnoException e) {
-                            customBundle.putString("message", e.getMessage());
-                        }
                     }
                     return customBundle;
                 }
@@ -263,7 +226,9 @@ public class XDocumentsProvider extends DocumentsProvider {
                     : newFile.createNewFile();
 
                 if (succeeded) {
-                    return parentDocumentId + "/" + newFile.getName();
+                    return parentDocumentId +
+                        (parentDocumentId.endsWith("/") ? "" : "/") +
+                        newFile.getName();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -280,7 +245,7 @@ public class XDocumentsProvider extends DocumentsProvider {
             file = getFileForDocId(docId, true);
         }
 
-        // Root directory - show virtual root
+        // Root directory
         if (file == null) {
             Context ctx = getContext();
             String title = ctx == null ? "XoDos" : ctx.getApplicationInfo().loadLabel(getContext().getPackageManager()).toString();
@@ -294,39 +259,43 @@ public class XDocumentsProvider extends DocumentsProvider {
             row.add(Document.COLUMN_FLAGS, 
                 Document.FLAG_DIR_SUPPORTS_CREATE | 
                 Document.FLAG_SUPPORTS_DELETE |
-                Document.FLAG_SUPPORTS_RENAME |
-                Document.FLAG_SUPPORTS_SETTINGS |
-                Document.FLAG_DIR_PREFERS_LAST_MODIFIED);
+                Document.FLAG_SUPPORTS_RENAME);
             return;
         }
 
         int flags = 0;
-        
-        // Set flags based on file type and permissions
         if (file.isDirectory()) {
-            flags |= Document.FLAG_DIR_SUPPORTS_CREATE |
-                     Document.FLAG_DIR_PREFERS_LAST_MODIFIED;
-        } else {
+            flags |= Document.FLAG_DIR_SUPPORTS_CREATE;
             if (file.canWrite()) {
-                flags |= Document.FLAG_SUPPORTS_WRITE;
+                flags |= Document.FLAG_SUPPORTS_DELETE | Document.FLAG_SUPPORTS_RENAME;
+            }
+        } else {
+            if (file.canRead()) {
+                // Reading is always supported for files that exist
+                // No specific flag needed for read support
+            }
+            if (file.canWrite()) {
+                flags |= Document.FLAG_SUPPORTS_WRITE | Document.FLAG_SUPPORTS_DELETE | 
+                         Document.FLAG_SUPPORTS_RENAME;
             }
         }
 
-        // Always include these flags for full control
-        flags |= Document.FLAG_SUPPORTS_SETTINGS |  // This enables permission management
-                 Document.FLAG_SUPPORTS_COPY | 
-                 Document.FLAG_SUPPORTS_MOVE |
-                 Document.FLAG_SUPPORTS_DELETE |
-                 Document.FLAG_SUPPORTS_RENAME;
+        // Add copy and move support for both files and directories
+        if (file.canRead()) {
+            flags |= Document.FLAG_SUPPORTS_COPY | Document.FLAG_SUPPORTS_MOVE;
+        }
 
         String displayName;
         String path = file.getPath();
+        boolean isNormalFile = true;
 
-        // For virtual directories, show friendly names
-        if (path.equals(this.filesDir.getPath())) {
-            displayName = "files";
-        } else if (path.equals(this.dataDir.getPath())) {
-            displayName = "data";
+        // Virtual directories
+        if (path.equals(this.dataDir.getPath())) {
+            displayName = "App Data";
+            isNormalFile = false;
+        } else if (wineDataDir != null && path.equals(wineDataDir.getPath())) {
+            displayName = "Wine Data";
+            isNormalFile = false;
         } else {
             displayName = file.getName();
         }
@@ -340,19 +309,20 @@ public class XDocumentsProvider extends DocumentsProvider {
         row.add(DocumentsContract.Document.COLUMN_FLAGS, flags);
         row.add("mt_path", file.getAbsolutePath());
         
-        // Add extended file information (mode, uid, gid, symlink target)
-        try {
-            StructStat lstat = Os.lstat(path);
-            StringBuilder sb = new StringBuilder()
-                .append(lstat.st_mode)
-                .append("|").append(lstat.st_uid)
-                .append("|").append(lstat.st_gid);
-            if ((lstat.st_mode & S_IFMT) == S_IFLNK) {
-                sb.append("|").append(Os.readlink(path));
+        if (isNormalFile) {
+            try {
+                StructStat lstat = Os.lstat(path);
+                StringBuilder sb = new StringBuilder()
+                    .append(lstat.st_mode)
+                    .append("|").append(lstat.st_uid)
+                    .append("|").append(lstat.st_gid);
+                if ((lstat.st_mode & S_IFMT) == S_IFLNK) {
+                    sb.append("|").append(Os.readlink(path));
+                }
+                row.add("mt_extras", sb.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            row.add("mt_extras", sb.toString());
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -382,7 +352,9 @@ public class XDocumentsProvider extends DocumentsProvider {
         if (sourceFile != null && targetParentFile != null) {
             File targetFile = new File(targetParentFile, sourceFile.getName());
             if (!targetFile.exists() && sourceFile.renameTo(targetFile)) {
-                return targetParentDocumentId + "/" + targetFile.getName();
+                return targetParentDocumentId
+                    + (targetParentDocumentId.endsWith("/") ? "" : "/")
+                    + targetFile.getName();
             }
         }
         throw new FileNotFoundException("Failed to move document " + sourceDocumentId + " to " + targetParentDocumentId);
@@ -412,11 +384,12 @@ public class XDocumentsProvider extends DocumentsProvider {
         MatrixCursor cursor = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
         File parent = getFileForDocId(parentDocumentId, true);
         
-        // Virtual root - list available virtual directories (like Termux)
+        // Virtual root - list available data directories
         if (parent == null) {
-            // Show "files" and "data" as virtual directories
-            includeFile(cursor, parentDocumentId + "/files", this.filesDir);
-            includeFile(cursor, parentDocumentId + "/data", this.dataDir);
+            includeFile(cursor, parentDocumentId.concat("/data"), this.dataDir);
+            if (wineDataDir != null && wineDataDir.exists()) {
+                includeFile(cursor, parentDocumentId.concat("/wine_data"), this.wineDataDir);
+            }
         } else {
             File[] children = parent.listFiles();
             if (children != null) {
@@ -444,7 +417,7 @@ public class XDocumentsProvider extends DocumentsProvider {
         MatrixCursor.RowBuilder row = result.newRow();
         row.add(Root.COLUMN_ROOT_ID, this.pkgName);
         row.add(Root.COLUMN_DOCUMENT_ID, this.pkgName);
-        row.add(Root.COLUMN_SUMMARY, "XoDos File Manager");
+        row.add(Root.COLUMN_SUMMARY, "Full control file manager with Wine support");
         row.add(Root.COLUMN_FLAGS, 
             Root.FLAG_SUPPORTS_CREATE | 
             Root.FLAG_SUPPORTS_SEARCH | 
@@ -452,7 +425,7 @@ public class XDocumentsProvider extends DocumentsProvider {
             Root.FLAG_LOCAL_ONLY);
         row.add(Root.COLUMN_TITLE, title);
         row.add(Root.COLUMN_MIME_TYPES, "*/*");
-        row.add(Root.COLUMN_AVAILABLE_BYTES, filesDir.getFreeSpace());
+        row.add(Root.COLUMN_AVAILABLE_BYTES, dataDir.getFreeSpace());
         row.add(Root.COLUMN_ICON, appInfo.icon);
         return result;
     }
