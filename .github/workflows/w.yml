@@ -1,12 +1,12 @@
 name: Build Wine Staging ARM64 WoW64
 
 on:
-  
+l
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # Use 22.04 instead of latest for better ARM support
+    runs-on: ubuntu-22.04
     env:
       BUILD_DIR: ${{ github.workspace }}/wine-build
 
@@ -36,18 +36,46 @@ jobs:
 
       - name: Install build dependencies
         run: |
+          # Add i386 architecture for 32-bit support
           sudo dpkg --add-architecture i386
           sudo apt-get update
+          
+          # Install basic build tools
           sudo apt-get install -y \
             build-essential \
-            gcc-10-aarch64-linux-gnu \
-            g++-10-aarch64-linux-gnu \
-            gcc-10-arm-linux-gnueabihf \
-            g++-10-arm-linux-gnueabihf \
-            flex bison \
-            python3 python3-mako \
+            git \
+            tar \
+            xz-utils \
+            cmake \
+            ninja-build \
+            flex \
+            bison \
+            gettext \
+            python3 \
+            python3-mako \
+            python3-distutils \
+            pkg-config \
+            llvm \
+            nasm \
+            gcc-multilib \
+            g++-multilib \
             mingw-w64 \
+            wine64 \
+            wine32
+          
+          # Install cross-compilation toolchain for ARM
+          sudo apt-get install -y \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            gcc-arm-linux-gnueabihf \
+            g++-arm-linux-gnueabihf \
+            binutils-aarch64-linux-gnu \
+            binutils-arm-linux-gnueabihf
+          
+          # Install 64-bit development libraries
+          sudo apt-get install -y \
             libfreetype6-dev \
+            libfontconfig1-dev \
             libx11-dev \
             libxext-dev \
             libxrender-dev \
@@ -55,79 +83,106 @@ jobs:
             libxinerama-dev \
             libxcursor-dev \
             libxi-dev \
+            libxfixes-dev \
+            libxcomposite-dev \
+            libxdamage-dev \
             libvulkan-dev \
-            pkg-config \
             libasound2-dev \
             libpulse-dev \
             libsdl2-dev \
-            gettext \
-            libgstreamer1.0-dev \
-            libgstreamer-plugins-base1.0-dev \
-            libfaudio-dev \
-            libfaudio-dev:i386 \
-            llvm \
-            cmake \
-            ninja-build \
-            git \
-            tar \
-            xz-utils
+            libusb-1.0-0-dev \
+            libudev-dev \
+            libdbus-1-dev \
+            libcups2-dev \
+            libkrb5-dev \
+            libpcap-dev \
+            libncurses5-dev \
+            libtinfo5
+          
+          # Install 32-bit development libraries for WoW64
+          sudo apt-get install -y \
+            libfreetype6-dev:i386 \
+            libfontconfig1-dev:i386 \
+            libx11-dev:i386 \
+            libxext-dev:i386 \
+            libxrender-dev:i386 \
+            libasound2-dev:i386 \
+            libpulse-dev:i386
 
-      - name: Setup cross-compilation environment
+      - name: Set up cross-compilation environment
         run: |
-          # Set up cross-compilation paths
-          export CC="aarch64-linux-gnu-gcc-10"
-          export CXX="aarch64-linux-gnu-g++-10"
-          export PKG_CONFIG_PATH="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/pkgconfig"
+          # Create necessary symlinks and directories
+          sudo mkdir -p /usr/lib/aarch64-linux-gnu
+          sudo mkdir -p /usr/lib/arm-linux-gnueabihf
           
-          # Create symlinks for 32-bit ARM libraries
-          sudo ln -sf /usr/arm-linux-gnueabihf/lib/ld-linux-armhf.so.3 /lib/ld-linux-armhf.so.3
-          
-          # Update pkg-config for cross-compilation
-          echo "export CC=\"$CC\"" >> $GITHUB_ENV
-          echo "export CXX=\"$CXX\"" >> $GITHUB_ENV
-          echo "export PKG_CONFIG_PATH=\"$PKG_CONFIG_PATH\"" >> $GITHUB_ENV
+          # Export environment variables
+          echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CXX=aarch64-linux-gnu-g++" >> $GITHUB_ENV
+          echo "AR=aarch64-linux-gnu-ar" >> $GITHUB_ENV
+          echo "LD=aarch64-linux-gnu-ld" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CFLAGS=-O2 -pipe" >> $GITHUB_ENV
+          echo "CXXFLAGS=-O2 -pipe" >> $GITHUB_ENV
 
-      - name: Configure Wine (WoW64)
+      - name: Configure Wine for ARM64 WoW64
         run: |
           cd $BUILD_DIR/wine
-          mkdir -p build
-          cd build
+          
+          # Create build directory
+          mkdir -p build-arm64
+          cd build-arm64
           
           # Configure for ARM64 with WoW64 support
           ../configure \
             --host=aarch64-linux-gnu \
+            --enable-win64 \
             --with-wine64=../wine64 \
             --with-wine32=../wine32 \
-            --enable-win64 \
-            --enable-wow64 \
             --prefix=/usr/local/wine-arm64 \
-            --with-x \
-            --with-gstreamer \
-            --with-pulse \
-            --with-sdl \
-            --with-vulkan \
-            --with-xattr \
             --disable-tests \
-            PKG_CONFIG="aarch64-linux-gnu-pkg-config"
+            --disable-option-checking \
+            PKG_CONFIG="aarch64-linux-gnu-pkg-config" \
+            ac_cv_c_bigendian=no
+          
+          # Check if configuration succeeded
+          if [ $? -eq 0 ]; then
+            echo "Configuration successful!"
+          else
+            echo "Configuration failed. Here's the config.log:"
+            cat config.log
+            exit 1
+          fi
 
       - name: Build Wine
         run: |
-          cd $BUILD_DIR/wine/build
-          make -j$(nproc) 2>&1 | tee build.log || (cat build.log && exit 1)
+          cd $BUILD_DIR/wine/build-arm64
+          make -j$(nproc) 2>&1 | tee build.log
+          
+          # Check if build succeeded
+          if [ $? -eq 0 ]; then
+            echo "Build successful!"
+          else
+            echo "Build failed. Here are the last 100 lines of the build log:"
+            tail -100 build.log
+            exit 1
+          fi
 
-      - name: Package Wine
+      - name: Install and package Wine
         run: |
-          cd $BUILD_DIR/wine/build
+          cd $BUILD_DIR/wine/build-arm64
+          
+          # Install to a temporary directory
+          mkdir -p $BUILD_DIR/wine-install
           make install DESTDIR=$BUILD_DIR/wine-install
           
-          # Create a tarball for distribution
+          # Create tarball
           cd $BUILD_DIR
-          tar -czf wine-arm64-woW64.tar.gz -C wine-install/usr/local .
+          tar -czf wine-arm64-wow64.tar.gz -C wine-install/usr/local .
 
-      - name: Upload Wine artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wine-staging-arm64
+          name: wine-staging-arm64-wow64
           path: |
-            $BUILD_DIR/wine-arm64-woW64.tar.gz
-            $BUILD_DIR/wine/build/build.log
+            $BUILD_DIR/wine-arm64-wow64.tar.gz
+            $BUILD_DIR/wine/build-arm64/build.log
