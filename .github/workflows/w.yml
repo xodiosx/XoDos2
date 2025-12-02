@@ -1,4 +1,4 @@
-name: Build Wine Staging (ARM64 WoW64)
+name: Build Wine Staging ARM64 WoW64
 
 on:
 push:
@@ -9,12 +9,10 @@ jobs:
 build:
 runs-on: ubuntu-latest
 env:
-WINE_VERSION: "latest" # or specify tag: wine-9.0
-WINE_STAGING_VERSION: "latest"
 BUILD_DIR: ${{ github.workspace }}/wine-build
 
 steps:
-  - name: Checkout Wine dev
+  - name: Checkout Wine
     run: |
       mkdir -p $BUILD_DIR
       cd $BUILD_DIR
@@ -29,7 +27,7 @@ steps:
       cd wine-staging
       git submodule update --init --recursive
 
-  - name: Apply Staging patches
+  - name: Apply Wine Staging patches
     run: |
       cd $BUILD_DIR/wine-staging
       python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
@@ -37,6 +35,7 @@ steps:
   - name: Install dependencies
     run: |
       sudo dpkg --add-architecture armhf
+      sudo dpkg --add-architecture i386
       sudo apt-get update
       sudo apt-get install -y \
         build-essential \
@@ -53,7 +52,6 @@ steps:
         libxi-dev \
         libvulkan-dev \
         libvulkan1 \
-        wine64 \
         pkg-config \
         libasound2-dev \
         libc6-dev:arm64 libc6-dev-i386 \
@@ -71,8 +69,8 @@ steps:
       cd $BUILD_DIR/wine/build
       make -j$(nproc)
 
-  - name: Upload Wine Artifacts
+  - name: Upload Wine artifacts
     uses: actions/upload-artifact@v4
     with:
       name: wine-staging-arm64
-      path: $BUILD_DIR/wine/build
+      path: $BUILD_DIR/wine/build/
