@@ -16,10 +16,9 @@ class MainActivity: FlutterActivity() {
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "android").setMethodCallHandler {
-            //Register the channel and set the method call handler
-             call, r
+             //Register the channel and set the method call handler
             call, result ->
-            //Judgment method name
+           //Judgment method 
             when (call.method) {
                 "launchSignal9Page" -> {
                     startActivity(Intent(this, Signal9Activity::class.java))
