@@ -1,4 +1,5 @@
-// old
+// workflow.dart  
+
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
@@ -55,35 +56,35 @@ class Util {
 
 
 
-  //所有key
-  //int defaultContainer = 0: 默认启动第0个容器
-  //int defaultAudioPort = 4718: 默认pulseaudio端口(为了避免和其它软件冲突改成4718了，原默认4713)
-  //bool autoLaunchVnc = true: 是否自动启动图形界面并跳转 以前只支持VNC就这么起名了
-  //String lastDate: 上次启动软件的日期，yyyy-MM-dd
-  //bool isTerminalWriteEnabled = false
-  //bool isTerminalCommandsEnabled = false 
-  //int termMaxLines = 4095 终端最大行数
-  //double termFontScale = 1 终端字体大小
-  //bool isStickyKey = true 终端ctrl, shift, alt键是否粘滞
-  //String defaultFFmpegCommand 默认推流命令
-  //String defaultVirglCommand 默认virgl参数
-  //String defaultVirglOpt 默认virgl环境变量
-  //bool reinstallBootstrap = false 下次启动是否重装引导包
-  //bool getifaddrsBridge = false 下次启动是否桥接getifaddrs
-  //bool uos = false 下次启动是否伪装UOS
-  //bool virgl = false 下次启动是否启用virgl
-  //bool wakelock = false 屏幕常亮
-  //bool isHidpiEnabled = false 是否开启高分辨率
-  //bool isJpEnabled = false 是否切换系统到日语
-  //bool useAvnc = false 是否默认使用AVNC
-  //bool avncResizeDesktop = true 是否默认AVNC按当前屏幕大小调整分辨率
-  //double avncScaleFactor = -0.5 AVNC：在当前屏幕大小的基础上调整缩放的比例。范围-1~1，对应比例4^-1~4^1
-  //String defaultHidpiOpt 默认HiDPI环境变量
-  //? int bootstrapVersion: 启动包版本
-  //String[] containersInfo: 所有容器信息(json)
-  //{name, boot:"\$DATA_DIR/bin/proot ...", vnc:"startnovnc", vncUrl:"...", commands:[{name:"更新和升级", command:"apt update -y && apt upgrade -y"},
-  // bind:[{name:"U盘", src:"/storage/xxxx", dst:"/media/meow"}]...]}
-  //TODO: 这么写还是不对劲，有空改成类试试？
+  // All keys
+  // int defaultContainer = 0: Default start the 0th container
+  // int defaultAudioPort = 4718: Default pulseaudio port (changed to 4718 to avoid conflicts with other software, original default was 4713)
+  // bool autoLaunchVnc = true: Whether to automatically start the graphical interface and jump (previously only supported VNC, hence the name)
+  // String lastDate: Last startup date of the software, yyyy-MM-dd
+  // bool isTerminalWriteEnabled = false
+  // bool isTerminalCommandsEnabled = false 
+  // int termMaxLines = 4095 Terminal maximum lines
+  // double termFontScale = 1 Terminal font size
+  // bool isStickyKey = true Whether terminal ctrl, shift, alt keys are sticky
+  // String defaultFFmpegCommand Default streaming command
+  // String defaultVirglCommand Default virgl parameters
+  // String defaultVirglOpt Default virgl environment variables
+  // bool reinstallBootstrap = false Whether to reinstall the bootstrap package on next startup
+  // bool getifaddrsBridge = false Whether to bridge getifaddrs on next startup
+  // bool uos = false Whether to disguise as UOS on next startup
+  // bool virgl = false Whether to enable virgl on next startup
+  // bool wakelock = false Keep screen on
+  // bool isHidpiEnabled = false Whether to enable high DPI
+  // bool isJpEnabled = false Whether to switch system to Japanese
+  // bool useAvnc = false Whether to use AVNC by default
+  // bool avncResizeDesktop = true Whether AVNC adjusts resolution based on current screen size by default
+  // double avncScaleFactor = -0.5 AVNC: Adjust scaling factor based on current screen size. Range -1~1, corresponding to ratio 4^-1~4^1
+  // String defaultHidpiOpt Default HiDPI environment variables
+  // ? int bootstrapVersion: Bootstrap package version
+  // String[] containersInfo: All container information (json)
+  // {name, boot:"\$DATA_DIR/bin/proot ...", vnc:"startnovnc", vncUrl:"...", commands:[{name:"Update and upgrade", command:"apt update -y && apt upgrade -y"},
+  // bind:[{name:"USB Drive", src:"/storage/xxxx", dst:"/media/meow"}]...]}
+  // TODO: Is this way of writing still not right? Try changing to class when have time?
   static dynamic getGlobal(String key) {
     bool b = G.prefs.containsKey(key);
     switch (key) {
@@ -142,7 +143,7 @@ class Util {
     }
   }
 
-  //用来设置name, boot, vnc, vncUrl等
+  // Used to set name, boot, vnc, vncUrl, etc.
   static Future<void> setCurrentProp(String key, dynamic value) async {
     await G.prefs.setStringList("containersInfo",
       Util.getGlobal("containersInfo")..setAll(G.currentContainer,
@@ -153,7 +154,7 @@ class Util {
     );
   }
 
-  //用来添加不存在的key等
+  // Used to add non-existent keys, etc.
   static Future<void> addCurrentProp(String key, dynamic value) async {
     await G.prefs.setStringList("containersInfo",
       Util.getGlobal("containersInfo")..setAll(G.currentContainer,
@@ -164,7 +165,7 @@ class Util {
     );
   }
 
-  //限定字符串在min和max之间, 给文本框的validator
+  // Limit string between min and max, for text box validator
   static String? validateBetween(String? value, int min, int max, Function opr) {
     if (value == null || value.isEmpty) {
       return AppLocalizations.of(G.homePageStateContext)!.enterNumber;
@@ -174,7 +175,7 @@ class Util {
       return AppLocalizations.of(G.homePageStateContext)!.enterValidNumber;
     }
     if (parsedValue < min || parsedValue > max) {
-      return "请输入$min到$max之间的数字";
+      return "Please enter a number between $min and $max";
     }
     opr();
     return null;
@@ -222,8 +223,8 @@ class Util {
 
 }
 
-//来自xterms关于操作ctrl, shift, alt键的示例
-//这个类应该只能有一个实例G.keyboard
+// From xterms example about handling ctrl, shift, alt keys
+// This class should only have one instance G.keyboard
 class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
   final TerminalInputHandler _inputHandler;
 
@@ -269,7 +270,7 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
       shift: event.shift || _shift,
       alt: event.alt || _alt,
     ));
-    G.maybeCtrlJ = event.key.name == "keyJ"; //这个是为了稍后区分按键到底是Enter还是Ctrl+J
+    G.maybeCtrlJ = event.key.name == "keyJ"; // This is to distinguish whether the key pressed is Enter or Ctrl+J later
     if (!(Util.getGlobal("isStickyKey") as bool)) {
       G.keyboard.ctrl = false;
       G.keyboard.shift = false;
@@ -279,7 +280,7 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
   }
 }
 
-//一个结合terminal和pty的类
+// A class combining terminal and pty
 class TermPty {
   late final Terminal terminal;
   late final Pty pty;
@@ -310,7 +311,7 @@ class TermPty {
       if (!(Util.getGlobal("isTerminalWriteEnabled") as bool)) {
         return;
       }
-      //由于对回车的处理似乎存在问题，所以拿出来单独处理
+      // Due to apparent issues with handling carriage returns, handle them separately
       data.split("").forEach((element) {
         if (element == "\n" && !G.maybeCtrlJ) {
           terminal.keyInput(TerminalKey.enter);
@@ -327,51 +328,51 @@ class TermPty {
 
 }
 
-//default values
+// default values
 class D {
 
-  //常用链接
+  // Common links
   static const links = [
-    {"name": "projectUrl", "value": "https://github.com/Cateners/xodos"},
-    {"name": "issueUrl", "value": "https://github.com/Cateners/xodos/issues"},
-    {"name": "faqUrl", "value": "https://gitee.com/caten/tc-hints/blob/master/pool/faq.md"},
-    {"name": "solutionUrl", "value": "https://gitee.com/caten/tc-hints/blob/master/pool/solution.md"},
-    {"name": "discussionUrl", "value": "https://github.com/Cateners/xodos/discussions"},
+    {"name": "projectUrl", "value": "https://github.com/xodiosx/XoDos2"},
+    {"name": "issueUrl", "value": "https://github.com/xodiosx/XoDos2/issues"},
+    {"name": "faqUrl", "value": "https://github.com/xodiosx/XoDos2"},
+    {"name": "solutionUrl", "value": "https://github.com/xodiosx/XoDos2"},
+    {"name": "discussionUrl", "value": "https://github.com/xodiosx/XoDos2"},
   ];
 
-  //默认快捷指令
-  static const commands = [{"name":"检查更新并升级", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"查看系统信息", "command":"neofetch -L && neofetch --off"},
-    {"name":"清屏", "command":"clear"},
-    {"name":"中断任务", "command":"\x03"},
-    {"name":"安装图形处理软件Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"卸载Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"安装视频剪辑软件Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"卸载Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"安装科学计算软件Octave", "command":"sudo apt update && sudo apt install -y octave"},
-    {"name":"卸载Octave", "command":"sudo apt autoremove --purge -y octave"},
-    {"name":"安装WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+  // Default quick commands
+  static const commands = [{"name":"Check for updates and upgrade", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"View system information", "command":"neofetch -L && neofetch --off"},
+    {"name":"Clear screen", "command":"clear"},
+    {"name":"Interrupt task", "command":"\x03"},
+    {"name":"Install graphics software Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"Uninstall Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"Install video editing software Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"Uninstall Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"Install scientific computing software Octave", "command":"sudo apt update && sudo apt install -y octave"},
+    {"name":"Uninstall Octave", "command":"sudo apt autoremove --purge -y octave"},
+    {"name":"Install WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
 wget https://github.akams.cn/https://github.com/tiny-computer/third-party-archives/releases/download/archives/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
 EOF
 rm /tmp/wps.deb"""},
-    {"name":"卸载WPS", "command":"sudo apt autoremove --purge -y wps-office"},
-    {"name":"安装CAJViewer", "command":"wget https://download.cnki.net/net.cnki.cajviewer_1.3.20-1_arm64.deb -O /tmp/caj.deb && sudo apt update && sudo apt install -y /tmp/caj.deb && bash /home/tiny/.local/share/tiny/caj/postinst; rm /tmp/caj.deb"},
-    {"name":"卸载CAJViewer", "command":"sudo apt autoremove --purge -y net.cnki.cajviewer && bash /home/tiny/.local/share/tiny/caj/postrm"},
-    {"name":"安装亿图图示", "command":"wget https://cc-download.wondershare.cc/business/prd/edrawmax_13.1.0-1_arm64_binner.deb -O /tmp/edraw.deb && sudo apt update && sudo apt install -y /tmp/edraw.deb && bash /home/tiny/.local/share/tiny/edraw/postinst; rm /tmp/edraw.deb"},
-    {"name":"卸载亿图图示", "command":"sudo apt autoremove --purge -y edrawmax libldap-2.4-2"},
-    {"name":"安装QQ", "command":"""wget \$(curl -s https://im.qq.com/rainbow/linuxQQDownload | grep -oP '"armDownloadUrl":{[^}]*"deb":"\\K[^"]+') -O /tmp/qq.deb && sudo apt update && sudo apt install -y /tmp/qq.deb && sed -i 's#Exec=/opt/QQ/qq %U#Exec=/opt/QQ/qq --no-sandbox %U#g' /usr/share/applications/qq.desktop; rm /tmp/qq.deb"""},
-    {"name":"卸载QQ", "command":"sudo apt autoremove --purge -y linuxqq"},
-    {"name":"安装微信", "command":"wget https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb -O /tmp/wechat.deb && sudo apt update && sudo apt install -y /tmp/wechat.deb && echo '安装完成。如果你使用微信只是为了传输文件，那么可以考虑使用支持SAF的文件管理器（如：质感文件），直接访问小小电脑所有文件。'; rm /tmp/wechat.deb"},
-    {"name":"卸载微信", "command":"sudo apt autoremove --purge -y wechat"},
-    {"name":"安装钉钉", "command":"""wget \$(curl -sw %{redirect_url} https://www.dingtalk.com/win/d/qd=linux_arm64) -O /tmp/dingtalk.deb && sudo apt update && sudo apt install -y /tmp/dingtalk.deb libglut3.12 libglu1-mesa && sed -i 's#\\./com.alibabainc.dingtalk#\\./com.alibabainc.dingtalk --no-sandbox#g' /opt/apps/com.alibabainc.dingtalk/files/Elevator.sh; rm /tmp/dingtalk.deb"""},
-    {"name":"卸载钉钉", "command":"sudo apt autoremove --purge -y com.alibabainc.dingtalk"},
-    {"name":"启用回收站", "command":"sudo apt update && sudo apt install -y gvfs && echo '安装完成, 重启软件即可使用回收站。'"},
-    {"name":"清理包管理器缓存", "command":"sudo apt clean"},
-    {"name":"关机", "command":"stopvnc\nexit\nexit"},
+    {"name":"Uninstall WPS", "command":"sudo apt autoremove --purge -y wps-office"},
+    {"name":"Install CAJViewer", "command":"wget https://download.cnki.net/net.cnki.cajviewer_1.3.20-1_arm64.deb -O /tmp/caj.deb && sudo apt update && sudo apt install -y /tmp/caj.deb && bash /home/tiny/.local/share/tiny/caj/postinst; rm /tmp/caj.deb"},
+    {"name":"Uninstall CAJViewer", "command":"sudo apt autoremove --purge -y net.cnki.cajviewer && bash /home/tiny/.local/share/tiny/caj/postrm"},
+    {"name":"Install EdrawMax", "command":"wget https://cc-download.wondershare.cc/business/prd/edrawmax_13.1.0-1_arm64_binner.deb -O /tmp/edraw.deb && sudo apt update && sudo apt install -y /tmp/edraw.deb && bash /home/tiny/.local/share/tiny/edraw/postinst; rm /tmp/edraw.deb"},
+    {"name":"Uninstall EdrawMax", "command":"sudo apt autoremove --purge -y edrawmax libldap-2.4-2"},
+    {"name":"Install QQ", "command":"""wget \$(curl -s https://im.qq.com/rainbow/linuxQQDownload | grep -oP '"armDownloadUrl":{[^}]*"deb":"\\K[^"]+') -O /tmp/qq.deb && sudo apt update && sudo apt install -y /tmp/qq.deb && sed -i 's#Exec=/opt/QQ/qq %U#Exec=/opt/QQ/qq --no-sandbox %U#g' /usr/share/applications/qq.desktop; rm /tmp/qq.deb"""},
+    {"name":"Uninstall QQ", "command":"sudo apt autoremove --purge -y linuxqq"},
+    {"name":"Install WeChat", "command":"wget https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb -O /tmp/wechat.deb && sudo apt update && sudo apt install -y /tmp/wechat.deb && echo 'Installation complete. If you only use WeChat for file transfer, consider using a file manager that supports SAF (e.g., Material Files) to directly access all files in Tiny Computer.'; rm /tmp/wechat.deb"},
+    {"name":"Uninstall WeChat", "command":"sudo apt autoremove --purge -y wechat"},
+    {"name":"Install DingTalk", "command":"""wget \$(curl -sw %{redirect_url} https://www.dingtalk.com/win/d/qd=linux_arm64) -O /tmp/dingtalk.deb && sudo apt update && sudo apt install -y /tmp/dingtalk.deb libglut3.12 libglu1-mesa && sed -i 's#\\./com.alibabainc.dingtalk#\\./com.alibabainc.dingtalk --no-sandbox#g' /opt/apps/com.alibabainc.dingtalk/files/Elevator.sh; rm /tmp/dingtalk.deb"""},
+    {"name":"Uninstall DingTalk", "command":"sudo apt autoremove --purge -y com.alibabainc.dingtalk"},
+    {"name":"Enable Recycle Bin", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Installation complete, restart the app to use Recycle Bin.'"},
+    {"name":"Clean package manager cache", "command":"sudo apt clean"},
+    {"name":"Shutdown", "command":"stopvnc\nexit\nexit"},
     {"name":"???", "command":"timeout 8 cmatrix"}
   ];
 
-  //默认快捷指令，英文版本
+  // Default quick commands, English version
   static const commands4En = [{"name":"Update Packages", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
     {"name":"System Info", "command":"neofetch -L && neofetch --off"},
     {"name":"Clear", "command":"clear"},
@@ -395,32 +396,32 @@ rm /tmp/wps.deb"""},
     {"name":"???", "command":"timeout 8 cmatrix"}
   ];
 
-  //默认wine快捷指令
-  static const wineCommands = [{"name":"Wine配置", "command":"winecfg"},
-    {"name":"修复方块字", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"开始菜单文件夹", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"开启DXVK", "command":"""WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d native /f >/dev/null 2>&1
+  // Default wine quick commands
+  static const wineCommands = [{"name":"Wine Configuration", "command":"winecfg"},
+    {"name":"Fix square characters", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"Start Menu folder", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"Enable DXVK", "command":"""WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d9 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d10core /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d11 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v dxgi /d native /f >/dev/null 2>&1"""},
-    {"name":"关闭DXVK", "command":"""WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d builtin /f >/dev/null 2>&1
+    {"name":"Disable DXVK", "command":"""WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d builtin /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d9 /d builtin /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d10core /d builtin /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d11 /d builtin /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v dxgi /d builtin /f >/dev/null 2>&1"""},
-    {"name":"我的电脑", "command":"wine explorer"},
-    {"name":"记事本", "command":"notepad"},
-    {"name":"扫雷", "command":"winemine"},
-    {"name":"注册表", "command":"regedit"},
-    {"name":"控制面板", "command":"wine control"},
-    {"name":"文件管理器", "command":"winefile"},
-    {"name":"任务管理器", "command":"wine taskmgr"},
-    {"name":"IE浏览器", "command":"wine iexplore"},
-    {"name":"强制关闭Wine", "command":"wineserver -k"}
+    {"name":"My Computer", "command":"wine explorer"},
+    {"name":"Notepad", "command":"notepad"},
+    {"name":"Minesweeper", "command":"winemine"},
+    {"name":"Registry Editor", "command":"regedit"},
+    {"name":"Control Panel", "command":"wine control"},
+    {"name":"File Manager", "command":"winefile"},
+    {"name":"Task Manager", "command":"wine taskmgr"},
+    {"name":"IE Browser", "command":"wine iexplore"},
+    {"name":"Force close Wine", "command":"wineserver -k"}
   ];
 
-  //默认wine快捷指令，英文版本
+  // Default wine quick commands, English version
   static const wineCommands4En = [{"name":"Wine Configuration", "command":"winecfg"},
     {"name":"Fix CJK Characters", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Start Menu Dir", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
@@ -445,7 +446,7 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
     {"name":"Kill Wine Process", "command":"wineserver -k"}
   ];
 
-  //默认小键盘
+  // Default numpad
   static const termCommands = [
     {"name": "Esc", "key": TerminalKey.escape},
     {"name": "Tab", "key": TerminalKey.tab},
@@ -472,7 +473,7 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
     {"name": "F12", "key": TerminalKey.f12},
   ];
 
-  static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=/home/tiny --rootfs=\$CONTAINER_DIR --mount=/system --mount=/apex --mount=/sys --mount=/data --kill-on-exit --mount=/storage --sysvipc -L --link2symlink --mount=/proc --mount=/dev --mount=\$CONTAINER_DIR/tmp:/dev/shm --mount=/dev/urandom:/dev/random --mount=/proc/self/fd:/dev/fd --mount=/proc/self/fd/0:/dev/stdin --mount=/proc/self/fd/1:/dev/stdout --mount=/proc/self/fd/2:/dev/stderr --mount=/dev/null:/dev/tty0 --mount=/dev/null:/proc/sys/kernel/cap_last_cap --mount=/storage/self/primary:/media/sd --mount=\$DATA_DIR/share:/home/tiny/公共 --mount=\$DATA_DIR/tiny:/home/tiny/.local/share/tiny --mount=/storage/self/primary/Fonts:/usr/share/fonts/wpsm --mount=/storage/self/primary/AppFiles/Fonts:/usr/share/fonts/yozom --mount=/system/fonts:/usr/share/fonts/androidm --mount=/storage/self/primary/Pictures:/home/tiny/图片 --mount=/storage/self/primary/Music:/home/tiny/音乐 --mount=/storage/self/primary/Movies:/home/tiny/视频 --mount=/storage/self/primary/Download:/home/tiny/下载 --mount=/storage/self/primary/DCIM:/home/tiny/照片 --mount=/storage/self/primary/Documents:/home/tiny/文档 --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.stat:/proc/stat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.version:/proc/version --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/bus:/proc/bus --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/buddyinfo:/proc/buddyinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/cgroups:/proc/cgroups --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/consoles:/proc/consoles --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/crypto:/proc/crypto --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/devices:/proc/devices --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/diskstats:/proc/diskstats --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/execdomains:/proc/execdomains --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/fb:/proc/fb --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/filesystems:/proc/filesystems --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/interrupts:/proc/interrupts --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/iomem:/proc/iomem --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/ioports:/proc/ioports --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kallsyms:/proc/kallsyms --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/keys:/proc/keys --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/key-users:/proc/key-users --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kpageflags:/proc/kpageflags --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/loadavg:/proc/loadavg --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/locks:/proc/locks --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/misc:/proc/misc --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/modules:/proc/modules --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/pagetypeinfo:/proc/pagetypeinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/partitions:/proc/partitions --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/sched_debug:/proc/sched_debug --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/softirqs:/proc/softirqs --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/timer_list:/proc/timer_list --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/uptime:/proc/uptime --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmallocinfo:/proc/vmallocinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmstat:/proc/vmstat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/zoneinfo:/proc/zoneinfo \$EXTRA_MOUNT /usr/bin/env -i HOSTNAME=TINY HOME=/home/tiny USER=tiny TERM=xterm-256color SDL_IM_MODULE=fcitx XMODIFIERS=@im=fcitx QT_IM_MODULE=fcitx GTK_IM_MODULE=fcitx TMOE_CHROOT=false TMOE_PROOT=true TMPDIR=/tmp MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 DISPLAY=:4 PULSE_SERVER=tcp:127.0.0.1:4718 LANG=zh_CN.UTF-8 SHELL=/bin/bash PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games \$EXTRA_OPT /bin/bash -l";
+  static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=/home/tiny --rootfs=\$CONTAINER_DIR --mount=/system --mount=/apex --mount=/sys --mount=/data --kill-on-exit --mount=/storage --sysvipc -L --link2symlink --mount=/proc --mount=/dev --mount=\$CONTAINER_DIR/tmp:/dev/shm --mount=/dev/urandom:/dev/random --mount=/proc/self/fd:/dev/fd --mount=/proc/self/fd/0:/dev/stdin --mount=/proc/self/fd/1:/dev/stdout --mount=/proc/self/fd/2:/dev/stderr --mount=/dev/null:/dev/tty0 --mount=/dev/null:/proc/sys/kernel/cap_last_cap --mount=/storage/self/primary:/media/sd --mount=\$DATA_DIR/share:/home/tiny/Public --mount=\$DATA_DIR/tiny:/home/tiny/.local/share/tiny --mount=/storage/self/primary/Fonts:/usr/share/fonts/wpsm --mount=/storage/self/primary/AppFiles/Fonts:/usr/share/fonts/yozom --mount=/system/fonts:/usr/share/fonts/androidm --mount=/storage/self/primary/Pictures:/home/tiny/Pictures --mount=/storage/self/primary/Music:/home/tiny/Music --mount=/storage/self/primary/Movies:/home/tiny/Videos --mount=/storage/self/primary/Download:/home/tiny/Downloads --mount=/storage/self/primary/DCIM:/home/tiny/Photos --mount=/storage/self/primary/Documents:/home/tiny/Documents --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.stat:/proc/stat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.version:/proc/version --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/bus:/proc/bus --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/buddyinfo:/proc/buddyinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/cgroups:/proc/cgroups --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/consoles:/proc/consoles --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/crypto:/proc/crypto --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/devices:/proc/devices --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/diskstats:/proc/diskstats --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/execdomains:/proc/execdomains --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/fb:/proc/fb --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/filesystems:/proc/filesystems --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/interrupts:/proc/interrupts --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/iomem:/proc/iomem --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/ioports:/proc/ioports --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kallsyms:/proc/kallsyms --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/keys:/proc/keys --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/key-users:/proc/key-users --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kpageflags:/proc/kpageflags --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/loadavg:/proc/loadavg --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/locks:/proc/locks --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/misc:/proc/misc --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/modules:/proc/modules --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/pagetypeinfo:/proc/pagetypeinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/partitions:/proc/partitions --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/sched_debug:/proc/sched_debug --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/softirqs:/proc/softirqs --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/timer_list:/proc/timer_list --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/uptime:/proc/uptime --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmallocinfo:/proc/vmallocinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmstat:/proc/vmstat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/zoneinfo:/proc/zoneinfo \$EXTRA_MOUNT /usr/bin/env -i HOSTNAME=TINY HOME=/home/tiny USER=tiny TERM=xterm-256color SDL_IM_MODULE=fcitx XMODIFIERS=@im=fcitx QT_IM_MODULE=fcitx GTK_IM_MODULE=fcitx TMOE_CHROOT=false TMOE_PROOT=true TMPDIR=/tmp MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 DISPLAY=:4 PULSE_SERVER=tcp:127.0.0.1:4718 LANG=zh_CN.UTF-8 SHELL=/bin/bash PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games \$EXTRA_OPT /bin/bash -l";
 
   static final ButtonStyle commandButtonStyle = OutlinedButton.styleFrom(
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -499,22 +500,22 @@ class G {
   static Pty? audioPty;
   static late WebViewController controller;
   static late BuildContext homePageStateContext;
-  static late int currentContainer; //目前运行第几个容器
-  static late Map<int, TermPty> termPtys; //为容器<int>存放TermPty数据
-  static late VirtualKeyboard keyboard; //存储ctrl, shift, alt状态
-  static bool maybeCtrlJ = false; //为了区分按下的ctrl+J和enter而准备的变量
-  static ValueNotifier<double> termFontScale = ValueNotifier(1); //终端字体大小，存储为G.prefs的termFontScale
+  static late int currentContainer; // Currently running which container
+  static late Map<int, TermPty> termPtys; // Store TermPty data for container<int>
+  static late VirtualKeyboard keyboard; // Store ctrl, shift, alt state
+  static bool maybeCtrlJ = false; // Variable prepared to distinguish between pressed ctrl+J and enter
+  static ValueNotifier<double> termFontScale = ValueNotifier(1); // Terminal font size, stored as G.prefs' termFontScale
   static bool isStreamServerStarted = false;
   static bool isStreaming = false;
   //static int? streamingPid;
   static String streamingOutput = "";
   static late Pty streamServerPty;
   //static int? virglPid;
-  static ValueNotifier<int> pageIndex = ValueNotifier(0); //主界面索引
-  static ValueNotifier<bool> terminalPageChange = ValueNotifier(true); //更改值，用于刷新小键盘
-  static ValueNotifier<bool> bootTextChange = ValueNotifier(true); //更改值，用于刷新启动命令
-  static ValueNotifier<String> updateText = ValueNotifier("小小电脑"); //加载界面的说明文字
-  static String postCommand = ""; //第一次进入容器时额外运行的命令
+  static ValueNotifier<int> pageIndex = ValueNotifier(0); // Main interface index
+  static ValueNotifier<bool> terminalPageChange = ValueNotifier(true); // Change value, used to refresh numpad
+  static ValueNotifier<bool> bootTextChange = ValueNotifier(true); // Change value, used to refresh boot command
+  static ValueNotifier<String> updateText = ValueNotifier("Tiny Computer"); // Description text on loading screen
+  static String postCommand = ""; // Additional command to run when first entering the container
   
   static bool wasAvncEnabled = false;
   static bool wasX11Enabled = false;
@@ -531,27 +532,27 @@ class Workflow {
   }
 
   static Future<void> setupBootstrap() async {
-    //用来共享数据文件的文件夹
+    // Folder for sharing data files
     Util.createDirFromString("${G.dataPath}/share");
-    //用来存放可执行文件的文件夹
+    // Folder for storing executable files
     Util.createDirFromString("${G.dataPath}/bin");
-    //用来存放库的文件夹
+    // Folder for storing libraries
     Util.createDirFromString("${G.dataPath}/lib");
-    //挂载到/dev/shm的文件夹
+    // Folder to be mounted to /dev/shm
     Util.createDirFromString("${G.dataPath}/tmp");
-    //给proot的tmp文件夹，虽然我不知道为什么proot要这个
+    // tmp folder for proot, though I don't know why proot needs this
     Util.createDirFromString("${G.dataPath}/proot_tmp");
-    //给pulseaudio的tmp文件夹
+    // tmp folder for pulseaudio
     Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
-    //解压后得到bin文件夹和libexec文件夹
-    //bin存放了proot, pulseaudio, tar等
-    //libexec存放了proot loader
+    // After extraction, get bin folder and libexec folder
+    // bin contains proot, pulseaudio, tar, etc.
+    // libexec contains proot loader
     await Util.copyAsset(
     "assets/assets.zip",
     "${G.dataPath}/assets.zip",
     );
-    //patch.tar.gz存放了tiny文件夹
-    //里面是一些补丁，会被挂载到~/.local/share/tiny
+    // patch.tar.gz contains the tiny folder
+    // These are some patches that will be mounted to ~/.local/share/tiny
     await Util.copyAsset(
     "assets/patch.tar.gz",
     "${G.dataPath}/patch.tar.gz",
@@ -587,21 +588,56 @@ chmod 1777 tmp
 """);
   }
 
-  //初次启动要做的事情
+  // Things to do on first startup
   static Future<void> initForFirstTime() async {
-    //首先设置bootstrap
+    // First set up bootstrap
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
     await setupBootstrap();
     
-    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
-    //存放容器的文件夹0和存放硬链接的文件夹.l2s
-    Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
-    //这个是容器rootfs，被split命令分成了xa*，放在assets里
-    //首次启动，就用这个，别让用户另选了
-    for (String name in jsonDecode(await rootBundle.loadString('AssetManifest.json')).keys.where((String e) => e.startsWith("assets/xa")).map((String e) => e.split("/").last).toList()) {
-      await Util.copyAsset("assets/$name", "${G.dataPath}/$name");
-    }
+ //   G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
+    // Folder 0 for storing containers and folder .l2s for storing hard links
+ //   Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+    // This is the container rootfs, split into xa* by split command, placed in assets
+    // On first startup, use this, don't let the user choose another one
+ //   for (String name in jsonDecode(await rootBundle.loadString('AssetManifest.json')).keys.where((String e) => e.startsWith("assets/xa")).map((String e) => e.split("/").last).toList()) {
+   //   await Util.copyAsset("assets/$name", "${G.dataPath}/$name");
+  //  }
     //-J
+/*
+G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
+// Folder 0 for storing containers and folder .l2s for storing hard links
+Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+// This is the container rootfs, split into xa* by split command, placed in assets
+// On first startup, use this, don't let the user choose another one
+
+// Hardcoded list of split container files
+List<String> xaFiles = ['xaa', 'xab', 'xac', 'xad', 'xae', 'xaf', 'xag', 'xah', 'xai', 'xaj'];
+
+for (String name in xaFiles) {
+  await Util.copyAsset("assets/$name", "${G.dataPath}/$name");
+}
+*/
+
+
+G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
+// Folder 0 for storing containers and folder .l2s for storing hard links
+Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+// This is the container rootfs, split into xa* by split command, placed in assets
+// On first startup, use this, don't let the user choose another one
+
+// Load custom manifest for container files
+final manifestString = await rootBundle.loadString('assets/container_manifest.json');
+final Map<String, dynamic> manifest = json.decode(manifestString);
+
+// Get the list of xa files
+final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
+
+for (String assetPath in xaFiles) {
+  final fileName = assetPath.split('/').last;
+  await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
+}
+
+
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
 """
@@ -634,9 +670,9 @@ done
 \$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
 ${Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? "" : "echo 'LANG=en_US.UTF-8' > \$CONTAINER_DIR/usr/local/etc/tmoe-linux/locale.txt"}
 """);
-    //一些数据初始化
-    //$DATA_DIR是数据文件夹, $CONTAINER_DIR是容器根目录
-    //Termux:X11的启动命令并不在这里面，而是写死了。这下成💩山代码了:P
+    // Some data initialization
+    // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
+    // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of 💩 code :P
     await G.prefs.setStringList("containersInfo", ["""{
 "name":"Debian Bookworm",
 "boot":"${Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? D.boot : D.boot.replaceFirst('LANG=zh_CN.UTF-8', 'LANG=en_US.UTF-8').replaceFirst('公共', 'Public').replaceFirst('图片', 'Pictures').replaceFirst('音乐', 'Music').replaceFirst('视频', 'Videos').replaceFirst('下载', 'Downloads').replaceFirst('文档', 'Documents').replaceFirst('照片', 'Photos')}",
@@ -659,10 +695,10 @@ ${Localizations.localeOf(G.homePageStateContext).languageCode == 'zh' ? "" : "ec
 
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
 
-    //如果没有这个key，说明是初次启动
+    // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
       await initForFirstTime();
-      //根据用户的屏幕调整分辨率
+      // Adjust resolution based on user's screen
       final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
       final String w = (max(s.width, s.height) * 0.75).round().toString();
       final String h = (min(s.width, s.height) * 0.75).round().toString();
@@ -680,14 +716,14 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""";
     }
     G.currentContainer = Util.getGlobal("defaultContainer") as int;
 
-    //是否需要重新安装引导包?
+    // Need to reinstall bootstrap package?
     if (Util.getGlobal("reinstallBootstrap")) {
       G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.reinstallingBootPackage;
       await setupBootstrap();
       G.prefs.setBool("reinstallBootstrap", false);
     }
 
-    //开启了什么图形界面？
+    // What graphical interface is enabled?
     if (Util.getGlobal("useX11")) {
       G.wasX11Enabled = true;
       Workflow.launchXServer();
@@ -699,7 +735,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""";
 
     G.controller = WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted);
 
-    //设置屏幕常亮
+    // Set screen always on
     WakelockPlus.toggle(enable: Util.getGlobal("wakelock"));
   }
 
@@ -850,5 +886,3 @@ clear""");
     }
   }
 }
-
-
