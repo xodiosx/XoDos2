@@ -56,10 +56,10 @@ jobs:
         git clone https://github.com/wine-mirror/wine.git --branch master --depth=1
         git clone https://github.com/wine-staging/wine-staging.git
 
-    - name: Apply Staging patches
+    - name: Apply Wine-Staging patches
       run: |
         cd wine
-        ../wine-staging/patches/gitapply.sh --all
+        find ../wine-staging/patches -type f -name "*.patch" | sort | xargs git apply --whitespace=nowarn
 
     - name: Build Wine64
       run: |
