@@ -1,4 +1,4 @@
-name: Build Wine Staging ARM64 WoW64
+name: Build x86_64 Wine Staging WoW64 for ARM64 (via box64)
 
 on:
   push:
@@ -35,23 +35,10 @@ jobs:
           cd $BUILD_DIR/wine-staging
           python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
 
-      - name: Install build dependencies
+      - name: Install build dependencies for x86_64
         run: |
-          # Add architectures for cross-compilation
+          # Add i386 architecture for 32-bit WoW64 support
           sudo dpkg --add-architecture i386
-          
-          # Update sources.list to include ports for ARM
-          echo "deb [arch=amd64,i386] http://archive.ubuntu.com/ubuntu jammy main restricted universe multiverse" | sudo tee /etc/apt/sources.list
-          echo "deb [arch=amd64,i386] http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=amd64,i386] http://archive.ubuntu.com/ubuntu jammy-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=amd64,i386] http://security.ubuntu.com/ubuntu jammy-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          
-          # Add ARM64 and ARMHF repositories (ports)
-          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse" | sudo tee /etc/apt/sources.list.d/arm.list
-          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm.list
-          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm.list
-          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm.list
-          
           sudo apt-get update
           
           # Install basic build tools
@@ -78,27 +65,9 @@ jobs:
             autoconf \
             automake \
             libtool \
-            wget \
-            software-properties-common
-          
-          # Add toolchain repository for better cross-compilation support
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt-get update
-          
-          # Install cross-compilation toolchain
-          sudo apt-get install -y \
-            gcc-11-aarch64-linux-gnu \
-            g++-11-aarch64-linux-gnu \
-            gcc-11-arm-linux-gnueabihf \
-            g++-11-arm-linux-gnueabihf \
-            binutils-aarch64-linux-gnu \
-            binutils-arm-linux-gnueabihf \
-            libc6-dev-arm64-cross \
-            libc6-dev-armhf-cross \
-            crossbuild-essential-arm64 \
-            crossbuild-essential-armhf
-          
-          # Install essential development libraries (native for host tools)
+            wget
+            
+          # Install x86_64 and i386 development libraries
           sudo apt-get install -y \
             libfreetype6-dev \
             libfontconfig1-dev \
@@ -110,6 +79,11 @@ jobs:
             libxcursor-dev \
             libxi-dev \
             libxfixes-dev \
+            libxcomposite-dev \
+            libxdamage-dev \
+            libxshmfence-dev \
+            libxxf86vm-dev \
+            libxtst-dev \
             libasound2-dev \
             libpulse-dev \
             libsdl2-dev \
@@ -117,53 +91,41 @@ jobs:
             libudev-dev \
             libcups2-dev \
             libgnutls28-dev \
+            libldap2-dev \
+            libgphoto2-dev \
+            libsane-dev \
+            libv4l-dev \
+            libelf-dev \
             libxml2-dev \
+            libxslt1-dev \
             libpng-dev \
-            libjpeg-dev
+            libjpeg-dev \
+            libtiff-dev \
+            libgif-dev \
+            libwebp-dev \
+            libegl-dev \
+            libgl-dev \
+            libglu1-mesa-dev \
+            libgles2-mesa-dev \
+            libglvnd-dev \
+            libfaudio-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev
+            
+          # Install i386 libraries for WoW64
+          sudo apt-get install -y \
+            libfreetype6-dev:i386 \
+            libfontconfig1-dev:i386 \
+            libx11-dev:i386 \
+            libxext-dev:i386 \
+            libxrender-dev:i386 \
+            libasound2-dev:i386 \
+            libpulse-dev:i386 \
+            libfaudio-dev:i386 \
+            libpng-dev:i386 \
+            libjpeg-dev:i386
 
-      - name: Build Wine tools for host system
-        run: |
-          cd $BUILD_DIR/wine
-          
-          # Create build directory for host tools
-          mkdir -p build-tools
-          cd build-tools
-          
-          # Configure and build tools for the host (x86_64)
-          ../configure --enable-win64
-          
-          # Build only the tools (not the full Wine)
-          make -j$(nproc) __tooldeps__
-
-      - name: Download and extract ARM libraries
-        run: |
-          # Download sysroot for ARM64
-          mkdir -p $BUILD_DIR/sysroot/arm64
-          mkdir -p $BUILD_DIR/sysroot/armhf
-          
-          # Download essential ARM64 libraries
-          cd $BUILD_DIR/sysroot/arm64
-          wget http://ports.ubuntu.com/pool/main/a/alsa-lib/libasound2-dev_1.2.6.1-1ubuntu1_arm64.deb || true
-          wget http://ports.ubuntu.com/pool/main/libx/libx11/libx11-dev_1.7.5-1_arm64.deb || true
-          wget http://ports.ubuntu.com/pool/main/f/freetype/libfreetype6-dev_2.11.1+dfsg-1ubuntu0.2_arm64.deb || true
-          
-          # Download essential ARMHF libraries
-          cd $BUILD_DIR/sysroot/armhf
-          wget http://ports.ubuntu.com/pool/main/a/alsa-lib/libasound2-dev_1.2.6.1-1ubuntu1_armhf.deb || true
-          wget http://ports.ubuntu.com/pool/main/libx/libx11/libx11-dev_1.7.5-1_armhf.deb || true
-          wget http://ports.ubuntu.com/pool/main/f/freetype/libfreetype6-dev_2.11.1+dfsg-1ubuntu0.2_armhf.deb || true
-
-      - name: Create sysroot for cross-compilation
-        run: |
-          # Create sysroot directories
-          sudo mkdir -p /usr/aarch64-linux-gnu
-          sudo mkdir -p /usr/arm-linux-gnueabihf
-          
-          # Copy basic libraries
-          sudo cp -r /usr/aarch64-linux-gnu/lib/* /usr/aarch64-linux-gnu/ || true
-          sudo cp -r /usr/arm-linux-gnueabihf/lib/* /usr/arm-linux-gnueabihf/ || true
-
-      - name: Build 64-bit Wine (ARM64) with minimal dependencies
+      - name: Build 64-bit Wine (x86_64)
         run: |
           cd $BUILD_DIR/wine
           
@@ -171,24 +133,16 @@ jobs:
           mkdir -p build64
           cd build64
           
-          # Configure for ARM64 with minimal dependencies
-          # Skip X and other problematic dependencies for now
+          # Configure for x86_64 (64-bit only)
           ../configure \
-            --host=aarch64-linux-gnu \
             --enable-win64 \
-            --prefix=/usr/local/wine-arm64 \
-            --disable-tests \
-            --without-x \
-            --without-freetype \
-            --without-alsa \
-            --without-pulse \
-            --without-cups \
-            --with-wine-tools=../build-tools
+            --prefix=/usr/local/wine-x86_64 \
+            --disable-tests
           
           # Build 64-bit Wine
           make -j$(nproc) 2>&1 | tee build64.log || (echo "64-bit build failed"; tail -100 build64.log; exit 1)
 
-      - name: Build 32-bit Wine (ARM) with WoW64 support
+      - name: Build 32-bit Wine (i686) with WoW64 support
         run: |
           cd $BUILD_DIR/wine
           
@@ -196,18 +150,11 @@ jobs:
           mkdir -p build32
           cd build32
           
-          # Configure 32-bit Wine with WoW64 support (minimal)
+          # Configure 32-bit Wine with WoW64 support
           ../configure \
-            --host=arm-linux-gnueabihf \
             --with-wine64=../build64 \
-            --prefix=/usr/local/wine-arm64 \
-            --disable-tests \
-            --without-x \
-            --without-freetype \
-            --without-alsa \
-            --without-pulse \
-            --without-cups \
-            --with-wine-tools=../build-tools
+            --prefix=/usr/local/wine-x86_64 \
+            --disable-tests
           
           # Build 32-bit Wine with WoW64
           make -j$(nproc) 2>&1 | tee build32.log || (echo "32-bit build failed"; tail -100 build32.log; exit 1)
@@ -225,25 +172,110 @@ jobs:
           cd $BUILD_DIR/wine/build32
           make install DESTDIR=$BUILD_DIR/wine-install 2>&1 | tee install32.log || true
 
-      - name: Package Wine
+      - name: Create runtime wrapper for box64
         run: |
           cd $BUILD_DIR
-          # Create a tarball of the installation
-          tar -czf wine-arm64-wow64-minimal.tar.gz -C wine-install/usr/local .
           
-          # Create build logs archive
-          zip -r wine-build-logs.zip \
+          # Create a wrapper script that sets up environment for box64
+          cat > wine-box64-wrapper << 'EOF'
+#!/bin/bash
+# Wrapper for running x86_64 Wine on ARM64 via box64
+# Set BOX64_LD_LIBRARY_PATH to point to x86_64 libraries
+# Set WINEPREFIX appropriately
+
+# Find box64 in PATH
+BOX64=$(which box64 2>/dev/null || echo "/usr/local/bin/box64")
+
+# Set library paths for x86_64
+export BOX64_LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu"
+export BOX64_PATH="/usr/local/wine-x86_64/bin:$PATH"
+
+# Disable noexec mount protection that causes the error
+export BOX64_NOBIND=1
+
+# Run wine with box64
+exec "$BOX64" "/usr/local/wine-x86_64/bin/wine" "$@"
+EOF
+          
+          chmod +x wine-box64-wrapper
+          
+          # Create a setup script for Debian Bookworm ARM64
+          cat > setup-wine-box64.sh << 'EOF'
+#!/bin/bash
+# Setup script for Wine x86_64 WoW64 on ARM64 Debian Bookworm
+
+echo "Installing dependencies for ARM64..."
+sudo apt-get update
+sudo apt-get install -y \
+  libfreetype6:arm64 \
+  libfontconfig1:arm64 \
+  libx11-6:arm64 \
+  libxext6:arm64 \
+  libxrender1:arm64 \
+  libasound2:arm64 \
+  libpulse0:arm64 \
+  libsdl2-2.0-0:arm64 \
+  libvulkan1:arm64 \
+  libudev1:arm64 \
+  libcups2:arm64 \
+  libgnutls30:arm64 \
+  libldap-2.4-2:arm64 \
+  libxml2:arm64 \
+  libpng16-16:arm64 \
+  libjpeg62-turbo:arm64 \
+  libtiff5:arm64 \
+  libgif7:arm64 \
+  libwebp7:arm64 \
+  libegl1:arm64 \
+  libgl1:arm64 \
+  libglu1-mesa:arm64 \
+  libgles2:arm64 \
+  libglvnd0:arm64
+
+echo "Installing box64..."
+# Install box64 from your preferred source
+# For example, from box64 repository:
+# git clone https://github.com/ptitSeb/box64
+# cd box64
+# mkdir build; cd build
+# cmake .. -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
+# make -j$(nproc)
+# sudo make install
+
+echo "Extracting Wine x86_64 WoW64..."
+sudo tar -xzf wine-x86_64-wow64.tar.gz -C /usr/local/
+
+echo "Copying wrapper script..."
+sudo cp wine-box64-wrapper /usr/local/bin/wine-box64
+sudo chmod +x /usr/local/bin/wine-box64
+
+echo "Setup complete!"
+echo "Use 'wine-box64' to run Windows applications via box64"
+EOF
+          
+          chmod +x setup-wine-box64.sh
+
+      - name: Package Wine for ARM64 deployment
+        run: |
+          cd $BUILD_DIR
+          
+          # Create a tarball of the installation
+          tar -czf wine-x86_64-wow64.tar.gz -C wine-install/usr/local .
+          
+          # Package everything together
+          tar -czf wine-box64-arm64-package.tar.gz \
+            wine-x86_64-wow64.tar.gz \
+            wine-box64-wrapper \
+            setup-wine-box64.sh \
             wine/build64/build64.log \
-            wine/build32/build32.log \
-            wine/build64/config.log \
-            wine/build32/config.log \
-            install64.log \
-            install32.log
+            wine/build32/build32.log
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wine-staging-arm64-wow64
+          name: wine-x86_64-wow64-for-arm64
           path: |
-            $BUILD_DIR/wine-arm64-wow64-minimal.tar.gz
-            $BUILD_DIR/wine-build-logs.zip
+            $BUILD_DIR/wine-box64-arm64-package.tar.gz
+            $BUILD_DIR/wine-x86_64-wow64.tar.gz
+            $BUILD_DIR/setup-wine-box64.sh
+            $BUILD_DIR/wine-box64-wrapper
