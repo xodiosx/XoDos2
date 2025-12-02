@@ -3,28 +3,21 @@ package com.xodos.filepicker;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.graphics.Point;
-import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
+import android.content.res.AssetFileDescriptor;
 import android.provider.DocumentsContract.Document;
 import android.provider.DocumentsContract.Root;
 import android.provider.DocumentsProvider;
-import android.content.Context;
-import android.content.res.AssetFileDescriptor;
-import android.webkit.MimeTypeMap;
 
+import android.content.Context;
+import android.webkit.MimeTypeMap;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 
-import java.util.LinkedList;
-import java.util.Collections;
-
-public class XodosDataFilesProvider extends DocumentsProvider {
+public class XDocumentsProvider extends DocumentsProvider {
 
     private File baseDir;
-    private String authority;
-
     private static final String ROOT_ID = "XODOS_ROOT";
 
     private static final String[] DEFAULT_ROOT_PROJECTION = new String[]{
@@ -46,11 +39,9 @@ public class XodosDataFilesProvider extends DocumentsProvider {
             Document.COLUMN_FLAGS
     };
 
-
     @Override
     public boolean onCreate() {
         Context ctx = getContext();
-        authority = ctx.getPackageName() + ".documents";
         baseDir = new File(ctx.getFilesDir().getAbsolutePath());
         return true;
     }
@@ -79,7 +70,6 @@ public class XodosDataFilesProvider extends DocumentsProvider {
     @Override
     public Cursor queryDocument(String documentId, String[] projection)
             throws FileNotFoundException {
-
         final MatrixCursor result =
                 new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
 
@@ -90,7 +80,6 @@ public class XodosDataFilesProvider extends DocumentsProvider {
     @Override
     public Cursor queryChildDocuments(String parentDocumentId, String[] projection,
                                       String sortOrder) throws FileNotFoundException {
-
         final MatrixCursor result =
                 new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
 
@@ -102,7 +91,6 @@ public class XodosDataFilesProvider extends DocumentsProvider {
                 includeFile(result, null, file);
             }
         }
-
         return result;
     }
 
@@ -114,7 +102,6 @@ public class XodosDataFilesProvider extends DocumentsProvider {
         File file = getFileForDocId(documentId);
 
         int accessMode = ParcelFileDescriptor.MODE_READ_ONLY;
-
         if (mode.contains("w")) {
             accessMode = ParcelFileDescriptor.MODE_READ_WRITE |
                     ParcelFileDescriptor.MODE_CREATE |
@@ -128,9 +115,7 @@ public class XodosDataFilesProvider extends DocumentsProvider {
     public AssetFileDescriptor openDocumentThumbnail(String documentId, Point size,
                                                      CancellationSignal signal)
             throws FileNotFoundException {
-
         File file = getFileForDocId(documentId);
-
         return new AssetFileDescriptor(
                 ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY),
                 0,
@@ -138,10 +123,8 @@ public class XodosDataFilesProvider extends DocumentsProvider {
         );
     }
 
-
     private File getFileForDocId(String docId) throws FileNotFoundException {
         if (docId.equals(ROOT_ID)) return baseDir;
-
         File file = new File(docId);
         if (!file.exists()) throw new FileNotFoundException(docId);
         return file;
@@ -149,9 +132,7 @@ public class XodosDataFilesProvider extends DocumentsProvider {
 
     private void includeFile(MatrixCursor result, String documentId, File file)
             throws FileNotFoundException {
-
         if (documentId == null) documentId = file.getAbsolutePath();
-
         final MatrixCursor.RowBuilder row = result.newRow();
         row.add(Document.COLUMN_DOCUMENT_ID, documentId);
         row.add(Document.COLUMN_DISPLAY_NAME, file.getName());

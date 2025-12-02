@@ -1,23 +1,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:remove="maxSdkVersion"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <uses-permission android:name="android.permission.MANAGE_DOCUMENTS" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
     <application
-        android:requestLegacyExternalStorage="true"
-        android:label="@string/tc_app_name"
         android:name=".MainApplication"
+        android:label="@string/tc_app_name"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:launchMode="singleInstance"
         android:theme="@style/App.Theme"
-        android:extractNativeLibs="true">
+        android:extractNativeLibs="true"
+        android:requestLegacyExternalStorage="true">
 
+        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -26,40 +27,36 @@
             android:configChanges="navigation|orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme" />
-
+                android:resource="@style/NormalTheme"/>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
+        <!-- Optional secondary activity -->
         <activity
             android:name=".Signal9Activity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
 
-        <!-- ✅ FIXED Xodos Data Files Provider -->
+        <!-- File provider for XDocumentsProvider -->
         <provider
-            android:name="com.xodos.filepicker.XodosDataFilesProvider"
+            android:name="com.xodos.filepicker.XDocumentsProvider"
             android:authorities="com.xodos.documents"
             android:exported="true"
-            android:permission="android.permission.MANAGE_DOCUMENTS"
-            android:grantUriPermissions="true">
-
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
             <intent-filter>
                 <action android:name="android.content.action.DOCUMENTS_PROVIDER"/>
             </intent-filter>
-
         </provider>
 
-        <!-- Flutter plugin system -->
+        <!-- Flutter embedding metadata -->
         <meta-data
             android:name="flutterEmbedding"
-            android:value="2" />
-
+            android:value="2"/>
     </application>
 </manifest>
