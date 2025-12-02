@@ -35,15 +35,22 @@ jobs:
           cd $BUILD_DIR/wine-staging
           python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
 
-      - name: Install build dependencies
+      - name: Configure APT sources for ARM
         run: |
-          # Add architectures for cross-compilation
+          # Add ARM architectures
           sudo dpkg --add-architecture arm64
           sudo dpkg --add-architecture armhf
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
           
-          # Install basic build tools
+          # Add ports repository for ARM packages
+          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse" | sudo tee /etc/apt/sources.list.d/arm-ports.list
+          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm-ports.list
+          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm-ports.list
+          
+          sudo apt-get update
+
+      - name: Install build dependencies
+        run: |
+          # Install basic build tools (amd64)
           sudo apt-get install -y \
             build-essential \
             git \
@@ -67,9 +74,11 @@ jobs:
             autoconf \
             automake \
             libtool \
-            wget
+            wget \
+            libc6-dev-i386 \
+            lib32gcc-s1
           
-          # Install cross-compilation toolchain for ARM
+          # Install cross-compilation toolchain
           sudo apt-get install -y \
             crossbuild-essential-arm64 \
             crossbuild-essential-armhf \
@@ -78,14 +87,44 @@ jobs:
             gcc-arm-linux-gnueabihf \
             g++-arm-linux-gnueabihf \
             binutils-aarch64-linux-gnu \
-            binutils-arm-linux-gnueabihf
+            binutils-arm-linux-gnueabihf \
+            libc6-dev-arm64-cross \
+            libc6-dev-armhf-cross
           
-          # Install essential development libraries for ARM64
+          # Install native development libraries (for host tools)
           sudo apt-get install -y \
-            libfreetype6-dev:arm64 \
-            libfontconfig1-dev:arm64 \
+            libfreetype6-dev \
+            libfontconfig1-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrender-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxfixes-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libsdl2-dev \
+            libvulkan-dev \
+            libudev-dev \
+            libcups2-dev \
+            libgnutls28-dev \
+            libxml2-dev \
+            libpng-dev \
+            libjpeg-dev \
+            libtiff-dev
+
+      - name: Install ARM development libraries via cross-compilation packages
+        run: |
+          # Instead of trying to install ARM packages, we'll download the needed headers manually
+          # or use cross-compilation packages
+          
+          # Install cross-compilation development packages
+          sudo apt-get install -y \
+            libfreetype-dev:arm64 \
+            libfontconfig-dev:arm64 \
             libx11-dev:arm64 \
-            libx11-xcb-dev:arm64 \
             libxext-dev:arm64 \
             libxrender-dev:arm64 \
             libxrandr-dev:arm64 \
@@ -93,61 +132,29 @@ jobs:
             libxcursor-dev:arm64 \
             libxi-dev:arm64 \
             libxfixes-dev:arm64 \
-            libxcomposite-dev:arm64 \
-            libxdamage-dev:arm64 \
-            libxshmfence-dev:arm64 \
-            libxxf86vm-dev:arm64 \
-            libxtst-dev:arm64 \
             libasound2-dev:arm64 \
             libpulse-dev:arm64 \
             libsdl2-dev:arm64 \
             libvulkan-dev:arm64 \
-            libvulkan1:arm64 \
             libudev-dev:arm64 \
             libcups2-dev:arm64 \
             libgnutls28-dev:arm64 \
-            libldap2-dev:arm64 \
-            libgphoto2-dev:arm64 \
-            libsane-dev:arm64 \
-            libv4l-dev:arm64 \
-            libelf-dev:arm64 \
             libxml2-dev:arm64 \
-            libxslt1-dev:arm64 \
             libpng-dev:arm64 \
             libjpeg-dev:arm64 \
-            libtiff-dev:arm64 \
-            libgif-dev:arm64 \
-            libwebp-dev:arm64 \
-            libegl-dev:arm64 \
-            libgl-dev:arm64 \
-            libglu1-mesa-dev:arm64 \
-            libgles2-mesa-dev:arm64 \
-            libglvnd-dev:arm64
+            libtiff-dev:arm64
+
+      - name: Set up Wine build environment
+        run: |
+          # Create a sysroot directory for cross-compilation
+          sudo mkdir -p /usr/aarch64-linux-gnu
+          sudo mkdir -p /usr/arm-linux-gnueabihf
           
-          # Install essential development libraries for ARM32 (WoW64)
-          sudo apt-get install -y \
-            libfreetype6-dev:armhf \
-            libfontconfig1-dev:armhf \
-            libx11-dev:armhf \
-            libxext-dev:armhf \
-            libxrender-dev:armhf \
-            libasound2-dev:armhf \
-            libpulse-dev:armhf \
-            libpng-dev:armhf \
-            libjpeg-dev:armhf
-          
-          # Install native libraries for host tools build
-          sudo apt-get install -y \
-            libfreetype6-dev \
-            libfontconfig1-dev \
-            libx11-dev \
-            libxext-dev \
-            libxrender-dev \
-            libasound2-dev \
-            libpulse-dev \
-            libsdl2-dev \
-            libvulkan-dev \
-            libudev-dev
+          # Link libraries for cross-compilation
+          sudo ln -sf /usr/lib/aarch64-linux-gnu /usr/aarch64-linux-gnu/lib
+          sudo ln -sf /usr/include/aarch64-linux-gnu /usr/aarch64-linux-gnu/include
+          sudo ln -sf /usr/lib/arm-linux-gnueabihf /usr/arm-linux-gnueabihf/lib
+          sudo ln -sf /usr/include/arm-linux-gnueabihf /usr/arm-linux-gnueabihf/include
 
       - name: Build Wine tools for host system
         run: |
@@ -160,32 +167,10 @@ jobs:
           # Configure and build tools for the host (x86_64)
           ../configure --enable-win64
           
-          # Build only the tools (not the full Wine)
+          # Build only the tools
           make -j$(nproc) __tooldeps__
 
-      - name: Set up pkg-config for cross-compilation
-        run: |
-          # Create pkg-config wrapper for ARM64
-          cat > /tmp/pkg-config-arm64 << 'EOF'
-          #!/bin/bash
-          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-          export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-          exec /usr/bin/pkg-config "$@"
-          EOF
-          
-          # Create pkg-config wrapper for ARM32
-          cat > /tmp/pkg-config-arm32 << 'EOF'
-          #!/bin/bash
-          export PKG_CONFIG_LIBDIR=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
-          export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
-          exec /usr/bin/pkg-config "$@"
-          EOF
-          
-          chmod +x /tmp/pkg-config-arm64 /tmp/pkg-config-arm32
-          sudo mv /tmp/pkg-config-arm64 /usr/local/bin/pkg-config-arm64
-          sudo mv /tmp/pkg-config-arm32 /usr/local/bin/pkg-config-arm32
-
-      - name: Build 64-bit Wine (ARM64)
+      - name: Build 64-bit Wine (ARM64) with minimal dependencies
         run: |
           cd $BUILD_DIR/wine
           
@@ -193,16 +178,21 @@ jobs:
           mkdir -p build64
           cd build64
           
-          # Configure for ARM64 (64-bit only)
+          # Configure for ARM64 with minimal dependencies
           CC="aarch64-linux-gnu-gcc" \
           CXX="aarch64-linux-gnu-g++" \
-          PKG_CONFIG="pkg-config-arm64" \
           ../configure \
             --host=aarch64-linux-gnu \
             --enable-win64 \
             --prefix=/usr/local/wine-arm64 \
             --disable-tests \
-            --with-x \
+            --without-x \
+            --without-freetype \
+            --without-fontconfig \
+            --without-cups \
+            --without-sdl \
+            --without-pulse \
+            --without-alsa \
             --with-wine-tools=../build-tools
           
           # Build 64-bit Wine
@@ -219,13 +209,18 @@ jobs:
           # Configure 32-bit Wine with WoW64 support
           CC="arm-linux-gnueabihf-gcc" \
           CXX="arm-linux-gnueabihf-g++" \
-          PKG_CONFIG="pkg-config-arm32" \
           ../configure \
             --host=arm-linux-gnueabihf \
             --with-wine64=../build64 \
             --prefix=/usr/local/wine-arm64 \
             --disable-tests \
-            --with-x \
+            --without-x \
+            --without-freetype \
+            --without-fontconfig \
+            --without-cups \
+            --without-sdl \
+            --without-pulse \
+            --without-alsa \
             --with-wine-tools=../build-tools
           
           # Build 32-bit Wine with WoW64
