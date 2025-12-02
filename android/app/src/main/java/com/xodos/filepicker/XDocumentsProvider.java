@@ -13,7 +13,6 @@ import android.system.Os;
 import android.system.StructStat;
 import android.webkit.MimeTypeMap;
 
-import com.xodos.R;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,7 +40,7 @@ public class XDocumentsProvider extends DocumentsProvider {
         row.add(DocumentsContract.Root.COLUMN_ROOT_ID, ROOT_ID);
         row.add(DocumentsContract.Root.COLUMN_TITLE, "XoDos Files");
         row.add(DocumentsContract.Root.COLUMN_DOCUMENT_ID, getDocIdForFile(baseDir));
-        row.add(DocumentsContract.Root.COLUMN_ICON, R.mipmap.ic_launcher);
+        row.add(DocumentsContract.Root.COLUMN_ICON, getContext().getApplicationInfo().icon); // app icon
         row.add(DocumentsContract.Root.COLUMN_FLAGS,
                 DocumentsContract.Root.FLAG_LOCAL_ONLY |
                 DocumentsContract.Root.FLAG_SUPPORTS_CREATE |
