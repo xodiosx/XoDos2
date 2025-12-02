@@ -69,9 +69,7 @@ jobs:
             gcc-arm-linux-gnueabihf \
             g++-arm-linux-gnueabihf \
             binutils-aarch64-linux-gnu \
-            binutils-arm-linux-gnueabihf \
-            pkg-config-aarch64-linux-gnu \
-            pkg-config-arm-linux-gnueabihf
+            binutils-arm-linux-gnueabihf
           
           # Install 64-bit development libraries
           sudo apt-get install -y \
@@ -88,7 +86,11 @@ jobs:
             libasound2-dev \
             libpulse-dev \
             libsdl2-dev \
-            libvulkan-dev
+            libvulkan-dev \
+            libudev-dev \
+            libcups2-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev
           
           # Install 32-bit development libraries for WoW64
           sudo apt-get install -y \
@@ -99,6 +101,28 @@ jobs:
             libxrender-dev:i386 \
             libasound2-dev:i386 \
             libpulse-dev:i386
+
+      - name: Set up pkg-config wrappers
+        run: |
+          # Create pkg-config wrapper for aarch64
+          cat > /tmp/pkg-config-aarch64 << 'EOF'
+          #!/bin/bash
+          SYSROOT=/usr/aarch64-linux-gnu
+          export PKG_CONFIG_LIBDIR="${SYSROOT}/lib/pkgconfig:${SYSROOT}/share/pkgconfig"
+          exec /usr/bin/pkg-config "$@"
+          EOF
+          
+          # Create pkg-config wrapper for armhf
+          cat > /tmp/pkg-config-armhf << 'EOF'
+          #!/bin/bash
+          SYSROOT=/usr/arm-linux-gnueabihf
+          export PKG_CONFIG_LIBDIR="${SYSROOT}/lib/pkgconfig:${SYSROOT}/share/pkgconfig"
+          exec /usr/bin/pkg-config "$@"
+          EOF
+          
+          chmod +x /tmp/pkg-config-aarch64 /tmp/pkg-config-armhf
+          sudo mv /tmp/pkg-config-aarch64 /usr/local/bin/pkg-config-aarch64
+          sudo mv /tmp/pkg-config-armhf /usr/local/bin/pkg-config-armhf
 
       - name: Build 64-bit Wine (ARM64)
         run: |
@@ -114,10 +138,10 @@ jobs:
             --enable-win64 \
             --prefix=/usr/local/wine-arm64 \
             --disable-tests \
-            PKG_CONFIG="aarch64-linux-gnu-pkg-config"
+            PKG_CONFIG="pkg-config-aarch64"
           
           # Build 64-bit Wine
-          make -j$(nproc)
+          make -j$(nproc) 2>&1 | tee build64.log || (echo "64-bit build failed"; tail -50 build64.log; exit 1)
 
       - name: Build 32-bit Wine (ARM) with WoW64 support
         run: |
@@ -128,31 +152,39 @@ jobs:
           cd build32
           
           # Configure 32-bit Wine with WoW64 support
-          # Point to the 64-bit build we just made
           ../configure \
             --host=arm-linux-gnueabihf \
             --with-wine64=../build64 \
             --prefix=/usr/local/wine-arm64 \
             --disable-tests \
-            PKG_CONFIG="arm-linux-gnueabihf-pkg-config"
+            PKG_CONFIG="pkg-config-armhf"
           
           # Build 32-bit Wine with WoW64
-          make -j$(nproc)
+          make -j$(nproc) 2>&1 | tee build32.log || (echo "32-bit build failed"; tail -50 build32.log; exit 1)
 
       - name: Install Wine WoW64
         run: |
-          # Install both 64-bit and 32-bit components
-          cd $BUILD_DIR/wine/build64
-          make install DESTDIR=$BUILD_DIR/wine-install
+          # Create installation directory
+          mkdir -p $BUILD_DIR/wine-install/usr/local
           
+          # Install 64-bit components
+          cd $BUILD_DIR/wine/build64
+          make install DESTDIR=$BUILD_DIR/wine-install 2>&1 | tee install64.log
+          
+          # Install 32-bit components
           cd $BUILD_DIR/wine/build32
-          make install DESTDIR=$BUILD_DIR/wine-install
+          make install DESTDIR=$BUILD_DIR/wine-install 2>&1 | tee install32.log
 
       - name: Package Wine
         run: |
           cd $BUILD_DIR
           # Create a tarball of the installation
           tar -czf wine-arm64-wow64.tar.gz -C wine-install/usr/local .
+          
+          # Also create a zip with build logs for debugging
+          cp wine/build64/build64.log .
+          cp wine/build32/build32.log .
+          zip wine-build-logs.zip build64.log build32.log
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -160,3 +192,4 @@ jobs:
           name: wine-staging-arm64-wow64
           path: |
             $BUILD_DIR/wine-arm64-wow64.tar.gz
+            $BUILD_DIR/wine-build-logs.zip
