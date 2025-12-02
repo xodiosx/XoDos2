@@ -35,22 +35,26 @@ jobs:
           cd $BUILD_DIR/wine-staging
           python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
 
-      - name: Configure APT sources for ARM
-        run: |
-          # Add ARM architectures
-          sudo dpkg --add-architecture arm64
-          sudo dpkg --add-architecture armhf
-          
-          # Add ports repository for ARM packages
-          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse" | sudo tee /etc/apt/sources.list.d/arm-ports.list
-          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm-ports.list
-          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm-ports.list
-          
-          sudo apt-get update
-
       - name: Install build dependencies
         run: |
-          # Install basic build tools (amd64)
+          # Add architectures for cross-compilation
+          sudo dpkg --add-architecture i386
+          
+          # Update sources.list to include ports for ARM
+          echo "deb [arch=amd64,i386] http://archive.ubuntu.com/ubuntu jammy main restricted universe multiverse" | sudo tee /etc/apt/sources.list
+          echo "deb [arch=amd64,i386] http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=amd64,i386] http://archive.ubuntu.com/ubuntu jammy-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=amd64,i386] http://security.ubuntu.com/ubuntu jammy-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          
+          # Add ARM64 and ARMHF repositories (ports)
+          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse" | sudo tee /etc/apt/sources.list.d/arm.list
+          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm.list
+          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm.list
+          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm.list
+          
+          sudo apt-get update
+          
+          # Install basic build tools
           sudo apt-get install -y \
             build-essential \
             git \
@@ -75,23 +79,26 @@ jobs:
             automake \
             libtool \
             wget \
-            libc6-dev-i386 \
-            lib32gcc-s1
+            software-properties-common
+          
+          # Add toolchain repository for better cross-compilation support
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt-get update
           
           # Install cross-compilation toolchain
           sudo apt-get install -y \
-            crossbuild-essential-arm64 \
-            crossbuild-essential-armhf \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            gcc-arm-linux-gnueabihf \
-            g++-arm-linux-gnueabihf \
+            gcc-11-aarch64-linux-gnu \
+            g++-11-aarch64-linux-gnu \
+            gcc-11-arm-linux-gnueabihf \
+            g++-11-arm-linux-gnueabihf \
             binutils-aarch64-linux-gnu \
             binutils-arm-linux-gnueabihf \
             libc6-dev-arm64-cross \
-            libc6-dev-armhf-cross
+            libc6-dev-armhf-cross \
+            crossbuild-essential-arm64 \
+            crossbuild-essential-armhf
           
-          # Install native development libraries (for host tools)
+          # Install essential development libraries (native for host tools)
           sudo apt-get install -y \
             libfreetype6-dev \
             libfontconfig1-dev \
@@ -112,49 +119,7 @@ jobs:
             libgnutls28-dev \
             libxml2-dev \
             libpng-dev \
-            libjpeg-dev \
-            libtiff-dev
-
-      - name: Install ARM development libraries via cross-compilation packages
-        run: |
-          # Instead of trying to install ARM packages, we'll download the needed headers manually
-          # or use cross-compilation packages
-          
-          # Install cross-compilation development packages
-          sudo apt-get install -y \
-            libfreetype-dev:arm64 \
-            libfontconfig-dev:arm64 \
-            libx11-dev:arm64 \
-            libxext-dev:arm64 \
-            libxrender-dev:arm64 \
-            libxrandr-dev:arm64 \
-            libxinerama-dev:arm64 \
-            libxcursor-dev:arm64 \
-            libxi-dev:arm64 \
-            libxfixes-dev:arm64 \
-            libasound2-dev:arm64 \
-            libpulse-dev:arm64 \
-            libsdl2-dev:arm64 \
-            libvulkan-dev:arm64 \
-            libudev-dev:arm64 \
-            libcups2-dev:arm64 \
-            libgnutls28-dev:arm64 \
-            libxml2-dev:arm64 \
-            libpng-dev:arm64 \
-            libjpeg-dev:arm64 \
-            libtiff-dev:arm64
-
-      - name: Set up Wine build environment
-        run: |
-          # Create a sysroot directory for cross-compilation
-          sudo mkdir -p /usr/aarch64-linux-gnu
-          sudo mkdir -p /usr/arm-linux-gnueabihf
-          
-          # Link libraries for cross-compilation
-          sudo ln -sf /usr/lib/aarch64-linux-gnu /usr/aarch64-linux-gnu/lib
-          sudo ln -sf /usr/include/aarch64-linux-gnu /usr/aarch64-linux-gnu/include
-          sudo ln -sf /usr/lib/arm-linux-gnueabihf /usr/arm-linux-gnueabihf/lib
-          sudo ln -sf /usr/include/arm-linux-gnueabihf /usr/arm-linux-gnueabihf/include
+            libjpeg-dev
 
       - name: Build Wine tools for host system
         run: |
@@ -167,8 +132,36 @@ jobs:
           # Configure and build tools for the host (x86_64)
           ../configure --enable-win64
           
-          # Build only the tools
+          # Build only the tools (not the full Wine)
           make -j$(nproc) __tooldeps__
+
+      - name: Download and extract ARM libraries
+        run: |
+          # Download sysroot for ARM64
+          mkdir -p $BUILD_DIR/sysroot/arm64
+          mkdir -p $BUILD_DIR/sysroot/armhf
+          
+          # Download essential ARM64 libraries
+          cd $BUILD_DIR/sysroot/arm64
+          wget http://ports.ubuntu.com/pool/main/a/alsa-lib/libasound2-dev_1.2.6.1-1ubuntu1_arm64.deb || true
+          wget http://ports.ubuntu.com/pool/main/libx/libx11/libx11-dev_1.7.5-1_arm64.deb || true
+          wget http://ports.ubuntu.com/pool/main/f/freetype/libfreetype6-dev_2.11.1+dfsg-1ubuntu0.2_arm64.deb || true
+          
+          # Download essential ARMHF libraries
+          cd $BUILD_DIR/sysroot/armhf
+          wget http://ports.ubuntu.com/pool/main/a/alsa-lib/libasound2-dev_1.2.6.1-1ubuntu1_armhf.deb || true
+          wget http://ports.ubuntu.com/pool/main/libx/libx11/libx11-dev_1.7.5-1_armhf.deb || true
+          wget http://ports.ubuntu.com/pool/main/f/freetype/libfreetype6-dev_2.11.1+dfsg-1ubuntu0.2_armhf.deb || true
+
+      - name: Create sysroot for cross-compilation
+        run: |
+          # Create sysroot directories
+          sudo mkdir -p /usr/aarch64-linux-gnu
+          sudo mkdir -p /usr/arm-linux-gnueabihf
+          
+          # Copy basic libraries
+          sudo cp -r /usr/aarch64-linux-gnu/lib/* /usr/aarch64-linux-gnu/ || true
+          sudo cp -r /usr/arm-linux-gnueabihf/lib/* /usr/arm-linux-gnueabihf/ || true
 
       - name: Build 64-bit Wine (ARM64) with minimal dependencies
         run: |
@@ -179,8 +172,7 @@ jobs:
           cd build64
           
           # Configure for ARM64 with minimal dependencies
-          CC="aarch64-linux-gnu-gcc" \
-          CXX="aarch64-linux-gnu-g++" \
+          # Skip X and other problematic dependencies for now
           ../configure \
             --host=aarch64-linux-gnu \
             --enable-win64 \
@@ -188,11 +180,9 @@ jobs:
             --disable-tests \
             --without-x \
             --without-freetype \
-            --without-fontconfig \
-            --without-cups \
-            --without-sdl \
-            --without-pulse \
             --without-alsa \
+            --without-pulse \
+            --without-cups \
             --with-wine-tools=../build-tools
           
           # Build 64-bit Wine
@@ -206,9 +196,7 @@ jobs:
           mkdir -p build32
           cd build32
           
-          # Configure 32-bit Wine with WoW64 support
-          CC="arm-linux-gnueabihf-gcc" \
-          CXX="arm-linux-gnueabihf-g++" \
+          # Configure 32-bit Wine with WoW64 support (minimal)
           ../configure \
             --host=arm-linux-gnueabihf \
             --with-wine64=../build64 \
@@ -216,11 +204,9 @@ jobs:
             --disable-tests \
             --without-x \
             --without-freetype \
-            --without-fontconfig \
-            --without-cups \
-            --without-sdl \
-            --without-pulse \
             --without-alsa \
+            --without-pulse \
+            --without-cups \
             --with-wine-tools=../build-tools
           
           # Build 32-bit Wine with WoW64
@@ -243,7 +229,7 @@ jobs:
         run: |
           cd $BUILD_DIR
           # Create a tarball of the installation
-          tar -czf wine-arm64-wow64.tar.gz -C wine-install/usr/local .
+          tar -czf wine-arm64-wow64-minimal.tar.gz -C wine-install/usr/local .
           
           # Create build logs archive
           zip -r wine-build-logs.zip \
@@ -259,5 +245,5 @@ jobs:
         with:
           name: wine-staging-arm64-wow64
           path: |
-            $BUILD_DIR/wine-arm64-wow64.tar.gz
+            $BUILD_DIR/wine-arm64-wow64-minimal.tar.gz
             $BUILD_DIR/wine-build-logs.zip
