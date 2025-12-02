@@ -23,7 +23,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
-import 'package:tiny_computer/l10n/app_localizations.dart';
+import 'package:xodos/l10n/app_localizations.dart';
 
 import 'package:avnc_flutter/avnc_flutter.dart';
 import 'package:x11_flutter/x11_flutter.dart';
@@ -332,11 +332,11 @@ class D {
 
   //常用链接
   static const links = [
-    {"name": "projectUrl", "value": "https://github.com/Cateners/tiny_computer"},
-    {"name": "issueUrl", "value": "https://github.com/Cateners/tiny_computer/issues"},
+    {"name": "projectUrl", "value": "https://github.com/Cateners/xodos"},
+    {"name": "issueUrl", "value": "https://github.com/Cateners/xodos/issues"},
     {"name": "faqUrl", "value": "https://gitee.com/caten/tc-hints/blob/master/pool/faq.md"},
     {"name": "solutionUrl", "value": "https://gitee.com/caten/tc-hints/blob/master/pool/solution.md"},
-    {"name": "discussionUrl", "value": "https://github.com/Cateners/tiny_computer/discussions"},
+    {"name": "discussionUrl", "value": "https://github.com/Cateners/xodos/discussions"},
   ];
 
   //默认快捷指令

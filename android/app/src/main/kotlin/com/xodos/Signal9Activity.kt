@@ -18,7 +18,7 @@ class Signal9Activity : AppCompatActivity() {
         binding = ActivitySignal9Binding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        //Set the status bar and navigation bar colors to match the screen background
+        // 设置状态栏和导航栏颜色匹配蓝屏背景
         window.statusBarColor = ContextCompat.getColor(this, R.color.tc_s9a_blue_screen_blue)
         window.navigationBarColor = ContextCompat.getColor(this, R.color.tc_s9a_blue_screen_blue)
         
@@ -26,12 +26,12 @@ class Signal9Activity : AppCompatActivity() {
     }
 
     private fun setupContent() {
-        //Set error message
+        // 设置错误信息
         binding.errorDetails.text = getString(R.string.tc_s9a_error_message)
         
-        //Show different solutions based on Android version
+        // 根据Android版本显示不同的解决方案
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // Android 14 or below
+            // Android 14以下版本
             binding.preAndroid14Layout.isVisible = true
             binding.solutionIntro.text = getString(R.string.tc_s9a_solution_intro)
             binding.solutionAlternative.text = getString(R.string.tc_s9a_solution_alternative)
@@ -46,7 +46,7 @@ class Signal9Activity : AppCompatActivity() {
                 openBrowserLink("https://github.com/xodiosx/XoDos2/signal9fix.md")
             }
         } else {
-            //Android 14 and above
+            // Android 14及以上版本
             binding.solutionAndroid14.isVisible = true
             binding.solutionAndroid14.text = getString(R.string.tc_s9a_solution_android14)
         }
@@ -57,6 +57,6 @@ class Signal9Activity : AppCompatActivity() {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             startActivity(intent)
         }
-        // If the URL is empty, do nothing (wait for subsequent supplementary links)
+        // 如果URL为空，则不执行任何操作（等待后续补充链接）
     }
 }
