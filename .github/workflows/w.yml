@@ -60,9 +60,7 @@ jobs:
             nasm \
             gcc-multilib \
             g++-multilib \
-            mingw-w64 \
-            wine64 \
-            wine32
+            mingw-w64
           
           # Install cross-compilation toolchain for ARM
           sudo apt-get install -y \
@@ -71,7 +69,9 @@ jobs:
             gcc-arm-linux-gnueabihf \
             g++-arm-linux-gnueabihf \
             binutils-aarch64-linux-gnu \
-            binutils-arm-linux-gnueabihf
+            binutils-arm-linux-gnueabihf \
+            pkg-config-aarch64-linux-gnu \
+            pkg-config-arm-linux-gnueabihf
           
           # Install 64-bit development libraries
           sudo apt-get install -y \
@@ -85,20 +85,10 @@ jobs:
             libxcursor-dev \
             libxi-dev \
             libxfixes-dev \
-            libxcomposite-dev \
-            libxdamage-dev \
-            libvulkan-dev \
             libasound2-dev \
             libpulse-dev \
             libsdl2-dev \
-            libusb-1.0-0-dev \
-            libudev-dev \
-            libdbus-1-dev \
-            libcups2-dev \
-            libkrb5-dev \
-            libpcap-dev \
-            libncurses5-dev \
-            libtinfo5
+            libvulkan-dev
           
           # Install 32-bit development libraries for WoW64
           sudo apt-get install -y \
@@ -110,74 +100,58 @@ jobs:
             libasound2-dev:i386 \
             libpulse-dev:i386
 
-      - name: Set up cross-compilation environment
-        run: |
-          # Create necessary symlinks and directories
-          sudo mkdir -p /usr/lib/aarch64-linux-gnu
-          sudo mkdir -p /usr/lib/arm-linux-gnueabihf
-          
-          # Export environment variables
-          echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "CXX=aarch64-linux-gnu-g++" >> $GITHUB_ENV
-          echo "AR=aarch64-linux-gnu-ar" >> $GITHUB_ENV
-          echo "LD=aarch64-linux-gnu-ld" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/pkgconfig" >> $GITHUB_ENV
-          echo "CFLAGS=-O2 -pipe" >> $GITHUB_ENV
-          echo "CXXFLAGS=-O2 -pipe" >> $GITHUB_ENV
-
-      - name: Configure Wine for ARM64 WoW64
+      - name: Build 64-bit Wine (ARM64)
         run: |
           cd $BUILD_DIR/wine
           
-          # Create build directory
-          mkdir -p build-arm64
-          cd build-arm64
+          # Create build directory for 64-bit
+          mkdir -p build64
+          cd build64
           
-          # Configure for ARM64 with WoW64 support
+          # Configure for ARM64 (64-bit only)
           ../configure \
             --host=aarch64-linux-gnu \
             --enable-win64 \
-            --with-wine64=../wine64 \
-            --with-wine32=../wine32 \
             --prefix=/usr/local/wine-arm64 \
             --disable-tests \
-            --disable-option-checking \
-            PKG_CONFIG="aarch64-linux-gnu-pkg-config" \
-            ac_cv_c_bigendian=no
+            PKG_CONFIG="aarch64-linux-gnu-pkg-config"
           
-          # Check if configuration succeeded
-          if [ $? -eq 0 ]; then
-            echo "Configuration successful!"
-          else
-            echo "Configuration failed. Here's the config.log:"
-            cat config.log
-            exit 1
-          fi
+          # Build 64-bit Wine
+          make -j$(nproc)
 
-      - name: Build Wine
+      - name: Build 32-bit Wine (ARM) with WoW64 support
         run: |
-          cd $BUILD_DIR/wine/build-arm64
-          make -j$(nproc) 2>&1 | tee build.log
+          cd $BUILD_DIR/wine
           
-          # Check if build succeeded
-          if [ $? -eq 0 ]; then
-            echo "Build successful!"
-          else
-            echo "Build failed. Here are the last 100 lines of the build log:"
-            tail -100 build.log
-            exit 1
-          fi
+          # Create build directory for 32-bit with WoW64
+          mkdir -p build32
+          cd build32
+          
+          # Configure 32-bit Wine with WoW64 support
+          # Point to the 64-bit build we just made
+          ../configure \
+            --host=arm-linux-gnueabihf \
+            --with-wine64=../build64 \
+            --prefix=/usr/local/wine-arm64 \
+            --disable-tests \
+            PKG_CONFIG="arm-linux-gnueabihf-pkg-config"
+          
+          # Build 32-bit Wine with WoW64
+          make -j$(nproc)
 
-      - name: Install and package Wine
+      - name: Install Wine WoW64
         run: |
-          cd $BUILD_DIR/wine/build-arm64
-          
-          # Install to a temporary directory
-          mkdir -p $BUILD_DIR/wine-install
+          # Install both 64-bit and 32-bit components
+          cd $BUILD_DIR/wine/build64
           make install DESTDIR=$BUILD_DIR/wine-install
           
-          # Create tarball
+          cd $BUILD_DIR/wine/build32
+          make install DESTDIR=$BUILD_DIR/wine-install
+
+      - name: Package Wine
+        run: |
           cd $BUILD_DIR
+          # Create a tarball of the installation
           tar -czf wine-arm64-wow64.tar.gz -C wine-install/usr/local .
 
       - name: Upload artifacts
@@ -186,4 +160,3 @@ jobs:
           name: wine-staging-arm64-wow64
           path: |
             $BUILD_DIR/wine-arm64-wow64.tar.gz
-            $BUILD_DIR/wine/build-arm64/build.log
