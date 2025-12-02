@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- Add this permission -->
+<uses-permission android:name="android.permission.MANAGE_DOCUMENTS" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:remove="maxSdkVersion"/>
@@ -42,12 +44,19 @@ android:requestLegacyExternalStorage="true"
             android:name=".Signal9Activity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
-        <provider
-            android:name="com.com.xodos.filepicker.XDocumentsProvider"
-            android:authorities="com.com.xodos.documents"
-            android:exported="true"
-            android:grantUriPermissions="true"
-            android:permission="android.permission.MANAGE_DOCUMENTS">
+
+
+<!-- Add this provider inside <application> tag -->
+<provider
+    android:name=".filepicker.XDocumentsProvider"
+    android:authorities="${applicationId}.documents"
+    android:exported="true"
+    android:grantUriPermissions="true"
+    android:permission="android.permission.MANAGE_DOCUMENTS">
+    <intent-filter>
+        <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+    </intent-filter>
+</provider>
             <intent-filter>
                 <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
             </intent-filter>
