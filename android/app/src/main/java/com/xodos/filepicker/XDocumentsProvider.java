@@ -29,8 +29,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Adapted from Termux MTDataFilesProvider for XoDos
+ * Original: https://github.com/ewt45/winlator-fork/blob/extra2/app/src/main/java/bin/mt/file/content/MTDataFilesProvider.java
+ */
 public class XDocumentsProvider extends DocumentsProvider {
-    private static final String[] DEFAULT_ROOT_PROJECTION = {
+    private static final String[] g_DEFAULT_ROOT_PROJECTION = {
         Root.COLUMN_ROOT_ID,
         Root.COLUMN_MIME_TYPES,
         Root.COLUMN_FLAGS,
@@ -41,7 +45,7 @@ public class XDocumentsProvider extends DocumentsProvider {
         Root.COLUMN_AVAILABLE_BYTES
     };
     
-    private static final String[] DEFAULT_DOCUMENT_PROJECTION = {
+    private static final String[] h_DEFAULT_DOCUMENT_PROJECTION = {
         Document.COLUMN_DOCUMENT_ID,
         Document.COLUMN_MIME_TYPE,
         Document.COLUMN_DISPLAY_NAME,
@@ -52,12 +56,8 @@ public class XDocumentsProvider extends DocumentsProvider {
     };
     
     private String pkgName;
-    
-    /**
-     * /data/data/package/name
-     */
     private File dataDir;
-    
+
     /**
      * delete files in directory or soft link
      */
@@ -113,19 +113,19 @@ public class XDocumentsProvider extends DocumentsProvider {
      * @param lsFileState list file(s)'s state info
      * @return file object. sometimes null。if null, then a
      * directory,and its documentId is package name,parent directory of its private directory
-     * such as /data/data/package/name
+     * such as Android/data/package/name, Android/obb/package/name, /data/data/package/name/files
      */
     private final File getFileForDocId(String documentId, boolean lsFileState) throws FileNotFoundException {
         String realPath;
         if (!documentId.startsWith(this.pkgName))
             throw new FileNotFoundException(documentId.concat(" not found"));
 
-        // private sub directory
+        //private sub directory
         String virtualName = documentId.substring(this.pkgName.length());
         if (virtualName.startsWith("/")) {
             virtualName = virtualName.substring(1);
         }
-        // self
+        //self
         if (virtualName.isEmpty()) {
             return null;
         }
@@ -136,9 +136,8 @@ public class XDocumentsProvider extends DocumentsProvider {
         File targetFile;
         if (virtualName.equalsIgnoreCase("data")) {
             targetFile = new File(this.dataDir, realPath);
-        } else {
+        } else
             throw new FileNotFoundException(documentId.concat(" not found"));
-        }
 
         if (lsFileState) {
             try {
@@ -165,7 +164,7 @@ public class XDocumentsProvider extends DocumentsProvider {
             List<String> pathSegments = ((Uri) extras.getParcelable("uri")).getPathSegments();
             String documentId = pathSegments.size() >= 4 ? pathSegments.get(3) : pathSegments.get(1);
             switch (method) {
-                case "mt:setPermissions": {
+                case "mt:setPermissions": { //-1645162251
                     File file = getFileForDocId(documentId, true);
                     if (file != null) {
                         Os.chmod(file.getPath(), extras.getInt("permissions"));
@@ -232,17 +231,17 @@ public class XDocumentsProvider extends DocumentsProvider {
      * @param file   the File object representing the desired file (may be null if given docID)
      */
     private void includeFile(MatrixCursor result, String docId, File file) throws FileNotFoundException {
-        // v1, 0x1
+        //v1, 0x1
         if (file == null) {
             file = getFileForDocId(docId, true);
         }
-        // common file（not private directory soft link）
+        //common file（not private directory soft link）
         boolean isNormalFile = false;
-        // if file without docId, set its id to package name
+        //if file without docId, set its id to package name
         // maybe root
         if (file == null) {
             Context ctx = getContext();
-            String title = ctx == null ? "XoDos" : ctx.getApplicationInfo().loadLabel(getContext().getPackageManager()).toString();
+            String title = ctx == null ? "ctx=null?!" : ctx.getApplicationInfo().loadLabel(getContext().getPackageManager()).toString();
 
             MatrixCursor.RowBuilder row = result.newRow();
             row.add(Document.COLUMN_DOCUMENT_ID, this.pkgName);
@@ -250,13 +249,7 @@ public class XDocumentsProvider extends DocumentsProvider {
             row.add(Document.COLUMN_SIZE, 0);
             row.add(Document.COLUMN_MIME_TYPE, MIME_TYPE_DIR);
             row.add(Document.COLUMN_LAST_MODIFIED, 0);
-            
-            // Add flags for root directory
-            int rootFlags = Document.FLAG_DIR_SUPPORTS_CREATE | 
-                          Document.FLAG_SUPPORTS_DELETE |
-                          Document.FLAG_SUPPORTS_RENAME |
-                          Document.FLAG_SUPPORTS_SETTINGS;
-            row.add(Document.COLUMN_FLAGS, rootFlags);
+            row.add(Document.COLUMN_FLAGS, 0);
             return;
         }
 
@@ -270,19 +263,10 @@ public class XDocumentsProvider extends DocumentsProvider {
 
         if (file.getParentFile().canWrite())
             flags |= Document.FLAG_SUPPORTS_DELETE;
-            
-        // Add permission control flag
-        flags |= Document.FLAG_SUPPORTS_SETTINGS;
-        
-        // Add copy and move support
-        flags |= Document.FLAG_SUPPORTS_COPY | Document.FLAG_SUPPORTS_MOVE;
-        
-        // Add rename support
-        flags |= Document.FLAG_SUPPORTS_RENAME;
 
         String displayName;
 
-        // once private directory
+        //once private directory
         String path = file.getPath();
         if (path.equals(this.dataDir.getPath())) {
             displayName = "data";
@@ -290,7 +274,6 @@ public class XDocumentsProvider extends DocumentsProvider {
             displayName = file.getName();
             isNormalFile = true;
         }
-        
         MatrixCursor.RowBuilder row = result.newRow();
         row.add(DocumentsContract.Document.COLUMN_DOCUMENT_ID, docId);
         row.add(DocumentsContract.Document.COLUMN_DISPLAY_NAME, displayName);
@@ -299,7 +282,6 @@ public class XDocumentsProvider extends DocumentsProvider {
         row.add(DocumentsContract.Document.COLUMN_LAST_MODIFIED, file.lastModified());
         row.add(DocumentsContract.Document.COLUMN_FLAGS, flags);
         row.add("mt_path", file.getAbsolutePath());
-        
         if (isNormalFile) {
             try {
                 StructStat lstat = Os.lstat(path);
@@ -369,11 +351,9 @@ public class XDocumentsProvider extends DocumentsProvider {
         if (parentDocumentId.endsWith("/")) {
             parentDocumentId = parentDocumentId.substring(0, parentDocumentId.length() - 1);
         }
-        
-        MatrixCursor cursor = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
+        MatrixCursor cursor = new MatrixCursor(projection != null ? projection : h_DEFAULT_DOCUMENT_PROJECTION);
         File parent = getFileForDocId(parentDocumentId, true);
-        
-        // once virtual root, list out private directory
+        //once virtual root, list out private directory
         if (parent == null) {
             includeFile(cursor, parentDocumentId.concat("/data"), this.dataDir);
         } else {
@@ -387,7 +367,7 @@ public class XDocumentsProvider extends DocumentsProvider {
 
     @Override
     public final Cursor queryDocument(String documentId, String[] projection) throws FileNotFoundException {
-        MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
+        MatrixCursor result = new MatrixCursor(projection != null ? projection : h_DEFAULT_DOCUMENT_PROJECTION);
         includeFile(result, documentId, null);
         return result;
     }
@@ -397,15 +377,12 @@ public class XDocumentsProvider extends DocumentsProvider {
         ApplicationInfo appInfo = Objects.requireNonNull(getContext()).getApplicationInfo();
         String title = appInfo.loadLabel(getContext().getPackageManager()).toString();
 
-        MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_ROOT_PROJECTION);
+        MatrixCursor result = new MatrixCursor(projection != null ? projection : g_DEFAULT_ROOT_PROJECTION);
         MatrixCursor.RowBuilder row = result.newRow();
         row.add(Root.COLUMN_ROOT_ID, this.pkgName);
         row.add(Root.COLUMN_DOCUMENT_ID, this.pkgName);
-        row.add(Root.COLUMN_SUMMARY, "XoDos File Manager");
-        row.add(Root.COLUMN_FLAGS, 
-            Root.FLAG_SUPPORTS_CREATE | 
-            Root.FLAG_SUPPORTS_SEARCH | 
-            Root.FLAG_SUPPORTS_IS_CHILD);
+        row.add(Root.COLUMN_SUMMARY, this.pkgName);
+        row.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
         row.add(Root.COLUMN_TITLE, title);
         row.add(Root.COLUMN_MIME_TYPES, "*/*");
         row.add(Root.COLUMN_AVAILABLE_BYTES, dataDir.getFreeSpace());
@@ -428,7 +405,7 @@ public class XDocumentsProvider extends DocumentsProvider {
         if (b == null || !b.renameTo(new File(b.getParentFile(), displayName))) {
             throw new FileNotFoundException("Failed to rename document " + documentId + " to " + displayName);
         }
-        // start from last second character, in case of last of segment '/'
+        //start from last second character, in case of last of segment '/'
         int parentIdx = documentId.lastIndexOf('/', documentId.length() - 2);
         return documentId.substring(0, parentIdx) + "/" + displayName;
     }
