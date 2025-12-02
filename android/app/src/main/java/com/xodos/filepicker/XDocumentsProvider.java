@@ -405,8 +405,7 @@ public class XDocumentsProvider extends DocumentsProvider {
         row.add(Root.COLUMN_FLAGS, 
             Root.FLAG_SUPPORTS_CREATE | 
             Root.FLAG_SUPPORTS_SEARCH | 
-            Root.FLAG_SUPPORTS_IS_CHILD |
-            Root.FLAG_SUPPORTS_SETTINGS);
+            Root.FLAG_SUPPORTS_IS_CHILD);
         row.add(Root.COLUMN_TITLE, title);
         row.add(Root.COLUMN_MIME_TYPES, "*/*");
         row.add(Root.COLUMN_AVAILABLE_BYTES, dataDir.getFreeSpace());
