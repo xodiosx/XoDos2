@@ -1,4 +1,4 @@
-name: Build x86_64 Wine Staging WoW64 for ARM64 (via box64)
+name: Build x86_64 Wine Staging WoW64
 
 on:
   push:
@@ -35,42 +35,19 @@ jobs:
           cd $BUILD_DIR/wine-staging
           python3 ./staging/patchinstall.py DESTDIR="$BUILD_DIR/wine" --all
 
-      - name: Install build dependencies for x86_64
+      - name: Install build dependencies
         run: |
-          # Add i386 architecture for 32-bit WoW64 support
           sudo dpkg --add-architecture i386
           sudo apt-get update
           
-          # Install basic build tools
           sudo apt-get install -y \
             build-essential \
             git \
-            tar \
-            xz-utils \
-            cmake \
-            ninja-build \
-            flex \
-            bison \
-            gettext \
             python3 \
             python3-mako \
-            python3-distutils \
+            flex \
+            bison \
             pkg-config \
-            llvm \
-            nasm \
-            gcc-multilib \
-            g++-multilib \
-            mingw-w64 \
-            meson \
-            autoconf \
-            automake \
-            libtool \
-            wget
-            
-          # Install x86_64 and i386 development libraries
-          sudo apt-get install -y \
-            libfreetype6-dev \
-            libfontconfig1-dev \
             libx11-dev \
             libxext-dev \
             libxrender-dev \
@@ -78,42 +55,21 @@ jobs:
             libxinerama-dev \
             libxcursor-dev \
             libxi-dev \
-            libxfixes-dev \
-            libxcomposite-dev \
-            libxdamage-dev \
-            libxshmfence-dev \
-            libxxf86vm-dev \
-            libxtst-dev \
+            libfreetype6-dev \
+            libfontconfig1-dev \
             libasound2-dev \
             libpulse-dev \
             libsdl2-dev \
             libvulkan-dev \
-            libudev-dev \
             libcups2-dev \
             libgnutls28-dev \
             libldap2-dev \
-            libgphoto2-dev \
-            libsane-dev \
-            libv4l-dev \
-            libelf-dev \
             libxml2-dev \
-            libxslt1-dev \
             libpng-dev \
             libjpeg-dev \
             libtiff-dev \
             libgif-dev \
             libwebp-dev \
-            libegl-dev \
-            libgl-dev \
-            libglu1-mesa-dev \
-            libgles2-mesa-dev \
-            libglvnd-dev \
-            libfaudio-dev \
-            libgstreamer1.0-dev \
-            libgstreamer-plugins-base1.0-dev
-            
-          # Install i386 libraries for WoW64
-          sudo apt-get install -y \
             libfreetype6-dev:i386 \
             libfontconfig1-dev:i386 \
             libx11-dev:i386 \
@@ -121,161 +77,40 @@ jobs:
             libxrender-dev:i386 \
             libasound2-dev:i386 \
             libpulse-dev:i386 \
-            libfaudio-dev:i386 \
             libpng-dev:i386 \
             libjpeg-dev:i386
 
-      - name: Build 64-bit Wine (x86_64)
+      - name: Build 64-bit Wine
         run: |
           cd $BUILD_DIR/wine
-          
-          # Create build directory for 64-bit
           mkdir -p build64
           cd build64
-          
-          # Configure for x86_64 (64-bit only)
-          ../configure \
-            --enable-win64 \
-            --prefix=/usr/local/wine-x86_64 \
-            --disable-tests
-          
-          # Build 64-bit Wine
-          make -j$(nproc) 2>&1 | tee build64.log || (echo "64-bit build failed"; tail -100 build64.log; exit 1)
+          ../configure --enable-win64 --prefix=/usr/local/wine
+          make -j$(nproc)
 
-      - name: Build 32-bit Wine (i686) with WoW64 support
+      - name: Build 32-bit Wine (WoW64)
         run: |
           cd $BUILD_DIR/wine
-          
-          # Create build directory for 32-bit with WoW64
           mkdir -p build32
           cd build32
-          
-          # Configure 32-bit Wine with WoW64 support
-          ../configure \
-            --with-wine64=../build64 \
-            --prefix=/usr/local/wine-x86_64 \
-            --disable-tests
-          
-          # Build 32-bit Wine with WoW64
-          make -j$(nproc) 2>&1 | tee build32.log || (echo "32-bit build failed"; tail -100 build32.log; exit 1)
+          ../configure --with-wine64=../build64 --prefix=/usr/local/wine
+          make -j$(nproc)
 
-      - name: Install Wine WoW64
+      - name: Install to temporary directory
         run: |
-          # Create installation directory
-          mkdir -p $BUILD_DIR/wine-install/usr/local
-          
-          # Install 64-bit components
+          mkdir -p $BUILD_DIR/wine-install
           cd $BUILD_DIR/wine/build64
-          make install DESTDIR=$BUILD_DIR/wine-install 2>&1 | tee install64.log || true
-          
-          # Install 32-bit components
+          make install DESTDIR=$BUILD_DIR/wine-install
           cd $BUILD_DIR/wine/build32
-          make install DESTDIR=$BUILD_DIR/wine-install 2>&1 | tee install32.log || true
+          make install DESTDIR=$BUILD_DIR/wine-install
 
-      - name: Create runtime wrapper for box64
+      - name: Create tarball
         run: |
           cd $BUILD_DIR
-          
-          # Create a wrapper script that sets up environment for box64
-          cat > wine-box64-wrapper << 'EOF'
-#!/bin/bash
-# Wrapper for running x86_64 Wine on ARM64 via box64
-# Set BOX64_LD_LIBRARY_PATH to point to x86_64 libraries
-# Set WINEPREFIX appropriately
-
-# Find box64 in PATH
-BOX64=$(which box64 2>/dev/null || echo "/usr/local/bin/box64")
-
-# Set library paths for x86_64
-export BOX64_LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu"
-export BOX64_PATH="/usr/local/wine-x86_64/bin:$PATH"
-
-# Disable noexec mount protection that causes the error
-export BOX64_NOBIND=1
-
-# Run wine with box64
-exec "$BOX64" "/usr/local/wine-x86_64/bin/wine" "$@"
-EOF
-          
-          chmod +x wine-box64-wrapper
-          
-          # Create a setup script for Debian Bookworm ARM64
-          cat > setup-wine-box64.sh << 'EOF'
-#!/bin/bash
-# Setup script for Wine x86_64 WoW64 on ARM64 Debian Bookworm
-
-echo "Installing dependencies for ARM64..."
-sudo apt-get update
-sudo apt-get install -y \
-  libfreetype6:arm64 \
-  libfontconfig1:arm64 \
-  libx11-6:arm64 \
-  libxext6:arm64 \
-  libxrender1:arm64 \
-  libasound2:arm64 \
-  libpulse0:arm64 \
-  libsdl2-2.0-0:arm64 \
-  libvulkan1:arm64 \
-  libudev1:arm64 \
-  libcups2:arm64 \
-  libgnutls30:arm64 \
-  libldap-2.4-2:arm64 \
-  libxml2:arm64 \
-  libpng16-16:arm64 \
-  libjpeg62-turbo:arm64 \
-  libtiff5:arm64 \
-  libgif7:arm64 \
-  libwebp7:arm64 \
-  libegl1:arm64 \
-  libgl1:arm64 \
-  libglu1-mesa:arm64 \
-  libgles2:arm64 \
-  libglvnd0:arm64
-
-echo "Installing box64..."
-# Install box64 from your preferred source
-# For example, from box64 repository:
-# git clone https://github.com/ptitSeb/box64
-# cd box64
-# mkdir build; cd build
-# cmake .. -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
-# make -j$(nproc)
-# sudo make install
-
-echo "Extracting Wine x86_64 WoW64..."
-sudo tar -xzf wine-x86_64-wow64.tar.gz -C /usr/local/
-
-echo "Copying wrapper script..."
-sudo cp wine-box64-wrapper /usr/local/bin/wine-box64
-sudo chmod +x /usr/local/bin/wine-box64
-
-echo "Setup complete!"
-echo "Use 'wine-box64' to run Windows applications via box64"
-EOF
-          
-          chmod +x setup-wine-box64.sh
-
-      - name: Package Wine for ARM64 deployment
-        run: |
-          cd $BUILD_DIR
-          
-          # Create a tarball of the installation
           tar -czf wine-x86_64-wow64.tar.gz -C wine-install/usr/local .
-          
-          # Package everything together
-          tar -czf wine-box64-arm64-package.tar.gz \
-            wine-x86_64-wow64.tar.gz \
-            wine-box64-wrapper \
-            setup-wine-box64.sh \
-            wine/build64/build64.log \
-            wine/build32/build32.log
 
-      - name: Upload artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wine-x86_64-wow64-for-arm64
-          path: |
-            $BUILD_DIR/wine-box64-arm64-package.tar.gz
-            $BUILD_DIR/wine-x86_64-wow64.tar.gz
-            $BUILD_DIR/setup-wine-box64.sh
-            $BUILD_DIR/wine-box64-wrapper
+          name: wine-x86_64-wow64
+          path: $BUILD_DIR/wine-x86_64-wow64.tar.gz
