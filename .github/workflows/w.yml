@@ -59,7 +59,7 @@ jobs:
     - name: Apply Staging patches
       run: |
         cd wine
-        ../wine-staging/patches/patchinstall.sh DESTDIR=. --all
+       ../wine-staging/patches/gitapply.sh --all
 
     - name: Build Wine64
       run: |
