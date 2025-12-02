@@ -52,9 +52,7 @@ jobs:
 
       - name: Create tarball
         run: |
-          cd wine-install/usr/local
-          tar -czf ../../../wine-x86_64-wow64.tar.gz .
-          cd ../..
+          tar -C wine-install/usr/local -czf wine-x86_64-wow64.tar.gz .
           echo "Tarball created at:"
           ls -lh wine-x86_64-wow64.tar.gz
 
