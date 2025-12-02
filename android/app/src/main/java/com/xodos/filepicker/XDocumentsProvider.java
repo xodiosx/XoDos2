@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Enhanced DocumentsProvider with virtual file system mapping like Termux MTFile provider
+ * XoDos DocumentsProvider - Works exactly like Termux MTFile provider
  */
 public class XDocumentsProvider extends DocumentsProvider {
     private static final String[] DEFAULT_ROOT_PROJECTION = {
@@ -55,9 +55,8 @@ public class XDocumentsProvider extends DocumentsProvider {
     };
 
     private String pkgName;
-    private File dataDir;
-    private File filesDir;
-    private File wineDataDir;
+    private File dataDir;      // /data/data/com.xodos
+    private File filesDir;     // /data/data/com.xodos/files
 
     /**
      * Delete files in directory or soft link
@@ -106,76 +105,46 @@ public class XDocumentsProvider extends DocumentsProvider {
         this.pkgName = Objects.requireNonNull(getContext()).getPackageName();
         this.dataDir = Objects.requireNonNull(context.getFilesDir().getParentFile());
         this.filesDir = context.getFilesDir();
-        
-        // Initialize Wine data directory - try multiple possible locations
-        this.wineDataDir = findWineDataDirectory();
-    }
-
-    private File findWineDataDirectory() {
-        // Try common Wine directories
-        String[] possiblePaths = {
-            "/data/data/com.wine.app",
-            "/data/data/com.winehq.wine", 
-            "/data/data/org.winehq.wine",
-            "/data/data/com.termux/files/home/.wine",
-            "/data/data/" + pkgName + "/files/wine"
-        };
-        
-        for (String path : possiblePaths) {
-            File dir = new File(path);
-            if (dir.exists() && dir.canRead()) {
-                return dir;
-            }
-        }
-        return null;
     }
 
     /**
-     * Get file object by documentId using virtual mapping
+     * Get file object by documentId - This is the KEY function that creates the virtual mapping
      */
     private final File getFileForDocId(String documentId, boolean lsFileState) throws FileNotFoundException {
+        // Document ID format: com.xodos/files/path/to/file
+        // or: com.xodos/data/path/to/file
+        
         if (!documentId.startsWith(this.pkgName)) {
             throw new FileNotFoundException(documentId.concat(" not found"));
         }
 
-        // Get virtual name after package name
-        String virtualName = documentId.substring(this.pkgName.length());
-        if (virtualName.startsWith("/")) {
-            virtualName = virtualName.substring(1);
+        // Get the part after package name
+        String virtualPath = documentId.substring(this.pkgName.length());
+        if (virtualPath.startsWith("/")) {
+            virtualPath = virtualPath.substring(1);
         }
         
         // Root directory - return null to indicate virtual root
-        if (virtualName.isEmpty()) {
+        if (virtualPath.isEmpty()) {
             return null;
         }
         
-        String[] split = virtualName.split("/", 2);
-        String virtualRoot = split[0];
-        String relativePath = split.length > 1 ? split[1] : "";
+        // Split into virtual directory and rest of path
+        String[] parts = virtualPath.split("/", 2);
+        String virtualDir = parts[0];
+        String restPath = parts.length > 1 ? parts[1] : "";
 
         File targetFile;
         
-        // Map virtual directories to real paths
-        switch (virtualRoot) {
-            case "files":
-                targetFile = new File(this.filesDir, relativePath);
-                break;
-            case "data":
-                targetFile = new File(this.dataDir, relativePath);
-                break;
-            case "wine":
-                if (this.wineDataDir != null) {
-                    targetFile = new File(this.wineDataDir, relativePath);
-                } else {
-                    throw new FileNotFoundException("Wine data not available");
-                }
-                break;
-            case "home":
-                // Map to app's home directory
-                targetFile = new File(this.filesDir, relativePath);
-                break;
-            default:
-                throw new FileNotFoundException(documentId.concat(" not found"));
+        // Map virtual directories to real paths - EXACTLY like Termux
+        if (virtualDir.equals("files")) {
+            // This maps to com.xodos/files
+            targetFile = new File(this.filesDir, restPath);
+        } else if (virtualDir.equals("data")) {
+            // This maps to com.xodos (the entire data directory)
+            targetFile = new File(this.dataDir, restPath);
+        } else {
+            throw new FileNotFoundException(documentId.concat(" not found"));
         }
 
         if (lsFileState && targetFile != null) {
@@ -202,11 +171,17 @@ public class XDocumentsProvider extends DocumentsProvider {
         Bundle customBundle = new Bundle();
         customBundle.putBoolean("result", false);
         try {
-            List<String> pathSegments = ((Uri) extras.getParcelable("uri")).getPathSegments();
+            Uri uri = extras.getParcelable("uri");
+            if (uri == null) {
+                return customBundle;
+            }
+            
+            List<String> pathSegments = uri.getPathSegments();
             String documentId = pathSegments.size() >= 4 ? pathSegments.get(3) : pathSegments.get(1);
             
             switch (method) {
                 case "mt:setPermissions": {
+                    // Change file permissions (chmod)
                     File file = getFileForDocId(documentId, true);
                     if (file != null) {
                         int permissions = extras.getInt("permissions");
@@ -216,6 +191,7 @@ public class XDocumentsProvider extends DocumentsProvider {
                     return customBundle;
                 }
                 case "mt:createSymlink": {
+                    // Create symbolic link
                     File file = getFileForDocId(documentId, false);
                     if (file != null) {
                         String targetPath = extras.getString("path");
@@ -225,6 +201,7 @@ public class XDocumentsProvider extends DocumentsProvider {
                     return customBundle;
                 }
                 case "mt:setLastModified": {
+                    // Set file modification time
                     File file = getFileForDocId(documentId, true);
                     if (file != null) {
                         customBundle.putBoolean("result", file.setLastModified(extras.getLong("time")));
@@ -232,26 +209,13 @@ public class XDocumentsProvider extends DocumentsProvider {
                     return customBundle;
                 }
                 case "mt:getPermissions": {
+                    // Get current file permissions
                     File file = getFileForDocId(documentId, true);
                     if (file != null) {
                         try {
                             StructStat stat = Os.lstat(file.getPath());
                             customBundle.putBoolean("result", true);
-                            customBundle.putInt("permissions", stat.st_mode & 0777);
-                            customBundle.putInt("uid", stat.st_uid);
-                            customBundle.putInt("gid", stat.st_gid);
-                        } catch (ErrnoException e) {
-                            customBundle.putString("message", e.getMessage());
-                        }
-                    }
-                    return customBundle;
-                }
-                case "mt:getOwner": {
-                    File file = getFileForDocId(documentId, true);
-                    if (file != null) {
-                        try {
-                            StructStat stat = Os.lstat(file.getPath());
-                            customBundle.putBoolean("result", true);
+                            customBundle.putInt("permissions", stat.st_mode & 0777); // Only permissions bits
                             customBundle.putInt("uid", stat.st_uid);
                             customBundle.putInt("gid", stat.st_gid);
                         } catch (ErrnoException e) {
@@ -261,6 +225,7 @@ public class XDocumentsProvider extends DocumentsProvider {
                     return customBundle;
                 }
                 case "mt:setOwner": {
+                    // Change file owner (chown)
                     File file = getFileForDocId(documentId, true);
                     if (file != null) {
                         try {
@@ -298,7 +263,6 @@ public class XDocumentsProvider extends DocumentsProvider {
                     : newFile.createNewFile();
 
                 if (succeeded) {
-                    // Return the virtual document ID
                     return parentDocumentId + "/" + newFile.getName();
                 }
             } catch (IOException e) {
@@ -309,14 +273,14 @@ public class XDocumentsProvider extends DocumentsProvider {
     }
 
     /**
-     * Add a representation of a file to a cursor with full control flags
+     * Add a representation of a file to a cursor
      */
     private void includeFile(MatrixCursor result, String docId, File file) throws FileNotFoundException {
         if (file == null) {
             file = getFileForDocId(docId, true);
         }
 
-        // Root directory - show virtual roots
+        // Root directory - show virtual root
         if (file == null) {
             Context ctx = getContext();
             String title = ctx == null ? "XoDos" : ctx.getApplicationInfo().loadLabel(getContext().getPackageManager()).toString();
@@ -338,13 +302,7 @@ public class XDocumentsProvider extends DocumentsProvider {
 
         int flags = 0;
         
-        // Basic flags for all files
-        flags |= Document.FLAG_SUPPORTS_SETTINGS | 
-                 Document.FLAG_SUPPORTS_COPY | 
-                 Document.FLAG_SUPPORTS_MOVE |
-                 Document.FLAG_SUPPORTS_DELETE |
-                 Document.FLAG_SUPPORTS_RENAME;
-
+        // Set flags based on file type and permissions
         if (file.isDirectory()) {
             flags |= Document.FLAG_DIR_SUPPORTS_CREATE |
                      Document.FLAG_DIR_PREFERS_LAST_MODIFIED;
@@ -354,16 +312,21 @@ public class XDocumentsProvider extends DocumentsProvider {
             }
         }
 
+        // Always include these flags for full control
+        flags |= Document.FLAG_SUPPORTS_SETTINGS |  // This enables permission management
+                 Document.FLAG_SUPPORTS_COPY | 
+                 Document.FLAG_SUPPORTS_MOVE |
+                 Document.FLAG_SUPPORTS_DELETE |
+                 Document.FLAG_SUPPORTS_RENAME;
+
         String displayName;
         String path = file.getPath();
 
-        // Map virtual root names
+        // For virtual directories, show friendly names
         if (path.equals(this.filesDir.getPath())) {
             displayName = "files";
         } else if (path.equals(this.dataDir.getPath())) {
             displayName = "data";
-        } else if (wineDataDir != null && path.equals(wineDataDir.getPath())) {
-            displayName = "wine";
         } else {
             displayName = file.getName();
         }
@@ -377,7 +340,7 @@ public class XDocumentsProvider extends DocumentsProvider {
         row.add(DocumentsContract.Document.COLUMN_FLAGS, flags);
         row.add("mt_path", file.getAbsolutePath());
         
-        // Add extended file information for permission control
+        // Add extended file information (mode, uid, gid, symlink target)
         try {
             StructStat lstat = Os.lstat(path);
             StringBuilder sb = new StringBuilder()
@@ -449,13 +412,11 @@ public class XDocumentsProvider extends DocumentsProvider {
         MatrixCursor cursor = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
         File parent = getFileForDocId(parentDocumentId, true);
         
-        // Virtual root - list available virtual directories
+        // Virtual root - list available virtual directories (like Termux)
         if (parent == null) {
+            // Show "files" and "data" as virtual directories
             includeFile(cursor, parentDocumentId + "/files", this.filesDir);
             includeFile(cursor, parentDocumentId + "/data", this.dataDir);
-            if (wineDataDir != null && wineDataDir.exists()) {
-                includeFile(cursor, parentDocumentId + "/wine", this.wineDataDir);
-            }
         } else {
             File[] children = parent.listFiles();
             if (children != null) {
@@ -483,13 +444,13 @@ public class XDocumentsProvider extends DocumentsProvider {
         MatrixCursor.RowBuilder row = result.newRow();
         row.add(Root.COLUMN_ROOT_ID, this.pkgName);
         row.add(Root.COLUMN_DOCUMENT_ID, this.pkgName);
-        row.add(Root.COLUMN_SUMMARY, "Full control file manager with Wine support");
+        row.add(Root.COLUMN_SUMMARY, "XoDos File Manager");
         row.add(Root.COLUMN_FLAGS, 
             Root.FLAG_SUPPORTS_CREATE | 
             Root.FLAG_SUPPORTS_SEARCH | 
             Root.FLAG_SUPPORTS_IS_CHILD |
             Root.FLAG_LOCAL_ONLY |
-            Root.FLAG_SUPPORTS_SETTINGS);
+            Root.FLAG_SUPPORTS_SETTINGS);  // This enables settings in root
         row.add(Root.COLUMN_TITLE, title);
         row.add(Root.COLUMN_MIME_TYPES, "*/*");
         row.add(Root.COLUMN_AVAILABLE_BYTES, filesDir.getFreeSpace());
