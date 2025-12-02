@@ -16,9 +16,10 @@ class MainActivity: FlutterActivity() {
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "android").setMethodCallHandler {
-            // 注册通道并设置方法调用处理器
+            //Register the channel and set the method call handler
+             call, r
             call, result ->
-            // 判断方法名
+            //Judgment method name
             when (call.method) {
                 "launchSignal9Page" -> {
                     startActivity(Intent(this, Signal9Activity::class.java))
@@ -28,7 +29,7 @@ class MainActivity: FlutterActivity() {
                     result.success(getApplicationInfo().nativeLibraryDir)
                 }
                 else -> {
-                    // 不支持的方法名
+                    // Unsupported part
                     result.notImplemented()
                 }
             }

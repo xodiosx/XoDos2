@@ -29,7 +29,7 @@
             android:textColor="@color/tc_s9a_white"
             android:textSize="16sp" />
 
-        <!-- Android 14以下版本的内容 -->
+        <!-- Android 14 under -->
         <LinearLayout
             android:id="@+id/pre_android14_layout"
             android:layout_width="match_parent"
@@ -71,7 +71,7 @@
 
         </LinearLayout>
 
-        <!-- Android 14及以上版本的内容 -->
+        <!-- Android 14 -->
         <TextView
             android:id="@+id/solution_android14"
             android:layout_width="match_parent"
