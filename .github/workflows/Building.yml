@@ -11,22 +11,40 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
+    # -------------------------
+    # CACHE FLUTTER SDK
+    # -------------------------
+    - name: Cache Flutter SDK
+      id: cache-flutter
+      uses: actions/cache@v3
       with:
-        distribution: temurin
-        java-version: "17"
+        path: flutter
+        key: flutter-sdk-cache-v1
 
-    - name: Download Flutter SDK ARM64 2025-11-15
+    - name: Download Flutter SDK if not cached
+      if: steps.cache-flutter.outputs.cache-hit != 'true'
       run: |
+        echo "Flutter not in cache, downloading..."
         wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip
-        mkdir -p flutter
-        unzip Flutter-SDK-ARM64.zip 
-        echo "$PWD/flutter/bin" >> $GITHUB_PATH
+        unzip Flutter-SDK-ARM64.zip -d flutter
 
-    - name: Install Android SDK dependencies
+    - name: Add Flutter to PATH
+      run: echo "$PWD/flutter/bin" >> $GITHUB_PATH
+
+    # ------------------------------------
+    # CACHE ANDROID SDK (cmdline, build-tools, platform, NDK)
+    # ------------------------------------
+    - name: Cache Android SDK
+      id: cache-android
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.ANDROID_HOME }}
+        key: android-sdk-cache-v1
+
+    - name: Install Android dependencies if not cached
+      if: steps.cache-android.outputs.cache-hit != 'true'
       run: |
-        flutter --version
+        echo "Android SDK not in cache, installing..."
         sudo apt-get update
         sudo apt-get install -y unzip wget
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
@@ -35,9 +53,26 @@ jobs:
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006"
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 
-    - name: Flutter pub get
+    # -------------------------
+    # CACHE GRADLE
+    # -------------------------
+    - name: Cache Gradle
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+    # -------------------------
+    # FLUTTER DEPENDENCIES
+    # -------------------------
+    - name: Pub Get
       run: flutter pub get
 
+    # -------------------------
+    # BUILD APK
+    # -------------------------
     - name: Build release APK
       run: |
         flutter clean
@@ -45,29 +80,33 @@ jobs:
           --target-platform android-arm64 \
           --split-per-abi
 
-    # ----------------------------
-    # Upload artifact (private)
-    # ----------------------------
+    # -------------------------
+    # ARTIFACT UPLOAD
+    # -------------------------
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: android-arm64-apk
         path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 
-    # ------------------------------------------------
-    # Push APK publicly to your other repo XoDos22
-    # ------------------------------------------------
+    # -------------------------
+    # PUSH TO OTHER REPO
+    # -------------------------
     - name: Push APK to XoDos22 repo
-      run: |
-        git config --global user.email "workflow@github.com"
-        git config --global user.name "GitHub Action"
+  env:
+    TOKEN: ${{ secrets.OTHER_REPO_TOKEN }}
+  run: |
+    git config --global user.email "workflow@github.com"
+    git config --global user.name "GitHub Action"
 
-        git clone https://xodiosx:${{ secrets.OTHER_REPO_TOKEN }}@github.com/xodiosx/XoDos22.git
-        cd XoDos22
+    git clone https://github.com/xodiosx/XoDos22.git
+    cd XoDos22
 
-        mkdir -p builds
-        cp ../build/app/outputs/flutter-apk/app-arm64-v8a-release.apk builds/
+    mkdir -p builds
+    cp ../build/app/outputs/flutter-apk/app-arm64-v8a-release.apk builds/
 
-        git add builds/app-arm64-v8a-release.apk
-        git commit -m "Auto upload APK $(date)"
-        git push
+    git add builds/app-arm64-v8a-release.apk
+    git commit -m "Auto upload APK $(date)" || echo "No changes to commit."
+
+    git remote set-url origin https://xodiosx:$TOKEN@github.com/xodiosx/XoDos22.git
+    git push origin main
