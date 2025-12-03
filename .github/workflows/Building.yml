@@ -18,14 +18,13 @@ jobs:
     # Cache Flutter SDK
     # -------------------------
     - name: Cache Flutter SDK
-       id: cache-flutter
-       uses: actions/cache@v3
-       with:
-         path: $HOME/flutter
-         key: flutter-sdk-cache-v1
-         restore-keys: |
-           flutter-sdk-cache-
-
+      id: cache-flutter
+      uses: actions/cache@v3
+      with:
+        path: $HOME/flutter
+        key: flutter-sdk-cache-v1
+        restore-keys: |
+             flutter-sdk-cache-
     - name: Download Flutter SDK if not cached
       if: steps.cache-flutter.outputs.cache-hit != 'true'
       run: |
