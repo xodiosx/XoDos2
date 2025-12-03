@@ -15,13 +15,22 @@ jobs:
       uses: actions/checkout@v4
 
     # -------------------------
+    # Setup Java (required for Android)
+    # -------------------------
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    # -------------------------
     # Cache Flutter SDK
     # -------------------------
     - name: Cache Flutter SDK
       id: cache-flutter
       uses: actions/cache@v3
       with:
-        path: $HOME/flutter
+        path: /opt/flutter
         key: flutter-sdk-cache-v1
 
     - name: Download Flutter SDK if not cached
@@ -29,21 +38,23 @@ jobs:
       run: |
         echo "Flutter not in cache, downloading..."
         wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip -O flutter.zip
-        unzip flutter.zip -d $HOME
+        sudo unzip flutter.zip -d /opt
+        sudo chmod -R 755 /opt/flutter
 
-    - name: Add Flutter to PATH
-      run: |
-        echo "$HOME/flutter/bin" >> $GITHUB_PATH
-        export PATH="$HOME/flutter/bin:$PATH"
-        flutter --version
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.19.5'
+        channel: 'stable'
+        cache: true
+        cache-key: flutter-cache
+        cache-path: /opt/flutter
 
     # -------------------------
-    # Set Android environment
+    # Setup Android SDK
     # -------------------------
-    - name: Set Android Home
-      run: |
-        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
 
     # -------------------------
     # Cache Android SDK
@@ -52,47 +63,58 @@ jobs:
       id: cache-android
       uses: actions/cache@v3
       with:
-        path: $HOME/android-sdk
-        key: android-sdk-cache-v1
-
-    - name: Install Android dependencies if not cached
-      if: steps.cache-android.outputs.cache-hit != 'true'
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y unzip wget
-
-        mkdir -p "$HOME/android-sdk/cmdline-tools"
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-        unzip cmdline-tools.zip -d "$HOME/android-sdk/cmdline-tools"
-        mv "$HOME/android-sdk/cmdline-tools/cmdline-tools" "$HOME/android-sdk/cmdline-tools/latest"
-
-        # Install required SDK components
-        yes '' | "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$HOME/android-sdk" \
-          "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006" || true
-        yes '' | "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-
-    # -------------------------
-    # Cache Gradle
-    # -------------------------
-    - name: Cache Gradle
-      uses: actions/cache@v3
-      with:
         path: |
+          ~/.android/cache
           ~/.gradle/caches
           ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        key: android-sdk-cache-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties') }}
+        restore-keys: |
+          android-sdk-cache-${{ runner.os }}-
+
+    - name: Accept Android Licenses
+      run: |
+        yes | sdkmanager --licenses || true
+        flutter doctor --android-licenses --verbose
+
+    # -------------------------
+    # Install Android SDK components
+    # -------------------------
+    - name: Install Android SDK Components
+      run: |
+        sdkmanager --list
+        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        sdkmanager "cmdline-tools;latest" "cmake;3.22.1" "ndk;25.1.8937393"
+        sdkmanager --update
+
+    # -------------------------
+    # Set environment variables properly
+    # -------------------------
+    - name: Set Android Environment
+      run: |
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+        echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH" >> $GITHUB_ENV
+        echo "JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
 
     # -------------------------
     # Verify setup
     # -------------------------
     - name: Verify Flutter and Android Setup
       run: |
-        echo "Flutter PATH: $(which flutter)"
+        echo "=== Environment Variables ==="
+        echo "ANDROID_HOME: $ANDROID_HOME"
+        echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+        echo "JAVA_HOME: $JAVA_HOME"
+        echo "PATH: $PATH"
+        
+        echo "=== Flutter Version ==="
         flutter --version
-        echo "ANDROID_HOME=$ANDROID_HOME"
-        ls -la "$HOME/android-sdk/platforms" || echo "Platforms not found"
-        ls -la "$HOME/android-sdk/build-tools" || echo "Build-tools not found"
+        
+        echo "=== Android SDK Contents ==="
+        ls -la $ANDROID_HOME/platforms || echo "Platforms not found"
+        ls -la $ANDROID_HOME/build-tools || echo "Build-tools not found"
+        
+        echo "=== Flutter Doctor ==="
         flutter doctor -v
 
     # -------------------------
@@ -107,7 +129,7 @@ jobs:
     - name: Build release APK
       run: |
         flutter clean
-        flutter build apk --target-platform android-arm64 --split-per-abi
+        flutter build apk --target-platform android-arm64 --split-per-abi --release --verbose
 
     # -------------------------
     # Upload artifact
@@ -117,6 +139,7 @@ jobs:
       with:
         name: android-arm64-apk
         path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+        retention-days: 7
 
     # -------------------------
     # Push to XoDos22 repo
