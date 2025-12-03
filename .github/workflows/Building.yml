@@ -29,16 +29,21 @@ jobs:
         unzip Flutter-SDK-ARM64.zip -d flutter
 
     - name: Add Flutter to PATH
-      run: echo "$PWD/flutter/bin" >> $GITHUB_PATH
+      shell: bash
+      run: |
+        echo "${PWD}/flutter/bin" >> $GITHUB_PATH
+        export PATH="${PWD}/flutter/bin:$PATH"
 
     # ------------------------------------
-    # SET ANDROID_HOME (important!)
+    # SET ANDROID_HOME
     # ------------------------------------
     - name: Set Android Home
-      run: echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+      run: |
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        export ANDROID_HOME="$HOME/android-sdk"
 
     # ------------------------------------
-    # CACHE ANDROID SDK (cmdline, build-tools, platform, NDK)
+    # CACHE ANDROID SDK
     # ------------------------------------
     - name: Cache Android SDK
       id: cache-android
@@ -49,17 +54,24 @@ jobs:
 
     - name: Install Android dependencies if not cached
       if: steps.cache-android.outputs.cache-hit != 'true'
+      shell: bash
       run: |
         echo "Android SDK not in cache, installing..."
         sudo apt-get update
         sudo apt-get install -y unzip wget
-        mkdir -p $ANDROID_HOME
+        
+        # Create ANDROID_HOME directory
+        mkdir -p "$ANDROID_HOME"
+        
+        # Download and install Android SDK
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-        mkdir -p $ANDROID_HOME/cmdline-tools
-        unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
-        mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006"
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        mkdir -p "$ANDROID_HOME/cmdline-tools"
+        unzip cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
+        mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+        
+        # Install required SDK components
+        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006"
+        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
 
     # -------------------------
     # CACHE GRADLE
@@ -70,13 +82,27 @@ jobs:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+    # -------------------------
+    # VERIFY SETUP
+    # -------------------------
+    - name: Verify Flutter Installation
+      run: |
+        flutter --version
+        echo "Flutter PATH: $(which flutter)"
+
+    - name: Verify Android Setup
+      run: |
+        echo "ANDROID_HOME: $ANDROID_HOME"
+        ls -la "$ANDROID_HOME/cmdline-tools/latest/bin" || echo "Android tools not found"
 
     # -------------------------
     # FLUTTER DEPENDENCIES
     # -------------------------
     - name: Pub Get
-      run: flutter pub get
+      run: |
+        flutter pub get
 
     # -------------------------
     # BUILD APK
@@ -104,17 +130,21 @@ jobs:
       env:
         TOKEN: ${{ secrets.OTHER_REPO_TOKEN }}
       run: |
-        git config --global user.email "workflow@github.com"
-        git config --global user.name "GitHub Action"
-
-        git clone https://github.com/xodiosx/XoDos22.git
+        git config --global user.email "github-actions@github.com"
+        git config --global user.name "GitHub Actions"
+        
+        # Clone the target repo with authentication
+        git clone https://xodiosx:$TOKEN@github.com/xodiosx/XoDos22.git
         cd XoDos22
-
+        
+        # Create builds directory if it doesn't exist
         mkdir -p builds
-        cp ../build/app/outputs/flutter-apk/app-arm64-v8a-release.apk builds/
-
-        git add builds/app-arm64-v8a-release.apk
-        git commit -m "Auto upload APK $(date)" || echo "No changes to commit."
-
-        git remote set-url origin https://xodiosx:$TOKEN@github.com/xodiosx/XoDos22.git
+        
+        # Copy APK with timestamp for uniqueness
+        TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
+        cp ../build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "builds/app-arm64-v8a-release-$TIMESTAMP.apk"
+        
+        # Add, commit, and push
+        git add builds/
+        git commit -m "Add APK build - $TIMESTAMP" || echo "No changes to commit"
         git push origin main
