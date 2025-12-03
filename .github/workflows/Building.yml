@@ -17,7 +17,7 @@ jobs:
     - name: Prepare SDK folders
       run: |
         mkdir -p $HOME/flutter
-        mkdir -p $HOME/android-sd
+        mkdir -p $HOME/android-sdk
      
      
      
