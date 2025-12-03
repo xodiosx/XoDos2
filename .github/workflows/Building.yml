@@ -14,16 +14,37 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
      
+    - name: Prepare SDK folders
+      run: |
+        mkdir -p $HOME/flutter
+        mkdir -p $HOME/android-sd
+     
+     
+     
     # -------------------------
-    # Set up Flutter using official action
+    # Cache Flutter SDK
     # -------------------------
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
+    - name: Cache Flutter SDK
+      id: cache-flutter
+      uses: actions/cache@v3
       with:
-        channel: 'stable'  # or 'beta', 'dev' as needed
-        cache: true
-        cache-key: flutter-packages-${{ hashFiles('pubspec.yaml') }}
-        cache-path: ${{ runner.tool_cache }}/flutter
+        path: $HOME/flutter
+        key: flutter-sdk-cache-v1
+        restore-keys: |
+             flutter-sdk-cache-
+    - name: Download Flutter SDK if not cached
+      if: steps.cache-flutter.outputs.cache-hit != 'true'
+      run: |
+        echo "Flutter not in cache, downloading..."
+        wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip -O flutter.zip
+        unzip flutter.zip -d $HOME
+
+    - name: Add Flutter to PATH
+      run: |
+        ls "$HOME"
+        echo "$HOME/flutter/bin" >> $GITHUB_PATH
+        export PATH="$HOME/flutter/bin:$PATH"
+        flutter --version
 
     # -------------------------
     # Set Android environment
@@ -49,6 +70,7 @@ jobs:
     - name: Install Android SDK dependencies
       if: steps.cache-android.outputs.cache-hit != 'true'
       run: |
+        flutter --version
         sudo apt-get update
         sudo apt-get install -y unzip wget
 
@@ -71,6 +93,26 @@ jobs:
           ~/.gradle/caches
           ~/.gradle/wrapper
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+    # -------------------------
+    # Cache Flutter packages
+    # -------------------------
+    - name: Cache Flutter packages
+      uses: actions/cache@v3
+      with:
+        path: $HOME/.pub-cache
+        key: flutter-packages-${{ hashFiles('pubspec.yaml') }}
+
+    # -------------------------
+    # Cache Flutter build outputs
+    # -------------------------
+    - name: Cache Flutter build
+      uses: actions/cache@v3
+      with:
+        path: build
+        key: flutter-build-cache-${{ github.sha }}
+        restore-keys: |
+          flutter-build-cache-
 
     # -------------------------
     # Verify setup
@@ -105,3 +147,8 @@ jobs:
       with:
         name: android-arm64-apk
         path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+    # -------------------------
+    # Push to XoDos22 repo
+    # -------------------------
+    
