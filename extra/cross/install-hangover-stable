@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "正在更新软件包..."
+echo "Updating packages..."
 sudo apt update
 sudo apt upgrade -y
 
@@ -20,39 +20,39 @@ cd /tmp/hangover
 
 for mirror in "${mirror_sites[@]}"; do
     url="${mirror}${hangover_url}"
-    echo "尝试从 $url 下载Hangover..."
+    echo "Attempting to download Hangover from $url..."
     wget "${url}" -O hangover.tar
     if [ $? -eq 0 ]; then
-        echo "成功下载Hangover"
+        echo "Successfully downloaded Hangover"
         break
     fi
     if [ -z "$mirror" ]; then
         cd /tmp
         rm -rf /tmp/hangover
-        echo "下载失败...退出安装..."
+        echo "Download failed... Exiting installation..."
         exit
     fi
 done
 
-echo "正在安装Hangover..."
+echo "Installing Hangover..."
 tar xvf hangover.tar
 sudo apt install -y ./hangover*.deb
 if [ $? -ne 0 ]; then
     cd /tmp
     rm -rf /tmp/hangover
-    echo "安装失败...退出安装..."
+    echo "Installation failed... Exiting installation..."
     exit 1
 fi
 
-echo "正在初始化Wine..."
+echo "Initializing Wine..."
 wineboot --init
 
-echo "正在安装DXVK..."
+echo "Installing DXVK..."
 tar xvf dxvk-v*.tar.gz
 mv dxvk-v*/x32/* /home/tiny/.wine/drive_c/windows/syswow64
 mv dxvk-v*/arm64ec/* /home/tiny/.wine/drive_c/windows/system32
 
-echo "正在修复字体..."
+echo "Fixing fonts..."
 regedit "Z:\\home\\tiny\\.local\\share\\tiny\\extra\\chn_fonts.reg" && wine reg delete "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /va /f
 
-echo "安装完成"
+echo "Installation completed"
