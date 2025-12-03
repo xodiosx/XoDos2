@@ -1,4 +1,4 @@
-name: Build flutter APK
+name: Build Flutter APK
 
 on:
   workflow_dispatch:
@@ -8,17 +8,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # -------------------------
+    # Checkout repo
+    # -------------------------
     - name: Checkout repo
       uses: actions/checkout@v4
 
     # -------------------------
-    # CACHE FLUTTER SDK
+    # Cache Flutter SDK
     # -------------------------
     - name: Cache Flutter SDK
       id: cache-flutter
       uses: actions/cache@v3
       with:
-        path: flutter
+        path: $HOME/flutter
         key: flutter-sdk-cache-v1
 
     - name: Download Flutter SDK if not cached
@@ -26,55 +29,42 @@ jobs:
       run: |
         echo "Flutter not in cache, downloading..."
         wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip
-        unzip Flutter-SDK-ARM64.zip -d flutter
+        unzip Flutter-SDK-ARM64.zip -d $HOME/flutter
 
     - name: Add Flutter to PATH
-      shell: bash
-      run: |
-        echo "${PWD}/flutter/bin" >> $GITHUB_PATH
-        export PATH="${PWD}/flutter/bin:$PATH"
+      run: echo "$HOME/flutter/bin" >> $GITHUB_PATH
 
-    # ------------------------------------
-    # SET ANDROID_HOME
-    # ------------------------------------
-    - name: Set Android Home
-      run: |
-        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-        export ANDROID_HOME="$HOME/android-sdk"
-
-    # ------------------------------------
-    # CACHE ANDROID SDK
-    # ------------------------------------
+    # -------------------------
+    # Cache Android SDK
+    # -------------------------
     - name: Cache Android SDK
       id: cache-android
       uses: actions/cache@v3
       with:
-        path: ${{ env.ANDROID_HOME }}
+        path: $HOME/android-sdk
         key: android-sdk-cache-v1
 
     - name: Install Android dependencies if not cached
       if: steps.cache-android.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        echo "Android SDK not in cache, installing..."
+        export ANDROID_HOME="$HOME/android-sdk"
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+
         sudo apt-get update
         sudo apt-get install -y unzip wget
-        
-        # Create ANDROID_HOME directory
-        mkdir -p "$ANDROID_HOME"
-        
-        # Download and install Android SDK
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+
         mkdir -p "$ANDROID_HOME/cmdline-tools"
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
         mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
-        
+
         # Install required SDK components
-        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006"
-        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+        yes '' | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006" || true
+        yes '' | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
     # -------------------------
-    # CACHE GRADLE
+    # Cache Gradle
     # -------------------------
     - name: Cache Gradle
       uses: actions/cache@v3
@@ -85,7 +75,7 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
     # -------------------------
-    # VERIFY SETUP
+    # Verify setup
     # -------------------------
     - name: Verify Flutter Installation
       run: |
@@ -98,24 +88,21 @@ jobs:
         ls -la "$ANDROID_HOME/cmdline-tools/latest/bin" || echo "Android tools not found"
 
     # -------------------------
-    # FLUTTER DEPENDENCIES
+    # Flutter dependencies
     # -------------------------
     - name: Pub Get
-      run: |
-        flutter pub get
+      run: flutter pub get
 
     # -------------------------
-    # BUILD APK
+    # Build APK
     # -------------------------
     - name: Build release APK
       run: |
         flutter clean
-        flutter build apk \
-          --target-platform android-arm64 \
-          --split-per-abi
+        flutter build apk --target-platform android-arm64 --split-per-abi
 
     # -------------------------
-    # ARTIFACT UPLOAD
+    # Upload artifact
     # -------------------------
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
@@ -124,7 +111,7 @@ jobs:
         path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 
     # -------------------------
-    # PUSH TO OTHER REPO
+    # Push to XoDos22 repo
     # -------------------------
     - name: Push APK to XoDos22 repo
       env:
@@ -132,19 +119,17 @@ jobs:
       run: |
         git config --global user.email "github-actions@github.com"
         git config --global user.name "GitHub Actions"
-        
-        # Clone the target repo with authentication
-        git clone https://xodiosx:$TOKEN@github.com/xodiosx/XoDos22.git
+
+        git clone https://github.com/xodiosx/XoDos22.git
         cd XoDos22
-        
-        # Create builds directory if it doesn't exist
+
         mkdir -p builds
-        
-        # Copy APK with timestamp for uniqueness
+
+        # Use timestamp to avoid overwriting
         TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
         cp ../build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "builds/app-arm64-v8a-release-$TIMESTAMP.apk"
-        
-        # Add, commit, and push
+
         git add builds/
         git commit -m "Add APK build - $TIMESTAMP" || echo "No changes to commit"
+        git remote set-url origin https://xodiosx:$TOKEN@github.com/xodiosx/XoDos22.git
         git push origin main
