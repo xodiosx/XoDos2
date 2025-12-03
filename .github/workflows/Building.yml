@@ -142,22 +142,4 @@ jobs:
     # -------------------------
     # Push to XoDos22 repo
     # -------------------------
-    - name: Push APK to XoDos22 repo
-      env:
-        TOKEN: ${{ secrets.OTHER_REPO_TOKEN }}
-      run: |
-        git config --global user.email "github-actions@github.com"
-        git config --global user.name "GitHub Actions"
-
-        git clone https://github.com/xodiosx/XoDos22.git
-        cd XoDos22
-
-        mkdir -p builds
-
-        TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
-        cp ../build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "builds/app-arm64-v8a-release-$TIMESTAMP.apk"
-
-        git add builds/
-        git commit -m "Add APK build - $TIMESTAMP" || echo "No changes to commit"
-        git remote set-url origin https://xodiosx:$TOKEN@github.com/xodiosx/XoDos22.git
-        git push origin main
+    
