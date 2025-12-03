@@ -18,7 +18,7 @@ jobs:
     # Set up Flutter using official action
     # -------------------------
     - name: Set up Flutter
-      uses: flutter/flutter-action@v2
+      uses: subosito/flutter-action@v2
       with:
         channel: 'stable'  # or 'beta', 'dev' as needed
         cache: true
