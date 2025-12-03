@@ -23,7 +23,7 @@ jobs:
       with:
         path: $HOME/flutter
         key: flutter-sdk-cache-v1
-          restore-keys: |
+        restore-keys: |
              flutter-sdk-cache-
 
     - name: Download Flutter SDK if not cached
