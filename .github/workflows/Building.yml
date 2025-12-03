@@ -13,7 +13,14 @@ jobs:
     # -------------------------
     - name: Checkout repo
       uses: actions/checkout@v4
-
+     
+    - name: Prepare SDK folders
+      run: |
+        mkdir -p $HOME/flutter
+        mkdir -p $HOME/android-sd
+     
+     
+     
     # -------------------------
     # Cache Flutter SDK
     # -------------------------
