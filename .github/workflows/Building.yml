@@ -33,6 +33,7 @@ jobs:
 
     - name: Add Flutter to PATH
       run: |
+          ls $HOME
         echo "$HOME/flutter/bin" >> $GITHUB_PATH
         export PATH="$HOME/flutter/bin:$PATH"
         flutter --version
