@@ -32,6 +32,12 @@ jobs:
       run: echo "$PWD/flutter/bin" >> $GITHUB_PATH
 
     # ------------------------------------
+    # SET ANDROID_HOME (important!)
+    # ------------------------------------
+    - name: Set Android Home
+      run: echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+
+    # ------------------------------------
     # CACHE ANDROID SDK (cmdline, build-tools, platform, NDK)
     # ------------------------------------
     - name: Cache Android SDK
@@ -47,7 +53,9 @@ jobs:
         echo "Android SDK not in cache, installing..."
         sudo apt-get update
         sudo apt-get install -y unzip wget
+        mkdir -p $ANDROID_HOME
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        mkdir -p $ANDROID_HOME/cmdline-tools
         unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006"
@@ -93,20 +101,20 @@ jobs:
     # PUSH TO OTHER REPO
     # -------------------------
     - name: Push APK to XoDos22 repo
-  env:
-    TOKEN: ${{ secrets.OTHER_REPO_TOKEN }}
-  run: |
-    git config --global user.email "workflow@github.com"
-    git config --global user.name "GitHub Action"
+      env:
+        TOKEN: ${{ secrets.OTHER_REPO_TOKEN }}
+      run: |
+        git config --global user.email "workflow@github.com"
+        git config --global user.name "GitHub Action"
 
-    git clone https://github.com/xodiosx/XoDos22.git
-    cd XoDos22
+        git clone https://github.com/xodiosx/XoDos22.git
+        cd XoDos22
 
-    mkdir -p builds
-    cp ../build/app/outputs/flutter-apk/app-arm64-v8a-release.apk builds/
+        mkdir -p builds
+        cp ../build/app/outputs/flutter-apk/app-arm64-v8a-release.apk builds/
 
-    git add builds/app-arm64-v8a-release.apk
-    git commit -m "Auto upload APK $(date)" || echo "No changes to commit."
+        git add builds/app-arm64-v8a-release.apk
+        git commit -m "Auto upload APK $(date)" || echo "No changes to commit."
 
-    git remote set-url origin https://xodiosx:$TOKEN@github.com/xodiosx/XoDos22.git
-    git push origin main
+        git remote set-url origin https://xodiosx:$TOKEN@github.com/xodiosx/XoDos22.git
+        git push origin main
