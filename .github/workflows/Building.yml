@@ -46,9 +46,20 @@ jobs:
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
     # -------------------------
+    # Cache Android SDK
+    # -------------------------
+    - name: Cache Android SDK
+      id: cache-android
+      uses: actions/cache@v3
+      with:
+        path: $HOME/android-sdk
+        key: android-sdk-cache-v1
+
+    # -------------------------
     # Install Android SDK dependencies (no caching)
     # -------------------------
     - name: Install Android SDK dependencies
+      if: steps.cache-android.outputs.cache-hit != 'true'
       run: |
         flutter --version
         sudo apt-get update
@@ -75,6 +86,26 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
     # -------------------------
+    # Cache Flutter packages
+    # -------------------------
+    - name: Cache Flutter packages
+      uses: actions/cache@v3
+      with:
+        path: $HOME/.pub-cache
+        key: flutter-packages-${{ hashFiles('pubspec.yaml') }}
+
+    # -------------------------
+    # Cache Flutter build outputs
+    # -------------------------
+    - name: Cache Flutter build
+      uses: actions/cache@v3
+      with:
+        path: build
+        key: flutter-build-cache-${{ github.sha }}
+        restore-keys: |
+          flutter-build-cache-
+
+    # -------------------------
     # Verify setup
     # -------------------------
     - name: Verify Flutter and Android Setup
@@ -82,8 +113,8 @@ jobs:
         echo "Flutter PATH: $(which flutter)"
         flutter --version
         echo "ANDROID_HOME=$ANDROID_HOME"
-        ls -la "$ANDROID_HOME/platforms" || echo "Platforms not found"
-        ls -la "$ANDROID_HOME/build-tools" || echo "Build-tools not found"
+        ls -la "$HOME/android-sdk/platforms" || echo "Platforms not found"
+        ls -la "$HOME/android-sdk/build-tools" || echo "Build-tools not found"
         flutter doctor -v
 
     # -------------------------
@@ -97,7 +128,6 @@ jobs:
     # -------------------------
     - name: Build release APK
       run: |
-        flutter clean
         flutter build apk --target-platform android-arm64 --split-per-abi
 
     # -------------------------
