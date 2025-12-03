@@ -29,14 +29,21 @@ jobs:
       run: |
         echo "Flutter not in cache, downloading..."
         wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip -O flutter.zip
-        unzip flutter.zip -d $HOME/
-        ls  $HOME
+        unzip flutter.zip -d $HOME/flutter
 
     - name: Add Flutter to PATH
       run: |
         echo "$HOME/flutter/bin" >> $GITHUB_PATH
         export PATH="$HOME/flutter/bin:$PATH"
         flutter --version
+
+    # -------------------------
+    # Set Android environment
+    # -------------------------
+    - name: Set Android Home
+      run: |
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
     # -------------------------
     # Cache Android SDK
@@ -52,21 +59,18 @@ jobs:
       if: steps.cache-android.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        export ANDROID_HOME="$HOME/android-sdk"
-        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-
         sudo apt-get update
         sudo apt-get install -y unzip wget
 
-        mkdir -p "$ANDROID_HOME/cmdline-tools"
+        mkdir -p "$HOME/android-sdk/cmdline-tools"
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-        unzip cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
-        mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+        unzip cmdline-tools.zip -d "$HOME/android-sdk/cmdline-tools"
+        mv "$HOME/android-sdk/cmdline-tools/cmdline-tools" "$HOME/android-sdk/cmdline-tools/latest"
 
         # Install required SDK components
-        yes '' | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+        yes '' | "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$HOME/android-sdk" \
           "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006" || true
-        yes '' | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+        yes '' | "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
     # -------------------------
     # Cache Gradle
@@ -82,15 +86,14 @@ jobs:
     # -------------------------
     # Verify setup
     # -------------------------
-    - name: Verify Flutter Installation
+    - name: Verify Flutter and Android Setup
       run: |
-        flutter --version
         echo "Flutter PATH: $(which flutter)"
-
-    - name: Verify Android Setup
-      run: |
-        echo "ANDROID_HOME: $ANDROID_HOME"
-        ls -la "$ANDROID_HOME/cmdline-tools/latest/bin" || echo "Android tools not found"
+        flutter --version
+        echo "ANDROID_HOME=$ANDROID_HOME"
+        ls -la "$HOME/android-sdk/platforms" || echo "Platforms not found"
+        ls -la "$HOME/android-sdk/build-tools" || echo "Build-tools not found"
+        flutter doctor -v
 
     # -------------------------
     # Flutter dependencies
