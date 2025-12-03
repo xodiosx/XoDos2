@@ -74,7 +74,7 @@ jobs:
     - name: Accept Android Licenses
       run: |
         yes | sdkmanager --licenses || true
-       sudo flutter doctor --android-licenses --verbose
+        sudo flutter doctor --android-licenses --verbose
 
     # -------------------------
     # Install Android SDK components
@@ -115,7 +115,7 @@ jobs:
         ls -la $ANDROID_HOME/build-tools || echo "Build-tools not found"
         
         echo "=== Flutter Doctor ==="
-      sudo flutter doctor -v
+        sudo flutter doctor -v
 
     # -------------------------
     # Flutter dependencies
