@@ -29,7 +29,8 @@ jobs:
       run: |
         echo "Flutter not in cache, downloading..."
         wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip -O flutter.zip
-        unzip flutter.zip -d $HOME/flutter
+        unzip flutter.zip -d $HOME/
+        ls  $HOME
 
     - name: Add Flutter to PATH
       run: |
