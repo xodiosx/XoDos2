@@ -16,8 +16,8 @@ jobs:
      
     - name: Prepare SDK folders
       run: |
-        mkdir -p $HOME/flutter
-        mkdir -p $HOME/android-sdk
+        
+        ls $HOME/
      
      
      
@@ -32,6 +32,7 @@ jobs:
         key: flutter-sdk-cache-v1
         restore-keys: |
              flutter-sdk-cache-
+
     - name: Download Flutter SDK if not cached
       if: steps.cache-flutter.outputs.cache-hit != 'true'
       run: |
@@ -63,7 +64,8 @@ jobs:
       with:
         path: $HOME/android-sdk
         key: android-sdk-cache-v1
-
+        restore-keys: |
+             android-sdk-cache-
     # -------------------------
     # Install Android SDK dependencies (no caching)
     # -------------------------
