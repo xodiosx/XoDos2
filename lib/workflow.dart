@@ -40,6 +40,8 @@ class AppColors {
   static const Color textPrimary = Color(0xFFE1E1E1);
   static const Color textSecondary = Color(0xFFA0A0A0);
   static const Color divider = Color(0xFF333333);
+  static const Color hoverColor = Color(0xFF2D2D2D);
+  static const Color pressedColor = Color(0xFF3A3A3A);
 }
 
 class LanguageManager {
@@ -232,7 +234,7 @@ rm /tmp/wps.deb"""},
     {"name":"مسح الشاشة", "command":"clear"},
     {"name":"مقاطعة المهمة", "command":"\x03"},
     {"name":"تثبيت برنامج الرسم كريتا", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"إزالة كريتا", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"إزالة كریتا", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
     {"name":"تثبيت برنامج تحرير الفيديو كدينلايف", "command":"sudo apt update && sudo apt install -y kdenlive"},
     {"name":"إزالة كدينلايف", "command":"sudo apt autoremove --purge -y kdenlive"},
     {"name":"تثبيت ليبر أوفيس", "command":"sudo apt update && sudo apt install -y libreoffice"},
@@ -251,7 +253,7 @@ rm /tmp/wps.deb"""},
     {"name":"कार्य बाधित करें", "command":"\x03"},
     {"name":"ग्राफिक सॉफ्टवेयर क्रिता इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
     {"name":"क्रिता अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"वीडियो एडिटिंग सॉफ्टवेयर केडेनलाइव इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"वीडियो एडिटिंग सॉफ्टवेयर केडेनलाइव इंスटॉल करें", "command":"sudo apt update && sudo apt install -y kdenlive"},
     {"name":"केडेनलाइव अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y kdenlive"},
     {"name":"रीसाइकिल बिन सक्षम करें", "command":"sudo apt update && sudo apt install -y gvfs && echo 'इंस्टॉलेशन पूर्ण, रीसाइकिल बिन का उपयोग करने के लिए ऐप को पुनरारंभ करें।'"},
     {"name":"पैकेज कैश साफ करें", "command":"sudo apt clean"},
@@ -354,7 +356,7 @@ rm /tmp/wps.deb"""},
 
   static const List<Map<String, String>> _portugueseWineCommands = [
     {"name":"Configurações do Wine", "command":"winecfg"},
-    {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHine\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Pasta do menu Iniciar", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
     {"name":"Remover Wine", "command":"rm -rf /opt/wine"},
   ];
@@ -618,10 +620,10 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
 class TermPty{
   late final Terminal terminal;
   late final Pty pty;
-  late final TerminalController controller; // Add this line
+  late final TerminalController controller;
 
   TermPty() {
-    controller = TerminalController(); // Initialize the controller
+    controller = TerminalController();
     terminal = Terminal(
       inputHandler: G.keyboard, 
       maxLines: Util.getGlobal("termMaxLines") as int,
@@ -666,107 +668,115 @@ class TermPty{
   }
 }
 
-// New List View Widget for Commands
-class CommandListView extends StatelessWidget {
-  final List<Map<String, String>> commands;
-  final String title;
+// Android 10+ Modern Settings Button Styles
+class AppButtonStyles {
+  // Modern Android 10+ Settings Button Style (for command buttons)
+  static final ButtonStyle modernSettingsButton = TextButton.styleFrom(
+    backgroundColor: Colors.transparent,
+    foregroundColor: AppColors.textPrimary,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    alignment: Alignment.centerLeft,
+    textStyle: const TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+    ),
+    minimumSize: const Size(double.infinity, 56),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  ).copyWith(
+    overlayColor: MaterialStateProperty.resolveWith<Color?>(
+      (Set<MaterialState> states) {
+        if (states.contains(MaterialState.pressed)) {
+          return AppColors.pressedColor;
+        }
+        if (states.contains(MaterialState.hovered)) {
+          return AppColors.hoverColor;
+        }
+        return null;
+      },
+    ),
+    side: MaterialStateProperty.all<BorderSide>(
+      const BorderSide(color: AppColors.divider, width: 0.5),
+    ),
+  );
 
-  const CommandListView({
-    super.key,
-    required this.commands,
-    required this.title,
-  });
+  // Compact Settings Button Style (for smaller buttons)
+  static final ButtonStyle compactSettingsButton = TextButton.styleFrom(
+    backgroundColor: Colors.transparent,
+    foregroundColor: AppColors.textPrimary,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    ),
+    alignment: Alignment.centerLeft,
+    textStyle: const TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w400,
+    ),
+    minimumSize: const Size(double.infinity, 48),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  ).copyWith(
+    overlayColor: MaterialStateProperty.resolveWith<Color?>(
+      (Set<MaterialState> states) {
+        if (states.contains(MaterialState.pressed)) {
+          return AppColors.pressedColor;
+        }
+        if (states.contains(MaterialState.hovered)) {
+          return AppColors.hoverColor;
+        }
+        return null;
+      },
+    ),
+    side: MaterialStateProperty.all<BorderSide>(
+      const BorderSide(color: AppColors.divider, width: 0.5),
+    ),
+  );
 
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: AppColors.cardDark,
-      margin: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ...commands.map((command) {
-            return ListTile(
-              title: Text(
-                command['name']!,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                ),
-              ),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.textSecondary,
-                size: 16,
-              ),
-              onTap: () {
-                Util.termWrite(command['command']!);
-              },
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
+  // Primary Action Button (for important actions)
+  static final ButtonStyle primaryActionButton = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.primaryPurple,
+    foregroundColor: Colors.white,
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    elevation: 2,
+    shadowColor: Colors.black.withOpacity(0.2),
+    textStyle: const TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+    ),
+    minimumSize: const Size(double.infinity, 56),
+  );
+
+  // Danger Action Button (for destructive actions)
+  static final ButtonStyle dangerActionButton = ElevatedButton.styleFrom(
+    backgroundColor: Colors.red.withOpacity(0.1),
+    foregroundColor: Colors.red,
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    elevation: 0,
+    textStyle: const TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+    ),
+    minimumSize: const Size(double.infinity, 56),
+  ).copyWith(
+    overlayColor: MaterialStateProperty.resolveWith<Color?>(
+      (Set<MaterialState> states) {
+        return Colors.red.withOpacity(0.2);
+      },
+    ),
+    side: MaterialStateProperty.all<BorderSide>(
+      BorderSide(color: Colors.red.withOpacity(0.3), width: 1),
+    ),
+  );
 }
 
-// New List View Widget for Terminal Commands
-// More robust version with proper type handling
-class TerminalCommandListView extends StatelessWidget {
-  const TerminalCommandListView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: AppColors.cardDark,
-      margin: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Terminal Controls',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Wrap(
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: D.termCommands.map((command) {
-              final String name = command['name'] as String;
-              final TerminalKey key = command['key'] as TerminalKey;
-              
-              return ElevatedButton(
-                style: D.controlButtonStyle,
-                onPressed: () {
-                  G.termPtys[G.currentContainer]!.terminal.keyInput(key);
-                },
-                child: Text(name),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
 // default values
 class D {
 
@@ -917,61 +927,9 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine reg add 'HKEY_C
   // Add this missing boot constant
   static const String boot = "\$DATA_DIR/bin/proot -H --change-id=1000:1000 --pwd=/home/xodos --rootfs=\$CONTAINER_DIR --mount=/system --mount=/apex --mount=/sys --mount=/data --kill-on-exit --mount=/storage --sysvipc -L --link2symlink --mount=/proc --mount=/dev --mount=\$CONTAINER_DIR/tmp:/dev/shm --mount=/dev/urandom:/dev/random --mount=/proc/self/fd:/dev/fd --mount=/proc/self/fd/0:/dev/stdin --mount=/proc/self/fd/1:/dev/stdout --mount=/proc/self/fd/2:/dev/stderr --mount=/dev/null:/dev/tty0 --mount=/dev/null:/proc/sys/kernel/cap_last_cap --mount=/storage/self/primary:/media/sd --mount=\$DATA_DIR/share:/home/xodos/Public --mount=\$DATA_DIR/tiny:/home/tiny/.local/share/tiny --mount=/storage/self/primary/Fonts:/usr/share/fonts/wpsm --mount=/storage/self/primary/AppFiles/Fonts:/usr/share/fonts/yozom --mount=/system/fonts:/usr/share/fonts/androidm --mount=/storage/self/primary/Pictures:/home/xodos/Pictures --mount=/storage/self/primary/Music:/home/xodos/Music --mount=/storage/self/primary/Movies:/home/xodos/Videos --mount=/storage/self/primary/Download:/home/xodos/Downloads --mount=/storage/self/primary/DCIM:/home/xodos/Photos --mount=/storage/self/primary/Documents:/home/xodos/Documents --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.stat:/proc/stat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/.tmoe-container.version:/proc/version --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/bus:/proc/bus --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/buddyinfo:/proc/buddyinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/cgroups:/proc/cgroups --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/consoles:/proc/consoles --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/crypto:/proc/crypto --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/devices:/proc/devices --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/diskstats:/proc/diskstats --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/execdomains:/proc/execdomains --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/fb:/proc/fb --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/filesystems:/proc/filesystems --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/interrupts:/proc/interrupts --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/iomem:/proc/iomem --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/ioports:/proc/ioports --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kallsyms:/proc/kallsyms --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/keys:/proc/keys --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/key-users:/proc/key-users --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/kpageflags:/proc/kpageflags --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/loadavg:/proc/loadavg --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/locks:/proc/locks --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/misc:/proc/misc --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/modules:/proc/modules --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/pagetypeinfo:/proc/pagetypeinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/partitions:/proc/partitions --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/sched_debug:/proc/sched_debug --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/softirqs:/proc/softirqs --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/timer_list:/proc/timer_list --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/uptime:/proc/uptime --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmallocinfo:/proc/vmallocinfo --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/vmstat:/proc/vmstat --mount=\$CONTAINER_DIR/usr/local/etc/tmoe-linux/proot_proc/zoneinfo:/proc/zoneinfo \$EXTRA_MOUNT /usr/bin/env -i HOSTNAME=xodos HOME=/home/xodos USER=xodos TERM=xterm-256color SDL_IM_MODULE=fcitx XMODIFIERS=@im=fcitx QT_IM_MODULE=fcitx GTK_IM_MODULE=fcitx TMOE_CHROOT=false TMOE_PROOT=true TMPDIR=/tmp MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 DISPLAY=:4 PULSE_SERVER=tcp:127.0.0.1:4718 LANG=zh_CN.UTF-8 SHELL=/bin/bash PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games \$EXTRA_OPT /bin/bash -l";
 
-    // Termux-style button themes - FIXED SIZES
-  static final ButtonStyle commandButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: AppColors.cardDark,
-    foregroundColor: AppColors.textPrimary,
-    elevation: 0,
-    shadowColor: Colors.transparent,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-      side: const BorderSide(color: AppColors.divider, width: 1),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced padding
-    textStyle: const TextStyle(
-      fontSize: 12, // Smaller font size
-      fontWeight: FontWeight.w500,
-    ),
-    minimumSize: const Size(0, 36), // Fixed minimum height
-  );
-
-  static final ButtonStyle controlButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: AppColors.surfaceDark,
-    foregroundColor: AppColors.textPrimary,
-    elevation: 0,
-    shadowColor: Colors.transparent,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(6),
-      side: const BorderSide(color: AppColors.divider, width: 1),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Reduced padding
-    textStyle: const TextStyle(
-      fontSize: 10, // Even smaller font size for control buttons
-      fontWeight: FontWeight.w500,
-    ),
-    minimumSize: const Size(0, 28), // Fixed minimum height
-  );
+  // Modern Android 10+ button styles
+  static final ButtonStyle commandButtonStyle = AppButtonStyles.modernSettingsButton;
   
-  
-  // Android-style list tile theme
-  static final ListTileThemeData listTileTheme = ListTileThemeData(
-    tileColor: AppColors.cardDark,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    titleTextStyle: const TextStyle(
-      color: AppColors.textPrimary,
-      fontSize: 16,
-      fontWeight: FontWeight.w500,
-    ),
-    subtitleTextStyle: const TextStyle(
-      color: AppColors.textSecondary,
-      fontSize: 14,
-    ),
-    iconColor: AppColors.primaryPurple,
-  );
-
   static const MethodChannel androidChannel = MethodChannel("android");
 
 }
