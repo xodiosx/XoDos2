@@ -1,4 +1,4 @@
-# XoDos Rebirth 🐧📱
+# XoDos Rebirth 
 <p align="center">
   <img src="icon.png" alt="XoDos Logo" width="200" height="200">
 </p>
@@ -15,7 +15,7 @@
 
 **XoDos** is a revolutionary Linux desktop environment that runs seamlessly on Android devices, bringing the full power of Linux to your mobile device without conflicts with other applications.
 
-> 🚧 **Work in Progress** - First release expected around New Year!
+> 🚧 **Work in Progress** - First release expected around New Year 🎄!
 
 ## ✨ What is XoDos?
 
@@ -38,6 +38,15 @@ XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/X
 
 ## 📥 Installation
 
+- just download and install and wait until desktop opens up
+
+## 📚fix phantom process killer (wiki)
+- on Android higher than 11 the app stops working suddenly became android phantom process killer that needs to be disabled first, read more
+[here & (fix)](https://github.com/xodiosx/XoDos2/blob/main/phantom.md)
+[and here)](https://github.com/xodiosx/XoDos2/blob/main/signal9fix.md)
+
+--------------------------------------------------------------------------------------------
+
 > ⚠️ **Note**: XoDos is currently under active development. The first official release will be available soon in the [GitHub Releases](https://github.com/xodiosx/XoDos2/releases) section.
 
 Stay tuned for installation instructions when the first release becomes available!
@@ -46,13 +55,24 @@ Stay tuned for installation instructions when the first release becomes availabl
 
 XoDos is currently in active development. We're working hard to deliver a stable and feature-rich experience. Here's what to expect:
 
-- [ ] Core Linux environment integration
-- [ ] Windows environment integration (wine / box64)
-- [ ] Desktop environment setup
-- [ ] Android compatibility layer
-- [ ] User interface optimization
-- [ ] Performance tuning
+- [✓] Core Linux environment integration
+- [✓] Windows environment integration (wine / box64)
+- [✓] Desktop environment setup
+- [✓] Android compatibility layer
+- [✓] User interface optimization
+- [✓] Performance tuning
+- [ ] touch gamepad controls
+- [ ] easy wine settings
+- [ ] gamepad support
+- [ ] More GPU drivers for Android devices
 - [ ] Initial release preparation
+
+## building
+[XoDos Proot(rootfs)](https://github.com/xodiosx/XoDos2/tree/main/extra/rootfs)
+
+
+
+
 
 ## 🤝 Contributing
 
