@@ -1,0 +1,45 @@
+sudo apt update
+sudo apt upgrade -y
+sudo apt clean
+rm .bash_history
+rm /root/.bash_history
+history -c
+cd /
+sudo su
+/busybox tar -Jcpvf /debian.tar.xz --exclude=debian.tar.xz --exclude=dev --exclude=proc --exclude=system --exclude=storage --exclude=apex --exclude=sys --exclude=media/sd --exclude=busybox --exclude=".l2s.*" /
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
