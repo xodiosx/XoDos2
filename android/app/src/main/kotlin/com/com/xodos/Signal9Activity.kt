@@ -39,11 +39,11 @@ class Signal9Activity : AppCompatActivity() {
             binding.tutorialButton.text = getString(R.string.tc_s9a_tutorial_button)
 
             binding.toolButton.setOnClickListener {
-                openBrowserLink("https://github.com/xodiosx/XoDos2/phantom.md")
+                openBrowserLink("https://github.com/xodiosx/XoDos2/blob/main/phantom.md")
             }
 
             binding.tutorialButton.setOnClickListener {
-                openBrowserLink("https://github.com/xodiosx/XoDos2/signal9fix.md")
+                openBrowserLink("https://github.com/xodiosx/XoDos2/blob/main/signal9fix.md")
             }
         } else {
             // Android 14及以上版本
