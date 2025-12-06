@@ -126,7 +126,7 @@
   "extractionInProgress": "Playing - Extraction in progress...",
   "playWhileWaiting": "Play while waiting for system processes",
   "gameModeActive": "Game Mode Active",
-  "simulateExtractionComplete": "Simulate Extraction Complete"
+  "simulateExtractionComplete": "Simulate Extraction Complete",
     "installCommandsSection": "quick Commands",
 }
 
