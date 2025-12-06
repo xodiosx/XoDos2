@@ -1545,7 +1545,7 @@ static Future<void> launchGUIBackend() async {
       String vncCmd = Util.getCurrentProp("vnc");
       // Remove any existing & and add redirection
       vncCmd = vncCmd.replaceAll(RegExp(r'\s*&\s*$'), '');
-      Util.termWrite("$vncCmd $> /dev/null 2>&1 &");
+      Util.termWrite("$vncCmd > /dev/null 2>&1 &");
     }
   }
   // Remove the clear command entirely
