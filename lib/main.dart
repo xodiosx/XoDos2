@@ -108,6 +108,154 @@ class MyApp extends StatelessWidget {
   }
 }
 
+
+
+// Add this AppColors class at the top of the file
+class AppColors {
+  static const Color primaryPurple = Color(0xFFBB86FC);
+  static const Color primaryDark = Color(0xFF121212);
+  static const Color surfaceDark = Color(0xFF1E1E1E);
+  static const Color cardDark = Color(0xFF252525);
+  static const Color accentPurple = Color(0xFF9C27B0);
+  static const Color textPrimary = Color(0xFFE1E1E1);
+  static const Color textSecondary = Color(0xFFA0A0A0);
+  static const Color divider = Color(0xFF333333);
+  static const Color hoverColor = Color(0xFF2D2D2D);
+  static const Color pressedColor = Color(0xFF3A3A3A);
+}
+
+// Add this DxvkDialog class after AppColors
+class DxvkDialog extends StatefulWidget {
+  @override
+  _DxvkDialogState createState() => _DxvkDialogState();
+}
+
+class _DxvkDialogState extends State<DxvkDialog> {
+  String? _selectedDxvk;
+  List<String> _dxvkFiles = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDxvkFiles();
+  }
+
+  Future<void> _loadDxvkFiles() async {
+    try {
+      final dir = Directory('/wincomponents/d3d');
+      if (!await dir.exists()) {
+        setState(() {
+          _dxvkFiles = [];
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      final files = await dir.list().toList();
+      final tzstFiles = files
+          .where((file) => file is File && file.path.endsWith('.tzst'))
+          .map((file) => file.path.split('/').last)
+          .toList();
+      
+      setState(() {
+        _dxvkFiles = tzstFiles;
+        if (tzstFiles.isNotEmpty) {
+          _selectedDxvk = tzstFiles.first;
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _dxvkFiles = [];
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _extractDxvk() async {
+    if (_selectedDxvk == null) return;
+    
+    final homeDir = Directory('/home/xodos/.wine');
+    if (!await homeDir.exists()) {
+      await homeDir.create(recursive: true);
+    }
+    
+    final dxvkPath = '/wincomponents/d3d/$_selectedDxvk';
+    
+    Navigator.of(context).pop(); // Close dialog
+    
+    // Show progress
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Extracting $_selectedDxvk...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    
+    // Execute extraction command
+    Util.termWrite("tar -xaf '$dxvkPath' -C /home/xodos/.wine --strip-components=1");
+    G.pageIndex.value = 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Install DXVK'),
+      content: Container(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              )
+            else if (_dxvkFiles.isEmpty)
+              Text('No DXVK files found in /wincomponents/d3d/'),
+            else
+              DropdownButtonFormField<String>(
+                value: _selectedDxvk,
+                decoration: const InputDecoration(
+                  labelText: 'Select DXVK Version',
+                  border: OutlineInputBorder(),
+                ),
+                items: _dxvkFiles.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedDxvk = newValue;
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        if (_dxvkFiles.isNotEmpty && !_isLoading)
+          ElevatedButton(
+            onPressed: _selectedDxvk == null ? null : _extractDxvk,
+            child: const Text('Install'),
+          ),
+      ],
+    );
+  }
+}
+
+
+
+
+
+
 class RTLWrapper extends StatelessWidget {
   final Widget child;
   
@@ -1343,20 +1491,26 @@ class _FastCommandsState extends State<FastCommands> {
 
   @override
   Widget build(BuildContext context) {
-    final groupedCommands = Util.getGroupedCommands();
+    // Get commands directly instead of using grouped commands
+    final commands = Util.getCurrentProp("commands") as List<dynamic>;
+    
+    // Manually separate commands into categories
+    final installCommands = _getInstallCommands(commands);
+    final otherCommands = _getOtherCommands(commands);
+    final systemCommands = _getSystemCommands(commands);
     
     return Column(
       children: [
         // Install Commands Section
-        if ((groupedCommands["install"] as List).isNotEmpty)
+        if (installCommands.isNotEmpty)
           Card(
             child: ExpansionTile(
               title: Text(
-                AppLocalizations.of(context)!.installCommandsSection,
+                'Installation Commands',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).textTheme.bodyLarge!.color,
                 ),
               ),
               initiallyExpanded: _sectionExpanded[0],
@@ -1372,7 +1526,7 @@ class _FastCommandsState extends State<FastCommands> {
                     alignment: WrapAlignment.center,
                     spacing: 4.0,
                     runSpacing: 4.0,
-                    children: _buildCommandButtons(groupedCommands["install"] as List<Map<String, String>>, isInstallSection: true),
+                    children: _buildCommandButtons(installCommands),
                   ),
                 ),
               ],
@@ -1380,7 +1534,7 @@ class _FastCommandsState extends State<FastCommands> {
           ),
         
         // Other Commands Section
-        if ((groupedCommands["other"] as List).isNotEmpty)
+        if (otherCommands.isNotEmpty)
           Card(
             child: ExpansionTile(
               title: Text(
@@ -1388,7 +1542,7 @@ class _FastCommandsState extends State<FastCommands> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).textTheme.bodyLarge!.color,
                 ),
               ),
               initiallyExpanded: _sectionExpanded[1],
@@ -1404,7 +1558,7 @@ class _FastCommandsState extends State<FastCommands> {
                     alignment: WrapAlignment.center,
                     spacing: 4.0,
                     runSpacing: 4.0,
-                    children: _buildCommandButtons(groupedCommands["other"] as List<Map<String, String>>),
+                    children: _buildCommandButtons(otherCommands),
                   ),
                 ),
               ],
@@ -1412,7 +1566,7 @@ class _FastCommandsState extends State<FastCommands> {
           ),
         
         // System Commands Section
-        if ((groupedCommands["system"] as List).isNotEmpty)
+        if (systemCommands.isNotEmpty)
           Card(
             child: ExpansionTile(
               title: Text(
@@ -1420,7 +1574,7 @@ class _FastCommandsState extends State<FastCommands> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).textTheme.bodyLarge!.color,
                 ),
               ),
               initiallyExpanded: _sectionExpanded[2],
@@ -1436,7 +1590,7 @@ class _FastCommandsState extends State<FastCommands> {
                     alignment: WrapAlignment.center,
                     spacing: 4.0,
                     runSpacing: 4.0,
-                    children: _buildCommandButtons(groupedCommands["system"] as List<Map<String, String>>),
+                    children: _buildCommandButtons(systemCommands),
                   ),
                 ),
               ],
@@ -1447,7 +1601,15 @@ class _FastCommandsState extends State<FastCommands> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: OutlinedButton(
-            style: D.commandButtonStyle,
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Theme.of(context).textTheme.bodyLarge!.color,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              side: BorderSide(color: Colors.grey[700]!),
+            ),
             onPressed: _addCommand,
             onLongPress: _resetCommands,
             child: Text(AppLocalizations.of(context)!.addShortcutCommand),
@@ -1457,23 +1619,60 @@ class _FastCommandsState extends State<FastCommands> {
     );
   }
 
-  List<Widget> _buildCommandButtons(List<Map<String, String>> commands, {bool isInstallSection = false}) {
+  List<Map<String, String>> _getInstallCommands(List<dynamic> commands) {
+    return commands.where((cmd) {
+      final name = cmd["name"]?.toString().toLowerCase() ?? "";
+      final command = cmd["command"]?.toString().toLowerCase() ?? "";
+      return name.contains("install") || 
+             command.contains("install") || 
+             name.contains("enable");
+    }).map((cmd) => Map<String, String>.from(cmd)).toList();
+  }
+
+  List<Map<String, String>> _getOtherCommands(List<dynamic> commands) {
+    return commands.where((cmd) {
+      final name = cmd["name"]?.toString().toLowerCase() ?? "";
+      final command = cmd["command"]?.toString().toLowerCase() ?? "";
+      return !name.contains("install") && 
+             !command.contains("install") && 
+             !name.contains("enable") &&
+             name != "???" &&
+             !name.contains("shutdown");
+    }).map((cmd) => Map<String, String>.from(cmd)).toList();
+  }
+
+  List<Map<String, String>> _getSystemCommands(List<dynamic> commands) {
+    return commands.where((cmd) {
+      final name = cmd["name"]?.toString().toLowerCase() ?? "";
+      return name.contains("shutdown") || name == "???";
+    }).map((cmd) => Map<String, String>.from(cmd)).toList();
+  }
+
+  List<Widget> _buildCommandButtons(List<Map<String, String>> commands) {
     return commands.asMap().entries.map<Widget>((e) {
       return OutlinedButton(
-        style: D.commandButtonStyle,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Theme.of(context).textTheme.bodyLarge!.color,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          side: BorderSide(color: Colors.grey[700]!),
+        ),
         child: Text(e.value["name"]!),
         onPressed: () {
           Util.termWrite(e.value["command"]!);
           G.pageIndex.value = 0;
         },
         onLongPress: () {
-          _editCommand(e.key, e.value, isInstallSection);
+          _editCommand(e.key, e.value);
         },
       );
     }).toList();
   }
 
-  void _editCommand(int index, Map<String, String> cmd, bool isInstallSection) {
+  void _editCommand(int index, Map<String, String> cmd) {
     String name = cmd["name"]!;
     String command = cmd["command"]!;
     
@@ -1514,10 +1713,11 @@ class _FastCommandsState extends State<FastCommands> {
             TextButton(
               onPressed: () async {
                 // Delete the command from the main commands list
-                List<Map<String, String>> allCommands = Util.getCurrentProp("commands");
+                List<Map<String, String>> allCommands = List<Map<String, String>>.from(Util.getCurrentProp("commands"));
                 int globalIndex = allCommands.indexWhere((c) => c["name"] == cmd["name"] && c["command"] == cmd["command"]);
                 if (globalIndex != -1) {
-                  await Util.setCurrentProp("commands", allCommands..removeAt(globalIndex));
+                  allCommands.removeAt(globalIndex);
+                  await Util.setCurrentProp("commands", allCommands);
                   setState(() {});
                 }
                 if (!context.mounted) return;
@@ -1534,7 +1734,7 @@ class _FastCommandsState extends State<FastCommands> {
             TextButton(
               onPressed: () async {
                 // Update the command in the main commands list
-                List<Map<String, String>> allCommands = Util.getCurrentProp("commands");
+                List<Map<String, String>> allCommands = List<Map<String, String>>.from(Util.getCurrentProp("commands"));
                 int globalIndex = allCommands.indexWhere((c) => c["name"] == cmd["name"] && c["command"] == cmd["command"]);
                 if (globalIndex != -1) {
                   allCommands[globalIndex] = {"name": name, "command": command};
@@ -1604,7 +1804,7 @@ class _FastCommandsState extends State<FastCommands> {
             ),
             TextButton(
               onPressed: () async {
-                List<Map<String, String>> allCommands = Util.getCurrentProp("commands");
+                List<Map<String, String>> allCommands = List<Map<String, String>>.from(Util.getCurrentProp("commands"));
                 allCommands.add({"name": name, "command": command});
                 await Util.setCurrentProp("commands", allCommands);
                 setState(() {});
@@ -1635,8 +1835,10 @@ class _FastCommandsState extends State<FastCommands> {
             ),
             TextButton(
               onPressed: () async {
-                await Util.setCurrentProp("commands",
-                    Localizations.localeOf(context).languageCode == 'zh' ? D.commands : D.commands4En);
+                final commands = Localizations.localeOf(context).languageCode == 'zh' 
+                    ? D.commands 
+                    : D.commands4En;
+                await Util.setCurrentProp("commands", commands);
                 setState(() {});
                 if (!context.mounted) return;
                 Navigator.of(context).pop();
@@ -1649,8 +1851,6 @@ class _FastCommandsState extends State<FastCommands> {
     );
   }
 }
-
-
 
 // Add this to your main.dart file, near the top with other global variables
 class ExtractionProgressState {
@@ -1869,5 +2069,12 @@ Widget buildWaitingGamesSection(BuildContext context) {
     child: const SpiritedMiniGamesView(),
   );
 }
+
+
+
+
+
+
+
 
 
