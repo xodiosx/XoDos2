@@ -1207,6 +1207,11 @@ cat tmp3 | while read -r group_name group_id; do
 	fi
 done
 \$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
+if [ -f "/usr/share/applications/wined.desktop" ]; then 
+rm -rf /usr/share/applications/wined.desktop
+  
+fi
+
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
@@ -1367,12 +1372,8 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 ${Util.getCurrentProp("boot")}
-if [ -f "/usr/share/applications/wined.desktop" ]; then
- mv /usr/share/applications/wined.desktop /usr/share/applications/wined.desktop.b
-fi
-${G.postCommand} > /dev/null 2>&1
 
-""");
+${G.postCommand} """);
 // Remove the "clear" command at the end
   }
 
