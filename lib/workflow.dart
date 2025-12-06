@@ -1053,13 +1053,12 @@ class Workflow {
   
       try {
       // Create DXVK directory in internal storage (for container 0)
-      String internalDxvkPath= '/storage/emulated/0/Android/data/com.xodos/files/';
+      String internalDxvkPath = '${G.dataPath}/containers/0/wincomponents/d3d';
       await Directory(internalDxvkPath).create(recursive: true);
       print('Created internal DXVK directory: $internalDxvkPath');
       
       // Also try to create in external storage (for user convenience)
-      
-      String externalDxvkPath = '/storage/emulated/0/xodos/wincomponents/d3d';
+      String externalDxvkPath = '/storage/emulated/0/Android/data/com.xodos/files/containers/0/wincomponents/d3d';
       try {
         await Directory(externalDxvkPath).create(recursive: true);
         print('Created external DXVK directory: $externalDxvkPath');
@@ -1078,10 +1077,6 @@ Supported formats:
 - .tar
 - .zip
 - .7z
-
-with both folders inside archive like
-system32
-syswow64
 
 How to use:
 1. Download DXVK from: https://github.com/doitsujin/dxvk/releases
@@ -1372,8 +1367,11 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 ${Util.getCurrentProp("boot")}
-#
-${G.postCommand} > /dev/null 2>&1""");
+sed -i 's/pkill -f wine/#pkill -f wine/' /bin/runh >/dev/null 2>&1
+sed -i 's/pkill -f wine/#pkill -f wine/' /bin/runhm >/dev/null 2>&1
+sed -i 's/pkill -f wine/#pkill -f wine/' /bin/run >/dev/null 2>&1
+
+${G.postCommand} >/dev/null 2>&1""");
 // Remove the "clear" command at the end
   }
 
@@ -1387,7 +1385,7 @@ static Future<void> launchGUIBackend() async {
       String vncCmd = Util.getCurrentProp("vnc");
       // Remove any existing & and add redirection
       vncCmd = vncCmd.replaceAll(RegExp(r'\s*&\s*$'), '');
-      Util.termWrite("$vncCmd > /dev/null 2>&1 &");
+      Util.termWrite("$vncCmd >/dev/null 2>&1 &");
     }
   }
   // Remove the clear command entirely

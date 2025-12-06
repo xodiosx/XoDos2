@@ -127,7 +127,6 @@ class AppColors {
 // Add this DxvkDialog class after AppColors
 // DxvkDialog class
 
-// DxvkDialog class
 class DxvkDialog extends StatefulWidget {
   @override
   _DxvkDialogState createState() => _DxvkDialogState();
@@ -138,167 +137,285 @@ class _DxvkDialogState extends State<DxvkDialog> {
   List<String> _dxvkFiles = [];
   String? _dxvkDirectory;
   bool _isLoading = true;
+  bool _mangohudEnabled = false;
+  bool _dxvkHudEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _loadDxvkFiles();
+    _checkCurrentHudState();
   }
 
-Future<void> _loadDxvkFiles() async {
-  try {
-    // Look in the container's wincomponents directory
-    String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
-    String hostDir = "$containerDir/wincomponents/d3d";
-    
-    final dir = Directory(hostDir);
-    if (!await dir.exists()) {
-      print('DXVK directory not found at: $hostDir');
+  Future<void> _checkCurrentHudState() async {
+    try {
+      // Check current state of MANGOHUD
+      final mangohudResult = await Process.run('bash', [
+        '-c',
+        'grep -q "export MANGOHUD=1" /bin/runh && grep -q "export MANGOHUD=1" /bin/run'
+      ]);
+      
+      // Check current state of DXVK_HUD
+      final dxvkhudResult = await Process.run('bash', [
+        '-c',
+        'grep -q "export DXVK_HUD=fps,version,devinfo" /bin/runh && grep -q "export DXVK_HUD=fps,version,devinfo" /bin/run'
+      ]);
+
+      setState(() {
+        _mangohudEnabled = mangohudResult.exitCode == 0;
+        _dxvkHudEnabled = dxvkhudResult.exitCode == 0;
+      });
+    } catch (e) {
+      print('Error checking HUD state: $e');
+    }
+  }
+
+  Future<void> _toggleMangohud(bool enabled) async {
+    setState(() {
+      _mangohudEnabled = enabled;
+    });
+
+    if (enabled) {
+      // Enable MANGOHUD
+      await Process.run('bash', [
+        '-c',
+        '''
+        sed -i 's/export MANGOHUD=0/export MANGOHUD=1/' /bin/runh >/dev/null 2>&1
+        sed -i 's/export MANGOHUD_DLSYM=0/export MANGOHUD_DLSYM=1/' /bin/runh >/dev/null 2>&1
+        sed -i 's/export MANGOHUD=0/export MANGOHUD=1/' /bin/run >/dev/null 2>&1
+        sed -i 's/export MANGOHUD_DLSYM=0/export MANGOHUD_DLSYM=1/' /bin/run >/dev/null 2>&1
+        # Add if not present
+        grep -q "export MANGOHUD=" /bin/runh || echo 'export MANGOHUD=1' >> /bin/runh
+        grep -q "export MANGOHUD_DLSYM=" /bin/runh || echo 'export MANGOHUD_DLSYM=1' >> /bin/runh
+        grep -q "export MANGOHUD=" /bin/run || echo 'export MANGOHUD=1' >> /bin/run
+        grep -q "export MANGOHUD_DLSYM=" /bin/run || echo 'export MANGOHUD_DLSYM=1' >> /bin/run
+        '''
+      ]);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('MANGOHUD enabled'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Disable MANGOHUD
+      await Process.run('bash', [
+        '-c',
+        '''
+        sed -i 's/export MANGOHUD=1/export MANGOHUD=0/' /bin/runh >/dev/null 2>&1
+        sed -i 's/export MANGOHUD_DLSYM=1/export MANGOHUD_DLSYM=0/' /bin/runh >/dev/null 2>&1
+        sed -i 's/export MANGOHUD=1/export MANGOHUD=0/' /bin/run >/dev/null 2>&1
+        sed -i 's/export MANGOHUD_DLSYM=1/export MANGOHUD_DLSYM=0/' /bin/run >/dev/null 2>&1
+        '''
+      ]);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('MANGOHUD disabled'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleDxvkHud(bool enabled) async {
+    setState(() {
+      _dxvkHudEnabled = enabled;
+    });
+
+    if (enabled) {
+      // Enable DXVK HUD
+      await Process.run('bash', [
+        '-c',
+        '''
+        sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/runh >/dev/null 2>&1
+        sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/run >/dev/null 2>&1
+        # Add if not present
+        grep -q "export DXVK_HUD=" /bin/runh || echo 'export DXVK_HUD=fps,version,devinfo' >> /bin/runh
+        grep -q "export DXVK_HUD=" /bin/run || echo 'export DXVK_HUD=fps,version,devinfo' >> /bin/run
+        '''
+      ]);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('DXVK HUD enabled'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Disable DXVK HUD
+      await Process.run('bash', [
+        '-c',
+        '''
+        sed -i 's/export DXVK_HUD=fps,version,devinfo/export DXVK_HUD=0/' /bin/runh >/dev/null 2>&1
+        sed -i 's/export DXVK_HUD=fps,version,devinfo/export DXVK_HUD=0/' /bin/run >/dev/null 2>&1
+        '''
+      ]);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('DXVK HUD disabled'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadDxvkFiles() async {
+    try {
+      // Look in the container's wincomponents directory
+      String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
+      String hostDir = "$containerDir/wincomponents/d3d";
+      
+      final dir = Directory(hostDir);
+      if (!await dir.exists()) {
+        print('DXVK directory not found at: $hostDir');
+        setState(() {
+          _dxvkFiles = [];
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      _dxvkDirectory = hostDir;
+      print('Found DXVK directory at: $hostDir');
+      
+      final files = await dir.list().toList();
+      
+      // Accept various archive formats
+      final dxvkFiles = files
+          .where((file) => file is File && 
+              RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z)$').hasMatch(file.path))
+          .map((file) => file.path.split('/').last)
+          .toList();
+      
+      setState(() {
+        _dxvkFiles = dxvkFiles;
+        if (dxvkFiles.isNotEmpty) {
+          _selectedDxvk = dxvkFiles.first;
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading DXVK files: $e');
       setState(() {
         _dxvkFiles = [];
         _isLoading = false;
       });
-      return;
     }
-    
-    _dxvkDirectory = hostDir;
-    print('Found DXVK directory at: $hostDir');
-    
-    final files = await dir.list().toList();
-    
-    // Accept various archive formats
-    final dxvkFiles = files
-        .where((file) => file is File && 
-            RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z)$').hasMatch(file.path))
-        .map((file) => file.path.split('/').last)
-        .toList();
-    
-    setState(() {
-      _dxvkFiles = dxvkFiles;
-      if (dxvkFiles.isNotEmpty) {
-        _selectedDxvk = dxvkFiles.first;
-      }
-      _isLoading = false;
-    });
-  } catch (e) {
-    print('Error loading DXVK files: $e');
-    setState(() {
-      _dxvkFiles = [];
-      _isLoading = false;
-    });
   }
-}
 
-Future<void> _extractDxvk() async {
-  try {
-    if (_selectedDxvk == null || _dxvkDirectory == null) {
+  Future<void> _extractDxvk() async {
+    try {
+      if (_selectedDxvk == null || _dxvkDirectory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please select a DXVK version'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+      
+      final dxvkPath = '$_dxvkDirectory/$_selectedDxvk';
+      final file = File(dxvkPath);
+      
+      // Check if file exists
+      if (!await file.exists()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File not found: $dxvkPath'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      
+      // First, close the dialog
+      Navigator.of(context).pop();
+      
+      // Show extraction message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select a DXVK version'),
+          content: Text('Starting DXVK extraction...'),
           duration: const Duration(seconds: 2),
         ),
       );
-      return;
-    }
-    
-    final dxvkPath = '$_dxvkDirectory/$_selectedDxvk';
-    final file = File(dxvkPath);
-    
-    // Check if file exists
-    if (!await file.exists()) {
+      
+      // Switch to terminal tab
+      G.pageIndex.value = 0;
+      
+      // Wait a moment for tab switch
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Send echo command first (same approach as other commands)
+      Util.termWrite("echo '================================'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo 'Starting DXVK installation'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo 'Extracting: $_selectedDxvk'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo '================================'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // Create target directory if it doesn't exist
+      Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // Check file type and extract accordingly (using relative path from container root)
+      // Since the file is in /wincomponents/d3d/ directory in the container
+      String containerPath = "/wincomponents/d3d/$_selectedDxvk";
+      
+      if (_selectedDxvk!.endsWith('.zip')) {
+        Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
+      } else if (_selectedDxvk!.endsWith('.7z')) {
+        Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
+      } else {
+        // Assume it's a tar archive (most common for DXVK)
+        Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // Add completion message
+      Util.termWrite("echo '================================'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo 'DXVK installation complete!'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo '================================'");
+      
+      // Show completion snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('File not found: $dxvkPath'),
+          content: Text('$_selectedDxvk extraction started successfully!'),
           duration: const Duration(seconds: 3),
         ),
       );
-      return;
+      
+    } catch (e) {
+      print('Error in _extractDxvk: $e');
+      // Ensure dialog closes even on error
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error during extraction: $e'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
-    
-    // First, close the dialog
-    Navigator.of(context).pop();
-    
-    // Show extraction message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Starting DXVK extraction...'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    
-    // Switch to terminal tab
-    G.pageIndex.value = 0;
-    
-    // Wait a moment for tab switch
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    // Send echo command first (same approach as other commands)
-    Util.termWrite("echo '================================'");
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    Util.termWrite("echo 'Starting DXVK installation'");
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    Util.termWrite("echo 'Extracting: $_selectedDxvk'");
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    Util.termWrite("echo '================================'");
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    // Create target directory if it doesn't exist
-    Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    // Check file type and extract accordingly (using relative path from container root)
-    // Since the file is in /wincomponents/d3d/ directory in the container
-    String containerPath = "/wincomponents/d3d/$_selectedDxvk";
-    
-    if (_selectedDxvk!.endsWith('.zip')) {
-      Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
-    } else if (_selectedDxvk!.endsWith('.7z')) {
-      Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
-    } else {
-      // Assume it's a tar archive (most common for DXVK)
-      Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
-    }
-    
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    // Add completion message
-    Util.termWrite("echo '================================'");
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    Util.termWrite("echo 'DXVK installation complete!'");
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
-    await Future.delayed(const Duration(milliseconds: 50));
-    
-    Util.termWrite("echo '================================'");
-    
-    // Show completion snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$_selectedDxvk extraction started successfully!'),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-    
-  } catch (e) {
-    print('Error in _extractDxvk: $e');
-    // Ensure dialog closes even on error
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error during extraction: $e'),
-        duration: const Duration(seconds: 5),
-      ),
-    );
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -339,23 +456,52 @@ Future<void> _extractDxvk() async {
                 ),
               ),
             if (!_isLoading && _dxvkFiles.isNotEmpty)
-              DropdownButtonFormField<String>(
-                value: _selectedDxvk,
-                decoration: const InputDecoration(
-                  labelText: 'Select DXVK Version',
-                  border: OutlineInputBorder(),
-                ),
-                items: _dxvkFiles.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedDxvk = newValue;
-                  });
-                },
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _selectedDxvk,
+                    decoration: const InputDecoration(
+                      labelText: 'Select DXVK Version',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _dxvkFiles.map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedDxvk = newValue;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // MANGOHUD Switch
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text('MANGOHUD'),
+                      subtitle: const Text('Overlay for monitoring FPS, CPU, GPU, etc.'),
+                      value: _mangohudEnabled,
+                      onChanged: (value) {
+                        _toggleMangohud(value);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // DXVK HUD Switch
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text('DXVK HUD'),
+                      subtitle: const Text('DXVK overlay showing FPS, version, device info'),
+                      value: _dxvkHudEnabled,
+                      onChanged: (value) {
+                        _toggleDxvkHud(value);
+                      },
+                    ),
+                  ),
+                ],
               ),
           ],
         ),
@@ -374,9 +520,6 @@ Future<void> _extractDxvk() async {
     );
   }
 }
-
-
-
 
 
 
