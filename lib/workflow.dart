@@ -464,7 +464,7 @@ class DxvkInstaller {
       await homeDir.create(recursive: true);
     }
     
-    final dxvkPath = '\$CONTAINER_DIR/wincomponents/d3d/\$fileName';
+    final dxvkPath = '$CONTAINER_DIR/wincomponents/d3d/$fileName';
     final dxvkFile = File(dxvkPath);
     if (!await dxvkFile.exists()) {
       if (context.mounted) {

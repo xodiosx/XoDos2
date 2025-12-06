@@ -142,37 +142,64 @@ class _DxvkDialogState extends State<DxvkDialog> {
     _loadDxvkFiles();
   }
 
-  Future<void> _loadDxvkFiles() async {
-    try {
-      final dir = Directory('containers/0/wincomponents/d3d');
-      if (!await dir.exists()) {
-        setState(() {
-          _dxvkFiles = [];
-          _isLoading = false;
-        });
-        return;
+Future<void> _loadDxvkFiles() async {
+  try {
+    // Try different possible paths
+    List<String> possiblePaths = [
+      'containers/0/wincomponents/d3d',
+      '/storage/emulated/0/Android/data/com.xodos/files/containers/0/wincomponents/d3d',
+      '/data/data/com.xodos/files/containers/0/wincomponents/d3d',
+      '/sdcard/Android/data/com.xodos/files/containers/0/wincomponents/d3d',
+    ];
+    
+    Directory? foundDir;
+    for (var path in possiblePaths) {
+      final dir = Directory(path);
+      if (await dir.exists()) {
+        foundDir = dir;
+        print('Found directory at: $path');
+        break;
       }
-      
-      final files = await dir.list().toList();
-      final tzstFiles = files
-          .where((file) => file is File && file.path.endsWith('.tzst'))
-          .map((file) => file.path.split('/').last)
-          .toList();
-      
-      setState(() {
-        _dxvkFiles = tzstFiles;
-        if (tzstFiles.isNotEmpty) {
-          _selectedDxvk = tzstFiles.first;
-        }
-        _isLoading = false;
-      });
-    } catch (e) {
+    }
+    
+    if (foundDir == null) {
+      print('No DXVK directory found in any location');
       setState(() {
         _dxvkFiles = [];
         _isLoading = false;
       });
+      return;
     }
+    
+    final files = await foundDir.list().toList();
+    
+    // List all files to see what's actually there
+    for (var file in files) {
+      print('Found: ${file.path}');
+    }
+    
+    // Accept various archive formats
+    final dxvkFiles = files
+        .where((file) => file is File && 
+            RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z)$').hasMatch(file.path))
+        .map((file) => file.path.split('/').last)
+        .toList();
+    
+    setState(() {
+      _dxvkFiles = dxvkFiles;
+      if (dxvkFiles.isNotEmpty) {
+        _selectedDxvk = dxvkFiles.first;
+      }
+      _isLoading = false;
+    });
+  } catch (e) {
+    print('Error loading DXVK files: $e');
+    setState(() {
+      _dxvkFiles = [];
+      _isLoading = false;
+    });
   }
+}
 
   Future<void> _extractDxvk() async {
     if (_selectedDxvk == null) return;
