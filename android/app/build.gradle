@@ -53,7 +53,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdk 28 // glob() version //proot version //ffmpeg_kit; flutter.minSdkVersion
-        targetSdk 34 //https://github.com/termux/termux-app/issues/1072; native; linker; flutter.targetSdkVersion
+        targetSdk 28 //https://github.com/termux/termux-app/issues/1072; native; linker; flutter.targetSdkVersion
         versionCode 1
         versionName "1.0.3"
 

@@ -136,7 +136,7 @@ class DxvkDialog extends StatefulWidget {
 class _DxvkDialogState extends State<DxvkDialog> {
   String? _selectedDxvk;
   List<String> _dxvkFiles = [];
-  List<String> _dxvkFilePaths = []; // Store full paths for each file
+  String? _dxvkDirectory;
   bool _isLoading = true;
 
   @override
@@ -147,170 +147,157 @@ class _DxvkDialogState extends State<DxvkDialog> {
 
 Future<void> _loadDxvkFiles() async {
   try {
-    // Try ALL possible paths at once
-    List<String> possiblePaths = [
-      // Container path
-      '${G.dataPath}/containers/${G.currentContainer}/wincomponents/d3d',
-      
-      // App data paths
-      '/data/data/com.xodos/files/wincomponents/d3d',
-      '/data/data/com.xodos/files/containers/0/wincomponents/d3d',
-      
-      // Storage/External paths
-      '/wincomponents/d3d',
-      '/storage/emulated/0/Android/data/com.xodos/files/containers/0/wincomponents/d3d',
-      '/sdcard/Android/data/com.xodos/files/containers/0/wincomponents/d3d',
-      '/storage/emulated/0/xodos/wincomponents/d3d',
-      '/sdcard/xodos/wincomponents/d3d',
-      
-      // Legacy paths
-      'containers/0/wincomponents/d3d',
-    ];
+    // Look in the container's wincomponents directory
+    String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
+    String hostDir = "$containerDir/wincomponents/d3d";
     
-    Map<String, String> allFiles = {}; // Map of filename -> full path
-    
-    print('Searching for DXVK files in all paths...');
-    
-    for (var path in possiblePaths) {
-      try {
-        final dir = Directory(path);
-        if (await dir.exists()) {
-          print('Checking directory: $path');
-          final files = await dir.list().toList();
-          
-          for (var file in files) {
-            if (file is File) {
-              final fileName = file.path.split('/').last;
-              if (RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z)$').hasMatch(fileName)) {
-                allFiles[fileName] = file.path; // Store with full path
-                print('Found: $fileName at ${file.path}');
-              }
-            }
-          }
-        }
-      } catch (e) {
-        print('Error checking path $path: $e');
-        // Continue with next path
-      }
+    final dir = Directory(hostDir);
+    if (!await dir.exists()) {
+      print('DXVK directory not found at: $hostDir');
+      setState(() {
+        _dxvkFiles = [];
+        _isLoading = false;
+      });
+      return;
     }
     
-    print('Total files found: ${allFiles.length}');
+    _dxvkDirectory = hostDir;
+    print('Found DXVK directory at: $hostDir');
+    
+    final files = await dir.list().toList();
+    
+    // Accept various archive formats
+    final dxvkFiles = files
+        .where((file) => file is File && 
+            RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z)$').hasMatch(file.path))
+        .map((file) => file.path.split('/').last)
+        .toList();
     
     setState(() {
-      _dxvkFiles = allFiles.keys.toList();
-      _dxvkFilePaths = _dxvkFiles.map((f) => allFiles[f]!).toList();
-      if (_dxvkFiles.isNotEmpty) {
-        _selectedDxvk = _dxvkFiles.first;
+      _dxvkFiles = dxvkFiles;
+      if (dxvkFiles.isNotEmpty) {
+        _selectedDxvk = dxvkFiles.first;
       }
       _isLoading = false;
     });
-    
   } catch (e) {
     print('Error loading DXVK files: $e');
     setState(() {
       _dxvkFiles = [];
-      _dxvkFilePaths = [];
       _isLoading = false;
     });
   }
 }
 
 Future<void> _extractDxvk() async {
-  if (_selectedDxvk == null) {
-    return;
-  }
-  
-  // Find the index of the selected file
-  int selectedIndex = _dxvkFiles.indexOf(_selectedDxvk!);
-  if (selectedIndex == -1 || selectedIndex >= _dxvkFilePaths.length) {
+  try {
+    if (_selectedDxvk == null || _dxvkDirectory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please select a DXVK version'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    final dxvkPath = '$_dxvkDirectory/$_selectedDxvk';
+    final file = File(dxvkPath);
+    
+    // Check if file exists
+    if (!await file.exists()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('File not found: $dxvkPath'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    
+    // First, close the dialog
+    Navigator.of(context).pop();
+    
+    // Show extraction message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Selected file not found'),
+        content: Text('Starting DXVK extraction...'),
         duration: const Duration(seconds: 2),
       ),
     );
-    return;
-  }
-  
-  final dxvkPath = _dxvkFilePaths[selectedIndex];
-  final file = File(dxvkPath);
-  
-  // Check if file exists
-  if (!await file.exists()) {
+    
+    // Switch to terminal tab
+    G.pageIndex.value = 0;
+    
+    // Wait a moment for tab switch
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Send echo command first (same approach as other commands)
+    Util.termWrite("echo '================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Starting DXVK installation'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Extracting: $_selectedDxvk'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo '================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Create target directory if it doesn't exist
+    Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Check file type and extract accordingly (using relative path from container root)
+    // Since the file is in /wincomponents/d3d/ directory in the container
+    String containerPath = "/wincomponents/d3d/$_selectedDxvk";
+    
+    if (_selectedDxvk!.endsWith('.zip')) {
+      Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
+    } else if (_selectedDxvk!.endsWith('.7z')) {
+      Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
+    } else {
+      // Assume it's a tar archive (most common for DXVK)
+      Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
+    }
+    
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Add completion message
+    Util.termWrite("echo '================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'DXVK installation complete!'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo '================================'");
+    
+    // Show completion snackbar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('File not found: $dxvkPath'),
+        content: Text('$_selectedDxvk extraction started successfully!'),
         duration: const Duration(seconds: 3),
       ),
     );
-    return;
+    
+  } catch (e) {
+    print('Error in _extractDxvk: $e');
+    // Ensure dialog closes even on error
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error during extraction: $e'),
+        duration: const Duration(seconds: 5),
+      ),
+    );
   }
-  
-  // First, close the dialog
-  Navigator.of(context).pop();
-  
-  // Show extraction message
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('Starting DXVK extraction...'),
-      duration: const Duration(seconds: 2),
-    ),
-  );
-  
-  // Switch to terminal tab
-  G.pageIndex.value = 0;
-  
-  // Wait a moment for tab switch
-  await Future.delayed(const Duration(milliseconds: 300));
-  
-  // Send commands to terminal - SAME AS OTHER COMMANDS
-  Util.termWrite("echo '================================'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo 'Starting DXVK installation'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo 'Extracting: $_selectedDxvk'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo '================================'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  // Create target directory if it doesn't exist
-  Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  // Extract based on file type
-  if (_selectedDxvk!.endsWith('.zip')) {
-    Util.termWrite("unzip -o '$dxvkPath' -d '/home/xodos/.wine/drive_c/windows'");
-  } else if (_selectedDxvk!.endsWith('.7z')) {
-    Util.termWrite("7z x '$dxvkPath' -o'/home/xodos/.wine/drive_c/windows' -y");
-  } else {
-    // Assume it's a tar archive
-    Util.termWrite("tar -xaf '$dxvkPath' -C '/home/xodos/.wine/drive_c/windows'");
-  }
-  
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  // Add completion message
- // Util.termWrite("echo '================================'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo 'DXVK installation complete!'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-//  Util.termWrite("echo '================================'");
-  
-  // Show completion snackbar
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('$_selectedDxvk extraction started successfully!'),
-      duration: const Duration(seconds: 3),
-    ),
-  );
 }
 
   @override
@@ -319,20 +306,13 @@ Future<void> _extractDxvk() async {
       title: const Text('Install DXVK'),
       content: Container(
         width: double.maxFinite,
-        constraints: const BoxConstraints(maxHeight: 400),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Searching for DXVK files...'),
-                  ],
-                ),
+                child: CircularProgressIndicator(),
               ),
             if (!_isLoading && _dxvkFiles.isEmpty)
               Padding(
@@ -346,82 +326,36 @@ Future<void> _extractDxvk() async {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Please place DXVK files in any of these directories:',
+                    Text(
+                      'Please place DXVK files in:\n/wincomponents/d3d/',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      '• /wincomponents/d3d/\n• /sdcard/wincomponents/d3d/\n• Container wincomponents/d3d/\n• App data wincomponents/d3d/',
-                      style: TextStyle(fontSize: 12),
+                    Text(
+                      'Directory: $_dxvkDirectory',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
               ),
             if (!_isLoading && _dxvkFiles.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Found ${_dxvkFiles.length} DXVK files:'),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: _selectedDxvk,
-                      underline: const SizedBox(),
-                      items: _dxvkFiles.map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(value),
-                              const SizedBox(height: 4),
-                              Text(
-                                _dxvkFilePaths[_dxvkFiles.indexOf(value)] ?? '',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedDxvk = newValue;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_selectedDxvk != null)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Selected file:'),
-                        Text(
-                          _selectedDxvk!,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text('Location:'),
-                        Text(
-                          _dxvkFilePaths[_dxvkFiles.indexOf(_selectedDxvk!)] ?? 'Unknown',
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                ],
+              DropdownButtonFormField<String>(
+                value: _selectedDxvk,
+                decoration: const InputDecoration(
+                  labelText: 'Select DXVK Version',
+                  border: OutlineInputBorder(),
+                ),
+                items: _dxvkFiles.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedDxvk = newValue;
+                  });
+                },
               ),
           ],
         ),
@@ -440,6 +374,10 @@ Future<void> _extractDxvk() async {
     );
   }
 }
+
+
+
+
 
 
 class RTLWrapper extends StatelessWidget {
