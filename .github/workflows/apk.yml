@@ -3,6 +3,10 @@ name: Build xodos2 APK
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
