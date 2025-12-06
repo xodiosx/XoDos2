@@ -1615,7 +1615,7 @@ class GroupedCommandsWidget extends StatelessWidget {
     );
   }
 }
-
+/*
 class WindowsCommandsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1710,6 +1710,6 @@ class WindowsCommandsWidget extends StatelessWidget {
 }
 
 
-
+*/
 
 
