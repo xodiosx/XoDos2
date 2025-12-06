@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'spirited_mini_games.dart'; // 
 import 'package:audioplayers/audioplayers.dart';
-
+import 'dart:io'; // Add this line
 import 'dart:math';
 import 'package:flutter/services.dart'; // Add this import
 import 'package:clipboard/clipboard.dart';
@@ -125,6 +125,7 @@ class AppColors {
 }
 
 // Add this DxvkDialog class after AppColors
+// DxvkDialog class
 class DxvkDialog extends StatefulWidget {
   @override
   _DxvkDialogState createState() => _DxvkDialogState();
@@ -176,7 +177,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
   Future<void> _extractDxvk() async {
     if (_selectedDxvk == null) return;
     
-    final homeDir = Directory('/home/xodos/.wine');
+    final homeDir = Directory('/home/xodos/.wine/drive_c/windows');
     if (!await homeDir.exists()) {
       await homeDir.create(recursive: true);
     }
@@ -194,7 +195,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
     );
     
     // Execute extraction command
-    Util.termWrite("tar -xaf '$dxvkPath' -C /home/xodos/.wine --strip-components=1");
+    Util.termWrite("tar -xaf '$dxvkPath' -C /home/xodos/.wine/drive_c/windows --strip-components=1");
     G.pageIndex.value = 0;
   }
 
@@ -211,10 +212,10 @@ class _DxvkDialogState extends State<DxvkDialog> {
               const Padding(
                 padding: EdgeInsets.all(20.0),
                 child: CircularProgressIndicator(),
-              )
-            else if (_dxvkFiles.isEmpty)
+              ),
+            if (!_isLoading && _dxvkFiles.isEmpty)
               Text('No DXVK files found in /wincomponents/d3d/'),
-            else
+            if (!_isLoading && _dxvkFiles.isNotEmpty)
               DropdownButtonFormField<String>(
                 value: _selectedDxvk,
                 decoration: const InputDecoration(
@@ -250,8 +251,6 @@ class _DxvkDialogState extends State<DxvkDialog> {
     );
   }
 }
-
-
 
 
 
