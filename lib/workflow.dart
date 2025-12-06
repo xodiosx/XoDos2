@@ -204,6 +204,56 @@ class LanguageManager {
     }
   }
 
+  static Map<String, dynamic> getGroupedCommandsForLanguage(String languageCode) {
+    final commands = getCommandsForLanguage(languageCode);
+    
+    // Separate install commands from other commands
+    final installCommands = commands.where((cmd) => 
+      cmd["name"]?.toLowerCase().contains("install") == true ||
+      cmd["command"]?.toLowerCase().contains("install") == true ||
+      cmd["name"]?.toLowerCase().contains("enable") == true
+    ).toList();
+    
+    final otherCommands = commands.where((cmd) => 
+      !cmd["name"]?.toLowerCase().contains("install") == true &&
+      !cmd["command"]?.toLowerCase().contains("install") == true &&
+      !cmd["name"]?.toLowerCase().contains("enable") == true &&
+      cmd["name"] != "???" &&
+      !cmd["name"]?.toLowerCase().contains("shutdown") == true
+    ).toList();
+    
+    final systemCommands = commands.where((cmd) => 
+      cmd["name"]?.toLowerCase().contains("shutdown") == true ||
+      cmd["name"] == "???"
+    ).toList();
+    
+    return {
+      "install": installCommands,
+      "other": otherCommands,
+      "system": systemCommands,
+    };
+  }
+
+  static Map<String, dynamic> getGroupedWineCommandsForLanguage(String languageCode) {
+    final commands = getWineCommandsForLanguage(languageCode);
+    
+    // Separate Wine install/remove commands from configuration commands
+    final installCommands = commands.where((cmd) => 
+      cmd["name"]?.toLowerCase().contains("remove") == true ||
+      cmd["name"]?.toLowerCase().contains("remove wine") == true
+    ).toList();
+    
+    final configCommands = commands.where((cmd) => 
+      !cmd["name"]?.toLowerCase().contains("remove") == true &&
+      !cmd["name"]?.toLowerCase().contains("remove wine") == true
+    ).toList();
+    
+    return {
+      "install": installCommands,
+      "config": configCommands,
+    };
+  }
+
   // Japanese commands
   static const List<Map<String, String>> _japaneseCommands = [
     {"name":"パッケージの更新とアップグレード", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
@@ -253,7 +303,7 @@ rm /tmp/wps.deb"""},
     {"name":"कार्य बाधित करें", "command":"\x03"},
     {"name":"ग्राफिक सॉफ्टवेयर क्रिता इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
     {"name":"क्रिता अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"वीडियो एडिटिंग सॉफ्टवेयर केडेनलाइव इंスटॉल करें", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"वीडियो एडिटिंग सॉफ्टवेयर केडेनलाइव इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y kdenlive"},
     {"name":"केडेनलाइव अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y kdenlive"},
     {"name":"रीसाइकिल बिन सक्षम करें", "command":"sudo apt update && sudo apt install -y gvfs && echo 'इंस्टॉलेशन पूर्ण, रीसाइकिल बिन का उपयोग करने के लिए ऐप को पुनरारंभ करें।'"},
     {"name":"पैकेज कैश साफ करें", "command":"sudo apt clean"},
@@ -330,50 +380,265 @@ rm /tmp/wps.deb"""},
     {"name":"Wine設定", "command":"winecfg"},
     {"name":"文字化け修正", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"スタートメニューフォルダ", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Wineを削除", "command":"rm -rf /opt/wine"},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _arabicWineCommands = [
     {"name":"إعدادات Wine", "command":"winecfg"},
     {"name":"إصلاح الأحرف", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"مجلد قائمة ابدأ", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"إزالة Wine", "command":"rm -rf /opt/wine"},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _hindiWineCommands = [
     {"name":"Wine सेटिंग्स", "command":"winecfg"},
     {"name":"वर्ण सुधार", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"स्टार्ट मेनू फोल्डर", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Wine हटाएं", "command":"rm -rf /opt/wine"},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _spanishWineCommands = [
     {"name":"Configuración de Wine", "command":"winecfg"},
     {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Carpeta del menú Inicio", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Eliminar Wine", "command":"rm -rf /opt/wine"},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _portugueseWineCommands = [
     {"name":"Configurações do Wine", "command":"winecfg"},
-    {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHine\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Pasta do menu Iniciar", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remover Wine", "command":"rm -rf /opt/wine"},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _frenchWineCommands = [
     {"name":"Paramètres Wine", "command":"winecfg"},
     {"name":"Réparer les caractères", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Dossier du menu Démarrer", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Supprimer Wine", "command":"rm -rf /opt/wine"},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
   ];
 
   static const List<Map<String, String>> _russianWineCommands = [
     {"name":"Настройки Wine", "command":"winecfg"},
     {"name":"Исправить символы", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Папка меню Пуск", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Удалить Wine", "command":"rm -rf /opt/wine"},
+    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
   ];
+}
+
+// DXVK Installer Class
+class DxvkInstaller {
+  static Future<List<String>> getDxvkFiles() async {
+    try {
+      final dir = Directory('/wincomponents/d3d');
+      if (!await dir.exists()) {
+        // Try to create directory if it doesn't exist
+        await dir.create(recursive: true);
+        return [];
+      }
+      
+      final files = await dir.list().toList();
+      return files
+          .where((file) => file is File && (file.path.endsWith('.tzst') || file.path.endsWith('.tar.zst')))
+          .map((file) => file.path.split('/').last)
+          .toList();
+    } catch (e) {
+      print('Error getting DXVK files: $e');
+      return [];
+    }
+  }
+  
+  static Future<void> extractDxvk(String fileName, BuildContext context) async {
+    final homeDir = Directory('/home/xodos/.wine');
+    if (!await homeDir.exists()) {
+      await homeDir.create(recursive: true);
+    }
+    
+    final dxvkPath = '/wincomponents/d3d/$fileName';
+    final dxvkFile = File(dxvkPath);
+    if (!await dxvkFile.exists()) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('DXVK file not found: $fileName')),
+        );
+      }
+      return;
+    }
+    
+    try {
+      // Show progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: Text('Installing DXVK'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Extracting $fileName...'),
+            ],
+          ),
+        ),
+      );
+      
+      // Extract tzst file using tar
+      final result = await Process.run('tar', [
+        '-xaf',
+        dxvkPath,
+        '-C',
+        '/home/xodos/.wine',
+        '--strip-components=1'
+      ]);
+      
+      // Close progress dialog
+      Navigator.of(context, rootNavigator: true).pop();
+      
+      if (result.exitCode == 0) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('DXVK installed successfully to ~/.wine!'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to extract DXVK: ${result.stderr}')),
+          );
+        }
+      }
+    } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error installing DXVK: $e')),
+        );
+      }
+    }
+  }
+}
+
+// DXVK Dialog Widget
+class DxvkDialog extends StatefulWidget {
+  @override
+  _DxvkDialogState createState() => _DxvkDialogState();
+}
+
+class _DxvkDialogState extends State<DxvkDialog> {
+  String? _selectedDxvk;
+  List<String> _dxvkFiles = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDxvkFiles();
+  }
+
+  Future<void> _loadDxvkFiles() async {
+    final files = await DxvkInstaller.getDxvkFiles();
+    setState(() {
+      _dxvkFiles = files;
+      if (files.isNotEmpty) {
+        _selectedDxvk = files.first;
+      }
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Install DXVK'),
+      content: Container(
+        width: double.maxFinite,
+        constraints: BoxConstraints(maxHeight: 300),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isLoading)
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Scanning for DXVK files...'),
+                  ],
+                ),
+              )
+            else if (_dxvkFiles.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Icon(Icons.folder_open, size: 48, color: AppColors.textSecondary),
+                    SizedBox(height: 16),
+                    Text(
+                      'No DXVK files found in /wincomponents/d3d/',
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Place .tzst files in the directory to install them',
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+            else
+              DropdownButtonFormField<String>(
+                value: _selectedDxvk,
+                decoration: InputDecoration(
+                  labelText: 'Select DXVK Version',
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: AppColors.surfaceDark,
+                ),
+                dropdownColor: AppColors.surfaceDark,
+                style: TextStyle(color: AppColors.textPrimary),
+                items: _dxvkFiles.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(
+                      value,
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedDxvk = newValue;
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cancel'),
+        ),
+        if (_dxvkFiles.isNotEmpty && !_isLoading)
+          ElevatedButton(
+            onPressed: _selectedDxvk == null ? null : () {
+              Navigator.of(context).pop();
+              DxvkInstaller.extractDxvk(_selectedDxvk!, context);
+            },
+            child: Text('Install'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryPurple,
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class Util {
@@ -476,6 +741,8 @@ class Util {
       case "vncUrl" : return (value){addCurrentProp(key, value); return value;}("http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678");
       case "vncUri" : return (value){addCurrentProp(key, value); return value;}("vnc://127.0.0.1:5904?VncPassword=12345678&SecurityType=2");
       case "commands" : return (value){addCurrentProp(key, value); return value;}(jsonDecode(jsonEncode(D.commands)));
+      case "groupedCommands" : return (value){addCurrentProp(key, value); return value;}(jsonDecode(jsonEncode(LanguageManager.getGroupedCommandsForLanguage(Localizations.localeOf(G.homePageStateContext).languageCode))));
+      case "groupedWineCommands" : return (value){addCurrentProp(key, value); return value;}(jsonDecode(jsonEncode(LanguageManager.getGroupedWineCommandsForLanguage(Localizations.localeOf(G.homePageStateContext).languageCode))));
     }
   }
 
@@ -555,6 +822,15 @@ class Util {
       default:
         return AppLocalizations.of(context)!.projectUrl;
     }
+  }
+
+  // Helper methods for grouped commands
+  static Map<String, dynamic> getGroupedCommands() {
+    return getCurrentProp("groupedCommands");
+  }
+
+  static Map<String, dynamic> getGroupedWineCommands() {
+    return getCurrentProp("groupedWineCommands");
   }
 
 }
@@ -784,9 +1060,9 @@ class D {
   static const links = [
     {"name": "projectUrl", "value": "https://github.com/xodiosx/XoDos2"},
     {"name": "issueUrl", "value": "https://github.com/xodiosx/XoDos2/issues"},
-    {"name": "faqUrl", "value": "https://github.com/xodiosx/XoDos2"},
-    {"name": "solutionUrl", "value": "https://github.com/xodiosx/XoDos2"},
-    {"name": "discussionUrl", "value": "https://github.com/xodiosx/XoDos2"},
+    {"name": "faqUrl", "value": "https://github.com/xodiosx/XoDos2blob/main/faq.md"},
+    {"name": "solutionUrl", "value": "https://github.com/xodiosx/XoDos2blob/main/fix.md"},
+    {"name": "discussionUrl", "value": "https://t.me/xodemulatorr"},
   ];
 
   // Default quick commands
@@ -1091,12 +1367,17 @@ done
     
     // Use LanguageManager for proper language support
     final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
+    final groupedCommands = LanguageManager.getGroupedCommandsForLanguage(languageCode);
+    final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
+    
     await G.prefs.setStringList("containersInfo", ["""{
 "name":"Debian Bookworm",
 "boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
 "vnc":"startnovnc &",
 "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
-"commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))}
+"commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))},
+"groupedCommands":${jsonEncode(groupedCommands)},
+"groupedWineCommands":${jsonEncode(groupedWineCommands)}
 }"""]);
     
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
@@ -1326,5 +1607,210 @@ static Future<void> launchGUIBackend() async {
       launchGUIBackend();
       waitForConnection().then((value) => G.wasAvncEnabled?launchAvnc():launchBrowser());
     }
+  }
+}
+
+// UI Widgets for displaying grouped commands and DXVK installation
+class GroupedCommandsWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final groupedCommands = Util.getGroupedCommands();
+    
+    return Column(
+      children: [
+        // Install Commands Section (Collapsible)
+        if ((groupedCommands["install"] as List).isNotEmpty)
+          ExpansionTile(
+            title: Text(
+              AppLocalizations.of(context)!.installCommandsSection,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            initiallyExpanded: true,
+            backgroundColor: AppColors.surfaceDark,
+            collapsedBackgroundColor: AppColors.surfaceDark,
+            children: [
+              ...(groupedCommands["install"] as List).map((cmd) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TextButton(
+                    style: AppButtonStyles.modernSettingsButton,
+                    onPressed: () => Util.termWrite(cmd["command"]),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        cmd["name"],
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        
+        // Other Commands Section
+        if ((groupedCommands["other"] as List).isNotEmpty)
+          ExpansionTile(
+            title: Text(
+              'Other Commands',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            backgroundColor: AppColors.surfaceDark,
+            collapsedBackgroundColor: AppColors.surfaceDark,
+            children: [
+              ...(groupedCommands["other"] as List).map((cmd) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TextButton(
+                    style: AppButtonStyles.modernSettingsButton,
+                    onPressed: () => Util.termWrite(cmd["command"]),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        cmd["name"],
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        
+        // System Commands Section
+        if ((groupedCommands["system"] as List).isNotEmpty)
+          ExpansionTile(
+            title: Text(
+              'System',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            backgroundColor: AppColors.surfaceDark,
+            collapsedBackgroundColor: AppColors.surfaceDark,
+            children: [
+              ...(groupedCommands["system"] as List).map((cmd) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TextButton(
+                    style: AppButtonStyles.modernSettingsButton,
+                    onPressed: () => Util.termWrite(cmd["command"]),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        cmd["name"],
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+class WindowsCommandsWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final groupedWineCommands = Util.getGroupedWineCommands();
+    
+    return Column(
+      children: [
+        // DXVK Installation Button
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+          child: ElevatedButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => DxvkDialog(),
+              );
+            },
+            icon: Icon(Icons.extension, color: Colors.white),
+            label: Text('Install DXVK'),
+            style: AppButtonStyles.primaryActionButton,
+          ),
+        ),
+        
+        // Wine Installation Commands
+        if ((groupedWineCommands["install"] as List).isNotEmpty)
+          ExpansionTile(
+            title: Text(
+              'Wine Management',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            backgroundColor: AppColors.surfaceDark,
+            collapsedBackgroundColor: AppColors.surfaceDark,
+            children: [
+              ...(groupedWineCommands["install"] as List).map((cmd) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TextButton(
+                    style: AppButtonStyles.modernSettingsButton,
+                    onPressed: () => Util.termWrite(cmd["command"]),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        cmd["name"],
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        
+        // Wine Configuration Commands
+        if ((groupedWineCommands["config"] as List).isNotEmpty)
+          ExpansionTile(
+            title: Text(
+              'Wine Configuration',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            backgroundColor: AppColors.surfaceDark,
+            collapsedBackgroundColor: AppColors.surfaceDark,
+            children: [
+              ...(groupedWineCommands["config"] as List).map((cmd) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TextButton(
+                    style: AppButtonStyles.modernSettingsButton,
+                    onPressed: () => Util.termWrite(cmd["command"]),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        cmd["name"],
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+      ],
+    );
   }
 }

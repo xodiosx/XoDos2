@@ -128,5 +128,6 @@
   "extractionInProgress": "播放中 - 提取进行中...", 
   "playWhileWaiting": "在等待系统进程时玩游戏",
   "gameModeActive": "游戏模式激活",
-  "simulateExtractionComplete": "模拟提取完成"
+  "simulateExtractionComplete": "模拟提取完成",
+  "installCommandsSection": "快速命令"
 }

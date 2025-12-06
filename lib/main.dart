@@ -558,7 +558,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
               Permission.manageExternalStorage.request();
             }),
             OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.fileAccessGuide), onPressed: () {
-              launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2/fileaccess.md"), mode: LaunchMode.externalApplication);
+              launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2/blob/main/fileaccess.md"), mode: LaunchMode.externalApplication);
             }),
           ]),
           const SizedBox.square(dimension: 16),
@@ -1383,7 +1383,7 @@ class _FastCommandsState extends State<FastCommands> {
             }),
           ])), actions: [
             TextButton(onPressed:() {
-              launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2/extracommand.md"), mode: LaunchMode.externalApplication);
+              launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2/blob/main/extracommand.md"), mode: LaunchMode.externalApplication);
             }, child: Text(AppLocalizations.of(context)!.more)),
             TextButton(onPressed:() {
               Navigator.of(context).pop();

@@ -129,5 +129,6 @@
   "extractionInProgress": "再生中 - 抽出進行中...",
   "playWhileWaiting": "システムプロセス待機中にプレイ",
   "gameModeActive": "ゲームモードアクティブ",
-  "simulateExtractionComplete": "抽出完了をシミュレート"
+  "simulateExtractionComplete": "抽出完了をシミュレート",
+  "installCommandsSection": "クイックコマンド"
 }

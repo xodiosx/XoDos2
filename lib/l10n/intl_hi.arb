@@ -129,5 +129,6 @@
   "extractionInProgress": "चल रहा है - एक्सट्रैक्शन प्रगति पर है...",
   "playWhileWaiting": "सिस्टम प्रक्रियाओं की प्रतीक्षा करते हुए खेलें",
   "gameModeActive": "गेम मोड सक्रिय",
-  "simulateExtractionComplete": "एक्सट्रैक्शन पूरा होने का अनुकरण करें"
+  "simulateExtractionComplete": "एक्सट्रैक्शन पूरा होने का अनुकरण करें",
+  "installCommandsSection": "त्वरित कमांड्स"
 }

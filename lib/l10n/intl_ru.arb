@@ -129,5 +129,6 @@
   "extractionInProgress": "Воспроизведение - Извлечение в процессе...",
   "playWhileWaiting": "Играйте, пока ждете системные процессы",
   "gameModeActive": "Игровой Режим Активен",
-  "simulateExtractionComplete": "Сымитировать Завершение Извлечения"
+  "simulateExtractionComplete": "Сымитировать Завершение Извлечения",
+  "installCommandsSection": "Быстрые команды"
 }

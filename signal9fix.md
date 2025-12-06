@@ -197,4 +197,4 @@ Pixel / AOSP
 Huawei EMUI (partial)
 
 
-**more information**https://github.com/xodiosx/XoDos2/phantom.md
+**more information**https://github.com/xodiosx/XoDos2/blob/main/phantom.md

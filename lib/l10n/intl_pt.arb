@@ -129,5 +129,7 @@
   "extractionInProgress": "Reproduzindo - Extração em andamento...",
   "playWhileWaiting": "Jogue enquanto espera pelos processos do sistema",
   "gameModeActive": "Modo de Jogo Ativo", 
-  "simulateExtractionComplete": "Simular Extração Completa"
+  "simulateExtractionComplete": "Simular Extração Completa",
+  "installCommandsSection": "Comandos rápidos"
+  
 }

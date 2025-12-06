@@ -128,5 +128,6 @@
   "extractionInProgress": "جاري التشغيل - الاستخراج قيد التقدم...",
   "playWhileWaiting": "اللعب أثناء انتظار عمليات النظام",
   "gameModeActive": "وضع اللعبة نشط",
-  "simulateExtractionComplete": " اكتمال الاستخراج"
+  "simulateExtractionComplete": " اكتمال الاستخراج",
+  "installCommandsSection": "أوامر سريعة"
 }

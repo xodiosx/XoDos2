@@ -186,7 +186,7 @@ pkill -f test.sh
 
 
 ---
-**more information**https://github.com/xodiosx/XoDos2/signal9fix.md
+**more information**https://github.com/xodiosx/XoDos2/blob/main/signal9fix.md
 
 
 📅 Last Updated
