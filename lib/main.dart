@@ -182,7 +182,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
       await homeDir.create(recursive: true);
     }
     
-    final dxvkPath = 'containers/0/wincomponents/d3d/$_selectedDxvk';
+    final dxvkPath = '/wincomponents/d3d/$_selectedDxvk';
     
     Navigator.of(context).pop(); // Close dialog
     
@@ -195,7 +195,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
     );
     
     // Execute extraction command
-    Util.termWrite("tar -xaf '$dxvkPath' -C /home/xodos/.wine/drive_c/windows --strip-components=1");
+    Util.termWrite("tar -xaf '$dxvkPath' -C /home/xodos/.wine/drive_c/windows");
     G.pageIndex.value = 0;
   }
 
@@ -1486,7 +1486,7 @@ class FastCommands extends StatefulWidget {
 
 class _FastCommandsState extends State<FastCommands> {
   // We'll keep the old edit functionality but use grouped display
-  final List<bool> _sectionExpanded = [true, false, false];
+  final List<bool> _sectionExpanded = [false, false, false];
 
   @override
   Widget build(BuildContext context) {
@@ -1569,9 +1569,9 @@ class _FastCommandsState extends State<FastCommands> {
           Card(
             child: ExpansionTile(
               title: Text(
-                'System',
+                'effects',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: Theme.of(context).textTheme.bodyLarge!.color,
                 ),

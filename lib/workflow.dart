@@ -440,7 +440,7 @@ rm /tmp/wps.deb"""},
 class DxvkInstaller {
   static Future<List<String>> getDxvkFiles() async {
     try {
-      final dir = Directory('/wincomponents/d3d');
+      final dir = Directory('\$CONTAINER_DIR/wincomponents/d3d');
       if (!await dir.exists()) {
         // Try to create directory if it doesn't exist
         await dir.create(recursive: true);
@@ -464,7 +464,7 @@ class DxvkInstaller {
       await homeDir.create(recursive: true);
     }
     
-    final dxvkPath = '/wincomponents/d3d/$fileName';
+    final dxvkPath = '\$CONTAINER_DIR/wincomponents/d3d/\$fileName';
     final dxvkFile = File(dxvkPath);
     if (!await dxvkFile.exists()) {
       if (context.mounted) {
@@ -498,8 +498,8 @@ class DxvkInstaller {
         '-xaf',
         dxvkPath,
         '-C',
-        '/home/xodos/.wine',
-        '--strip-components=1'
+        '/home/xodos/.wine/drive_c/windows'
+        
       ]);
       
       // Close progress dialog
