@@ -204,55 +204,65 @@ class LanguageManager {
     }
   }
 
-  static Map<String, dynamic> getGroupedCommandsForLanguage(String languageCode) {
-    final commands = getCommandsForLanguage(languageCode);
-    
-    // Separate install commands from other commands
-    final installCommands = commands.where((cmd) => 
-      cmd["name"]?.toLowerCase().contains("install") == true ||
-      cmd["command"]?.toLowerCase().contains("install") == true ||
-      cmd["name"]?.toLowerCase().contains("enable") == true
-    ).toList();
-    
-    final otherCommands = commands.where((cmd) => 
-      !cmd["name"]?.toLowerCase().contains("install") == true &&
-      !cmd["command"]?.toLowerCase().contains("install") == true &&
-      !cmd["name"]?.toLowerCase().contains("enable") == true &&
-      cmd["name"] != "???" &&
-      !cmd["name"]?.toLowerCase().contains("shutdown") == true
-    ).toList();
-    
-    final systemCommands = commands.where((cmd) => 
-      cmd["name"]?.toLowerCase().contains("shutdown") == true ||
-      cmd["name"] == "???"
-    ).toList();
-    
-    return {
-      "install": installCommands,
-      "other": otherCommands,
-      "system": systemCommands,
-    };
-  }
 
-  static Map<String, dynamic> getGroupedWineCommandsForLanguage(String languageCode) {
-    final commands = getWineCommandsForLanguage(languageCode);
-    
-    // Separate Wine install/remove commands from configuration commands
-    final installCommands = commands.where((cmd) => 
-      cmd["name"]?.toLowerCase().contains("remove") == true ||
-      cmd["name"]?.toLowerCase().contains("remove wine") == true
-    ).toList();
-    
-    final configCommands = commands.where((cmd) => 
-      !cmd["name"]?.toLowerCase().contains("remove") == true &&
-      !cmd["name"]?.toLowerCase().contains("remove wine") == true
-    ).toList();
-    
-    return {
-      "install": installCommands,
-      "config": configCommands,
-    };
-  }
+
+
+
+static Map<String, dynamic> getGroupedCommandsForLanguage(String languageCode) {
+  final commands = getCommandsForLanguage(languageCode);
+  
+  // Separate install commands from other commands
+  final installCommands = commands.where((cmd) { 
+    final name = cmd["name"]?.toLowerCase() ?? "";
+    final command = cmd["command"]?.toLowerCase() ?? "";
+    return name.contains("install") || 
+           command.contains("install") || 
+           name.contains("enable");
+  }).toList();
+  
+  final otherCommands = commands.where((cmd) {
+    final name = cmd["name"]?.toLowerCase() ?? "";
+    final command = cmd["command"]?.toLowerCase() ?? "";
+    return !name.contains("install") && 
+           !command.contains("install") && 
+           !name.contains("enable") &&
+           name != "???" &&
+           !name.contains("shutdown");
+  }).toList();
+  
+  final systemCommands = commands.where((cmd) {
+    final name = cmd["name"]?.toLowerCase() ?? "";
+    return name.contains("shutdown") || name == "???";
+  }).toList();
+  
+  return {
+    "install": installCommands,
+    "other": otherCommands,
+    "system": systemCommands,
+  };
+}
+
+static Map<String, dynamic> getGroupedWineCommandsForLanguage(String languageCode) {
+  final commands = getWineCommandsForLanguage(languageCode);
+  
+  // Separate Wine install/remove commands from configuration commands
+  final installCommands = commands.where((cmd) {
+    final name = cmd["name"]?.toLowerCase() ?? "";
+    return name.contains("remove wine") || 
+           name.contains("remove");
+  }).toList();
+  
+  final configCommands = commands.where((cmd) {
+    final name = cmd["name"]?.toLowerCase() ?? "";
+    return !name.contains("remove wine") && 
+           !name.contains("remove");
+  }).toList();
+  
+  return {
+    "install": installCommands,
+    "config": configCommands,
+  };
+}
 
   // Japanese commands
   static const List<Map<String, String>> _japaneseCommands = [
@@ -1535,7 +1545,7 @@ static Future<void> launchGUIBackend() async {
       String vncCmd = Util.getCurrentProp("vnc");
       // Remove any existing & and add redirection
       vncCmd = vncCmd.replaceAll(RegExp(r'\s*&\s*$'), '');
-      Util.termWrite("$vncCmd > /dev/null 2>&1 &");
+      Util.termWrite("$vncCmd $> /dev/null 2>&1 &");
     }
   }
   // Remove the clear command entirely
