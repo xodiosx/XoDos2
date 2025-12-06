@@ -459,7 +459,7 @@ class DxvkInstaller {
   }
   
   static Future<void> extractDxvk(String fileName, BuildContext context) async {
-    final homeDir = Directory('/home/xodos/.wine');
+    final homeDir = Directory('/home/xodos/.wine/drive_c/windows');
     if (!await homeDir.exists()) {
       await homeDir.create(recursive: true);
     }
@@ -1824,3 +1824,8 @@ class WindowsCommandsWidget extends StatelessWidget {
     );
   }
 }
+
+
+
+
+

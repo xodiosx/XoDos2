@@ -627,23 +627,34 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
           Text(AppLocalizations.of(context)!.hangoverDescription),
           const SizedBox.square(dimension: 8),
           Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: [
-            OutlinedButton(style: D.commandButtonStyle, child: Text("${AppLocalizations.of(context)!.installHangoverStable}（10.14）"), onPressed: () async {
-              Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover-stable");
-              G.pageIndex.value = 0;
-            }),
-            OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.installHangoverLatest), onPressed: () async {
-              Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover");
-              G.pageIndex.value = 0;
-            }),
-            OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.uninstallHangover), onPressed: () async {
-              Util.termWrite("sudo apt autoremove --purge -y hangover*");
-              G.pageIndex.value = 0;
-            }),
-            OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.clearWineData), onPressed: () async {
-              Util.termWrite("rm -rf ~/.wine");
-              G.pageIndex.value = 0;
-            }),
-          ]),
+  OutlinedButton(style: D.commandButtonStyle, child: Text("${AppLocalizations.of(context)!.installHangoverStable}（10.14）"), onPressed: () async {
+    Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover-stable");
+    G.pageIndex.value = 0;
+  }),
+  OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.installHangoverLatest), onPressed: () async {
+    Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover");
+    G.pageIndex.value = 0;
+  }),
+  OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.uninstallHangover), onPressed: () async {
+    Util.termWrite("sudo apt autoremove --purge -y hangover*");
+    G.pageIndex.value = 0;
+  }),
+  OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.clearWineData), onPressed: () async {
+    Util.termWrite("rm -rf ~/.wine");
+    G.pageIndex.value = 0;
+  }),
+  // ADD THIS NEW DXVK BUTTON:
+  OutlinedButton(
+    style: D.commandButtonStyle,
+    child: Text('Install DXVK'),
+    onPressed: () {
+      showDialog(
+        context: context,
+        builder: (context) => DxvkDialog(),
+      );
+    },
+  ),
+]),
           const SizedBox.square(dimension: 16),
           const Divider(height: 2, indent: 8, endIndent: 8),
           const SizedBox.square(dimension: 16),
@@ -1319,7 +1330,6 @@ Future<void> _pasteToTerminal() async {
 
 
 
-
 class FastCommands extends StatefulWidget {
   const FastCommands({super.key});
 
@@ -1328,92 +1338,319 @@ class FastCommands extends StatefulWidget {
 }
 
 class _FastCommandsState extends State<FastCommands> {
+  // We'll keep the old edit functionality but use grouped display
+  final List<bool> _sectionExpanded = [true, false, false];
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(alignment: WrapAlignment.center, spacing: 4.0, runSpacing: 4.0, children: Util.getCurrentProp("commands")
-      .asMap().entries.map<Widget>((e) {
-      return OutlinedButton(style: D.commandButtonStyle, child: Text(e.value["name"]!), onPressed: () {
-        Util.termWrite(e.value["command"]!);
-        G.pageIndex.value = 0;
-      }, onLongPress: () {
-        String name = e.value["name"]!;
-        String command = e.value["command"]!;
-        showDialog(context: context, builder: (context) {
-          return AlertDialog(title: Text(AppLocalizations.of(context)!.commandEdit), content: SingleChildScrollView(child: Column(children: [
-            TextFormField(initialValue: name, decoration: InputDecoration(border: OutlineInputBorder(), labelText: AppLocalizations.of(context)!.commandName), onChanged: (value) {
-              name = value;
-            }),
-            const SizedBox.square(dimension: 8),
-            TextFormField(maxLines: null, initialValue: command, decoration: InputDecoration(border: OutlineInputBorder(), labelText: AppLocalizations.of(context)!.commandContent), onChanged: (value) {
-              command = value;
-            }),
-          ])), actions: [
-            TextButton(onPressed:() async {
-              await Util.setCurrentProp("commands", Util.getCurrentProp("commands")
-                ..removeAt(e.key));
-              setState(() {});
-              if (!context.mounted) return;
-              Navigator.of(context).pop();
-            }, child: Text(AppLocalizations.of(context)!.deleteItem)),
-            TextButton(onPressed:() {
-              Navigator.of(context).pop();
-            }, child: Text(AppLocalizations.of(context)!.cancel)),
-            TextButton(onPressed:() async {
-              await Util.setCurrentProp("commands", Util.getCurrentProp("commands")
-                ..setAll(e.key, [{"name": name, "command": command}]));
-              setState(() {});
-              if (!context.mounted) return;
-              Navigator.of(context).pop();
-            }, child: Text(AppLocalizations.of(context)!.save)),
-          ]);
-        },);
-      },);
-    }).toList()..add(OutlinedButton(style: D.commandButtonStyle, onPressed:() {
-        String name = "";
-        String command = "";
-        showDialog(context: context, builder: (context) {
-          return AlertDialog(title: Text(AppLocalizations.of(context)!.commandEdit), content: SingleChildScrollView(child: Column(children: [
-            TextFormField(initialValue: name, decoration: InputDecoration(border: OutlineInputBorder(), labelText: AppLocalizations.of(context)!.commandName), onChanged: (value) {
-              name = value;
-            }),
-            const SizedBox.square(dimension: 8),
-            TextFormField(maxLines: null, initialValue: command, decoration: InputDecoration(border: OutlineInputBorder(), labelText: AppLocalizations.of(context)!.commandContent), onChanged: (value) {
-              command = value;
-            }),
-          ])), actions: [
-            TextButton(onPressed:() {
-              launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2/blob/main/extracommand.md"), mode: LaunchMode.externalApplication);
-            }, child: Text(AppLocalizations.of(context)!.more)),
-            TextButton(onPressed:() {
-              Navigator.of(context).pop();
-            }, child: Text(AppLocalizations.of(context)!.cancel)),
-            TextButton(onPressed:() async {
-              await Util.setCurrentProp("commands", Util.getCurrentProp("commands")
-                ..add({"name": name, "command": command}));
-              setState(() {});
-              if (!context.mounted) return;
-              Navigator.of(context).pop();
-            }, child: Text(AppLocalizations.of(context)!.add)),
-          ]);
-        },);
-    }, onLongPress: () {
-      showDialog(context: context, builder: (context) {
-        return AlertDialog(title: Text(AppLocalizations.of(context)!.resetCommand), content: Text(AppLocalizations.of(context)!.confirmResetAllCommands), actions: [
-          TextButton(onPressed:() {
-            Navigator.of(context).pop();
-          }, child: Text(AppLocalizations.of(context)!.cancel)),
-          TextButton(onPressed:() async {
-            await Util.setCurrentProp("commands", Localizations.localeOf(context).languageCode == 'zh' ? D.commands : D.commands4En);
-            setState(() {});
-            if (!context.mounted) return;
-            Navigator.of(context).pop();
-          }, child: Text(AppLocalizations.of(context)!.yes)),
-        ]);
-      });
-    }, child: Text(AppLocalizations.of(context)!.addShortcutCommand))));
+    final groupedCommands = Util.getGroupedCommands();
+    
+    return Column(
+      children: [
+        // Install Commands Section
+        if ((groupedCommands["install"] as List).isNotEmpty)
+          Card(
+            child: ExpansionTile(
+              title: Text(
+                AppLocalizations.of(context)!.installCommandsSection,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              initiallyExpanded: _sectionExpanded[0],
+              onExpansionChanged: (expanded) {
+                setState(() {
+                  _sectionExpanded[0] = expanded;
+                });
+              },
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 4.0,
+                    runSpacing: 4.0,
+                    children: _buildCommandButtons(groupedCommands["install"] as List<Map<String, String>>, isInstallSection: true),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
+        // Other Commands Section
+        if ((groupedCommands["other"] as List).isNotEmpty)
+          Card(
+            child: ExpansionTile(
+              title: Text(
+                'Other Commands',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              initiallyExpanded: _sectionExpanded[1],
+              onExpansionChanged: (expanded) {
+                setState(() {
+                  _sectionExpanded[1] = expanded;
+                });
+              },
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 4.0,
+                    runSpacing: 4.0,
+                    children: _buildCommandButtons(groupedCommands["other"] as List<Map<String, String>>),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
+        // System Commands Section
+        if ((groupedCommands["system"] as List).isNotEmpty)
+          Card(
+            child: ExpansionTile(
+              title: Text(
+                'System',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              initiallyExpanded: _sectionExpanded[2],
+              onExpansionChanged: (expanded) {
+                setState(() {
+                  _sectionExpanded[2] = expanded;
+                });
+              },
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 4.0,
+                    runSpacing: 4.0,
+                    children: _buildCommandButtons(groupedCommands["system"] as List<Map<String, String>>),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
+        // Add Command Button (kept at the bottom)
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: OutlinedButton(
+            style: D.commandButtonStyle,
+            onPressed: _addCommand,
+            onLongPress: _resetCommands,
+            child: Text(AppLocalizations.of(context)!.addShortcutCommand),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildCommandButtons(List<Map<String, String>> commands, {bool isInstallSection = false}) {
+    return commands.asMap().entries.map<Widget>((e) {
+      return OutlinedButton(
+        style: D.commandButtonStyle,
+        child: Text(e.value["name"]!),
+        onPressed: () {
+          Util.termWrite(e.value["command"]!);
+          G.pageIndex.value = 0;
+        },
+        onLongPress: () {
+          _editCommand(e.key, e.value, isInstallSection);
+        },
+      );
+    }).toList();
+  }
+
+  void _editCommand(int index, Map<String, String> cmd, bool isInstallSection) {
+    String name = cmd["name"]!;
+    String command = cmd["command"]!;
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(AppLocalizations.of(context)!.commandEdit),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextFormField(
+                  initialValue: name,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: AppLocalizations.of(context)!.commandName,
+                  ),
+                  onChanged: (value) {
+                    name = value;
+                  },
+                ),
+                const SizedBox.square(dimension: 8),
+                TextFormField(
+                  maxLines: null,
+                  initialValue: command,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: AppLocalizations.of(context)!.commandContent,
+                  ),
+                  onChanged: (value) {
+                    command = value;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                // Delete the command from the main commands list
+                List<Map<String, String>> allCommands = Util.getCurrentProp("commands");
+                int globalIndex = allCommands.indexWhere((c) => c["name"] == cmd["name"] && c["command"] == cmd["command"]);
+                if (globalIndex != -1) {
+                  await Util.setCurrentProp("commands", allCommands..removeAt(globalIndex));
+                  setState(() {});
+                }
+                if (!context.mounted) return;
+                Navigator.of(context).pop();
+              },
+              child: Text(AppLocalizations.of(context)!.deleteItem),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(AppLocalizations.of(context)!.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Update the command in the main commands list
+                List<Map<String, String>> allCommands = Util.getCurrentProp("commands");
+                int globalIndex = allCommands.indexWhere((c) => c["name"] == cmd["name"] && c["command"] == cmd["command"]);
+                if (globalIndex != -1) {
+                  allCommands[globalIndex] = {"name": name, "command": command};
+                  await Util.setCurrentProp("commands", allCommands);
+                  setState(() {});
+                }
+                if (!context.mounted) return;
+                Navigator.of(context).pop();
+              },
+              child: Text(AppLocalizations.of(context)!.save),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addCommand() {
+    String name = "";
+    String command = "";
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(AppLocalizations.of(context)!.commandEdit),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextFormField(
+                  initialValue: name,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: AppLocalizations.of(context)!.commandName,
+                  ),
+                  onChanged: (value) {
+                    name = value;
+                  },
+                ),
+                const SizedBox.square(dimension: 8),
+                TextFormField(
+                  maxLines: null,
+                  initialValue: command,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: AppLocalizations.of(context)!.commandContent,
+                  ),
+                  onChanged: (value) {
+                    command = value;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2/blob/main/extracommand.md"),
+                    mode: LaunchMode.externalApplication);
+              },
+              child: Text(AppLocalizations.of(context)!.more),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(AppLocalizations.of(context)!.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                List<Map<String, String>> allCommands = Util.getCurrentProp("commands");
+                allCommands.add({"name": name, "command": command});
+                await Util.setCurrentProp("commands", allCommands);
+                setState(() {});
+                if (!context.mounted) return;
+                Navigator.of(context).pop();
+              },
+              child: Text(AppLocalizations.of(context)!.add),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _resetCommands() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(AppLocalizations.of(context)!.resetCommand),
+          content: Text(AppLocalizations.of(context)!.confirmResetAllCommands),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(AppLocalizations.of(context)!.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                await Util.setCurrentProp("commands",
+                    Localizations.localeOf(context).languageCode == 'zh' ? D.commands : D.commands4En);
+                setState(() {});
+                if (!context.mounted) return;
+                Navigator.of(context).pop();
+              },
+              child: Text(AppLocalizations.of(context)!.yes),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
+
+
 
 // Add this to your main.dart file, near the top with other global variables
 class ExtractionProgressState {
@@ -1624,7 +1861,7 @@ Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap
 }
 
 
-// ========== ADD THIS FUNCTION AT THE BOTTOM OF THE FILE ==========
+// ========== ADD THIS FUNCTION ==========
 Widget buildWaitingGamesSection(BuildContext context) {
   return Container(
     height: 600, // Fixed height for the games section
@@ -1632,3 +1869,5 @@ Widget buildWaitingGamesSection(BuildContext context) {
     child: const SpiritedMiniGamesView(),
   );
 }
+
+
