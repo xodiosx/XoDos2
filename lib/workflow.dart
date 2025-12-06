@@ -1414,8 +1414,8 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 ${Util.getCurrentProp("boot")}
-# Run post-command silently
-(${G.postCommand}) > /dev/null 2>&1""");
+#
+${G.postCommand} > /dev/null 2>&1""");
 // Remove the "clear" command at the end
   }
 
