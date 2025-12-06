@@ -19,6 +19,9 @@
 
 ## ✨ What is XoDos?
 
+<p align="center">
+  <img src="extra/XoDos2.jpg" alt="XoDos2" width="250" height="180">
+</p>
 XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/XoDos) project, now reimagined and rebuilt from the ground up. Inspired by the [tiny computer project](https://github.com/Cateners/tiny_computer), XoDos offers:
 
 - **🔄 Conflict-Free**: Designed not to interfere with Termux, Termux X11, or other Android applications
