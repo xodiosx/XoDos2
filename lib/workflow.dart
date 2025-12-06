@@ -1367,11 +1367,9 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 ${Util.getCurrentProp("boot")}
-sed -i 's/pkill -f wine/#pkill -f wine/' /bin/runh >/dev/null 2>&1
-sed -i 's/pkill -f wine/#pkill -f wine/' /bin/runhm >/dev/null 2>&1
-sed -i 's/pkill -f wine/#pkill -f wine/' /bin/run >/dev/null 2>&1
+sed -i 's/pkill -f wine/#pkill -f wine/' /bin/runh
 
-${G.postCommand} >/dev/null 2>&1""");
+${G.postCommand} > /dev/null """);
 // Remove the "clear" command at the end
   }
 
@@ -1385,7 +1383,7 @@ static Future<void> launchGUIBackend() async {
       String vncCmd = Util.getCurrentProp("vnc");
       // Remove any existing & and add redirection
       vncCmd = vncCmd.replaceAll(RegExp(r'\s*&\s*$'), '');
-      Util.termWrite("$vncCmd >/dev/null 2>&1 &");
+      Util.termWrite("$vncCmd > /dev/null  &");
     }
   }
   // Remove the clear command entirely

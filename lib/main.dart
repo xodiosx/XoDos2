@@ -126,7 +126,6 @@ class AppColors {
 
 // Add this DxvkDialog class after AppColors
 // DxvkDialog class
-
 class DxvkDialog extends StatefulWidget {
   @override
   _DxvkDialogState createState() => _DxvkDialogState();
@@ -144,121 +143,79 @@ class _DxvkDialogState extends State<DxvkDialog> {
   void initState() {
     super.initState();
     _loadDxvkFiles();
-    _checkCurrentHudState();
+    _loadHudPreferences();
   }
 
-  Future<void> _checkCurrentHudState() async {
+  Future<void> _loadHudPreferences() async {
     try {
-      // Check current state of MANGOHUD
-      final mangohudResult = await Process.run('bash', [
-        '-c',
-        'grep -q "export MANGOHUD=1" /bin/runh && grep -q "export MANGOHUD=1" /bin/run'
-      ]);
-      
-      // Check current state of DXVK_HUD
-      final dxvkhudResult = await Process.run('bash', [
-        '-c',
-        'grep -q "export DXVK_HUD=fps,version,devinfo" /bin/runh && grep -q "export DXVK_HUD=fps,version,devinfo" /bin/run'
-      ]);
-
       setState(() {
-        _mangohudEnabled = mangohudResult.exitCode == 0;
-        _dxvkHudEnabled = dxvkhudResult.exitCode == 0;
+        _mangohudEnabled = G.prefs.getBool('mangohud_enabled') ?? false;
+        _dxvkHudEnabled = G.prefs.getBool('dxvkhud_enabled') ?? false;
       });
     } catch (e) {
-      print('Error checking HUD state: $e');
+      print('Error loading HUD preferences: $e');
     }
   }
 
-  Future<void> _toggleMangohud(bool enabled) async {
-    setState(() {
-      _mangohudEnabled = enabled;
-    });
-
-    if (enabled) {
-      // Enable MANGOHUD
-      await Process.run('bash', [
-        '-c',
-        '''
-        sed -i 's/export MANGOHUD=0/export MANGOHUD=1/' /bin/runh >/dev/null 2>&1
-        sed -i 's/export MANGOHUD_DLSYM=0/export MANGOHUD_DLSYM=1/' /bin/runh >/dev/null 2>&1
-        sed -i 's/export MANGOHUD=0/export MANGOHUD=1/' /bin/run >/dev/null 2>&1
-        sed -i 's/export MANGOHUD_DLSYM=0/export MANGOHUD_DLSYM=1/' /bin/run >/dev/null 2>&1
-        # Add if not present
-        grep -q "export MANGOHUD=" /bin/runh || echo 'export MANGOHUD=1' >> /bin/runh
-        grep -q "export MANGOHUD_DLSYM=" /bin/runh || echo 'export MANGOHUD_DLSYM=1' >> /bin/runh
-        grep -q "export MANGOHUD=" /bin/run || echo 'export MANGOHUD=1' >> /bin/run
-        grep -q "export MANGOHUD_DLSYM=" /bin/run || echo 'export MANGOHUD_DLSYM=1' >> /bin/run
-        '''
-      ]);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('MANGOHUD enabled'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // Disable MANGOHUD
-      await Process.run('bash', [
-        '-c',
-        '''
-        sed -i 's/export MANGOHUD=1/export MANGOHUD=0/' /bin/runh >/dev/null 2>&1
-        sed -i 's/export MANGOHUD_DLSYM=1/export MANGOHUD_DLSYM=0/' /bin/runh >/dev/null 2>&1
-        sed -i 's/export MANGOHUD=1/export MANGOHUD=0/' /bin/run >/dev/null 2>&1
-        sed -i 's/export MANGOHUD_DLSYM=1/export MANGOHUD_DLSYM=0/' /bin/run >/dev/null 2>&1
-        '''
-      ]);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('MANGOHUD disabled'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+  Future<void> _saveMangohudPreference(bool enabled) async {
+    await G.prefs.setBool('mangohud_enabled', enabled);
   }
 
-  Future<void> _toggleDxvkHud(bool enabled) async {
-    setState(() {
-      _dxvkHudEnabled = enabled;
-    });
+  Future<void> _saveDxvkHudPreference(bool enabled) async {
+    await G.prefs.setBool('dxvkhud_enabled', enabled);
+  }
 
-    if (enabled) {
-      // Enable DXVK HUD
-      await Process.run('bash', [
-        '-c',
-        '''
-        sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/runh >/dev/null 2>&1
-        sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/run >/dev/null 2>&1
-        # Add if not present
-        grep -q "export DXVK_HUD=" /bin/runh || echo 'export DXVK_HUD=fps,version,devinfo' >> /bin/runh
-        grep -q "export DXVK_HUD=" /bin/run || echo 'export DXVK_HUD=fps,version,devinfo' >> /bin/run
-        '''
-      ]);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('DXVK HUD enabled'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+  Future<void> _applyHudCommands() async {
+    // Switch to terminal tab
+    G.pageIndex.value = 0;
+    
+    // Wait a moment for tab switch
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Apply MANGOHUD commands
+    if (_mangohudEnabled) {
+      Util.termWrite("echo 'Enabling MANGOHUD...'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export MANGOHUD=0/export MANGOHUD=1/' /bin/runh >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export MANGOHUD_DLSYM=0/export MANGOHUD_DLSYM=1/' /bin/runh >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export MANGOHUD=0/export MANGOHUD=1/' /bin/run >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export MANGOHUD_DLSYM=0/export MANGOHUD_DLSYM=1/' /bin/run >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("echo 'MANGOHUD enabled.'");
     } else {
-      // Disable DXVK HUD
-      await Process.run('bash', [
-        '-c',
-        '''
-        sed -i 's/export DXVK_HUD=fps,version,devinfo/export DXVK_HUD=0/' /bin/runh >/dev/null 2>&1
-        sed -i 's/export DXVK_HUD=fps,version,devinfo/export DXVK_HUD=0/' /bin/run >/dev/null 2>&1
-        '''
-      ]);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('DXVK HUD disabled'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      Util.termWrite("echo 'Disabling MANGOHUD...'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export MANGOHUD=1/export MANGOHUD=0/' /bin/runh >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export MANGOHUD_DLSYM=1/export MANGOHUD_DLSYM=0/' /bin/runh >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export MANGOHUD=1/export MANGOHUD=0/' /bin/run >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export MANGOHUD_DLSYM=1/export MANGOHUD_DLSYM=0/' /bin/run >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("echo 'MANGOHUD disabled.'");
+    }
+    
+    // Apply DXVK_HUD commands
+    if (_dxvkHudEnabled) {
+      Util.termWrite("echo 'Enabling DXVK HUD...'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/runh >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/run >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("echo 'DXVK HUD enabled.'");
+    } else {
+      Util.termWrite("echo 'Disabling DXVK HUD...'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export DXVK_HUD=fps,version,devinfo/export DXVK_HUD=0/' /bin/runh >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("sed -i 's/export DXVK_HUD=fps,version,devinfo/export DXVK_HUD=0/' /bin/run >/dev/null 2>&1");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("echo 'DXVK HUD disabled.'");
     }
   }
 
@@ -335,6 +292,9 @@ class _DxvkDialogState extends State<DxvkDialog> {
       // First, close the dialog
       Navigator.of(context).pop();
       
+      // Apply HUD commands first
+      await _applyHudCommands();
+      
       // Show extraction message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -342,12 +302,6 @@ class _DxvkDialogState extends State<DxvkDialog> {
           duration: const Duration(seconds: 2),
         ),
       );
-      
-      // Switch to terminal tab
-      G.pageIndex.value = 0;
-      
-      // Wait a moment for tab switch
-      await Future.delayed(const Duration(milliseconds: 300));
       
       // Send echo command first (same approach as other commands)
       Util.termWrite("echo '================================'");
@@ -415,6 +369,26 @@ class _DxvkDialogState extends State<DxvkDialog> {
         ),
       );
     }
+  }
+
+  Future<void> _cancelDialog() async {
+    // Save preferences first
+    await _saveMangohudPreference(_mangohudEnabled);
+    await _saveDxvkHudPreference(_dxvkHudEnabled);
+    
+    // Close dialog
+    Navigator.of(context).pop();
+    
+    // Apply HUD commands
+    await _applyHudCommands();
+    
+    // Show confirmation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('HUD settings saved and applied.'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -485,7 +459,9 @@ class _DxvkDialogState extends State<DxvkDialog> {
                       subtitle: const Text('Overlay for monitoring FPS, CPU, GPU, etc.'),
                       value: _mangohudEnabled,
                       onChanged: (value) {
-                        _toggleMangohud(value);
+                        setState(() {
+                          _mangohudEnabled = value;
+                        });
                       },
                     ),
                   ),
@@ -497,8 +473,21 @@ class _DxvkDialogState extends State<DxvkDialog> {
                       subtitle: const Text('DXVK overlay showing FPS, version, device info'),
                       value: _dxvkHudEnabled,
                       onChanged: (value) {
-                        _toggleDxvkHud(value);
+                        setState(() {
+                          _dxvkHudEnabled = value;
+                        });
                       },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Note: HUD settings will be applied when dialog closes.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
@@ -508,12 +497,19 @@ class _DxvkDialogState extends State<DxvkDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _cancelDialog,
           child: const Text('Cancel'),
         ),
         if (_dxvkFiles.isNotEmpty && !_isLoading && _selectedDxvk != null)
           ElevatedButton(
-            onPressed: _extractDxvk,
+            onPressed: () async {
+              // Save preferences before extraction
+              await _saveMangohudPreference(_mangohudEnabled);
+              await _saveDxvkHudPreference(_dxvkHudEnabled);
+              
+              // Start extraction (which includes HUD commands)
+              await _extractDxvk();
+            },
             child: const Text('Install'),
           ),
       ],
