@@ -1050,6 +1050,58 @@ class Workflow {
   }
 
   static Future<void> setupBootstrap() async {
+  
+      try {
+      // Create DXVK directory in internal storage (for container 0)
+      String internalDxvkPath= '/storage/emulated/0/Android/data/com.xodos/files/';
+      await Directory(internalDxvkPath).create(recursive: true);
+      print('Created internal DXVK directory: $internalDxvkPath');
+      
+      // Also try to create in external storage (for user convenience)
+      
+      String externalDxvkPath = '/storage/emulated/0/xodos/wincomponents/d3d';
+      try {
+        await Directory(externalDxvkPath).create(recursive: true);
+        print('Created external DXVK directory: $externalDxvkPath');
+        
+        // Add a README file with instructions
+        File readmeFile = File('$externalDxvkPath/README.txt');
+        await readmeFile.writeAsString('''
+=== DXVK Installation Directory ===
+
+Place DXVK files here for installation in XoDos.
+
+Supported formats:
+- .tzst (tar.zst)
+- .tar.gz / .tgz
+- .tar.xz / .txz
+- .tar
+- .zip
+- .7z
+
+with both folders inside archive like
+system32
+syswow64
+
+How to use:
+1. Download DXVK from: https://github.com/doitsujin/dxvk/releases
+2. Place the archive file in this directory
+3. Open XoDos app
+4. Go to Settings → Windows App Support → Install DXVK
+5. Select the file and install
+
+Note: DXVK will be extracted to ~/.wine/drive_c/windows/
+''');
+        print('Created README file in DXVK directory');
+      } catch (e) {
+        print('Could not create external DXVK directory: $e');
+        print('User may need to create it manually or grant storage permission');
+      }
+    } catch (e) {
+      print('Error creating DXVK directory: $e');
+    }
+    // ========== folders making  ======
+ 
     // Folder for sharing data files
     Util.createDirFromString("${G.dataPath}/share");
     // Folder for storing executable files
