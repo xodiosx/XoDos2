@@ -124,6 +124,9 @@ class AppColors {
   static const Color pressedColor = Color(0xFF3A3A3A);
 }
 
+// Add this DxvkDialog class after AppColors
+// DxvkDialog class
+
 // DxvkDialog class
 class DxvkDialog extends StatefulWidget {
   @override
@@ -144,29 +147,13 @@ class _DxvkDialogState extends State<DxvkDialog> {
 
 Future<void> _loadDxvkFiles() async {
   try {
-    List<String> possiblePaths = [
-      '/wincomponents/d3d',
-      'containers/0/wincomponents/d3d',
-      '/storage/emulated/0/Android/data/com.xodos/files/containers/0/wincomponents/d3d',
-      '/data/data/com.xodos/files/containers/0/wincomponents/d3d',
-      '/sdcard/Android/data/com.xodos/files/containers/0/wincomponents/d3d',
-    ];
+    // Look in the container's wincomponents directory
+    String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
+    String hostDir = "$containerDir/wincomponents/d3d";
     
-    Directory? foundDir;
-    String? foundPath;
-    
-    for (var path in possiblePaths) {
-      final dir = Directory(path);
-      if (await dir.exists()) {
-        foundDir = dir;
-        _dxvkDirectory = path;
-        print('Found DXVK directory at: $path');
-        break;
-      }
-    }
-    
-    if (foundDir == null) {
-      print('No DXVK directory found in any location');
+    final dir = Directory(hostDir);
+    if (!await dir.exists()) {
+      print('DXVK directory not found at: $hostDir');
       setState(() {
         _dxvkFiles = [];
         _isLoading = false;
@@ -174,20 +161,17 @@ Future<void> _loadDxvkFiles() async {
       return;
     }
     
-    final files = await foundDir.list().toList();
+    _dxvkDirectory = hostDir;
+    print('Found DXVK directory at: $hostDir');
     
-    print('Files found in $_dxvkDirectory:');
-    for (var file in files) {
-      print('  - ${file.path}');
-    }
+    final files = await dir.list().toList();
     
+    // Accept various archive formats
     final dxvkFiles = files
         .where((file) => file is File && 
             RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z)$').hasMatch(file.path))
         .map((file) => file.path.split('/').last)
         .toList();
-    
-    print('Found ${dxvkFiles.length} DXVK files: $dxvkFiles');
     
     setState(() {
       _dxvkFiles = dxvkFiles;
@@ -206,115 +190,114 @@ Future<void> _loadDxvkFiles() async {
 }
 
 Future<void> _extractDxvk() async {
-  if (_selectedDxvk == null || _dxvkDirectory == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Please select a DXVK version'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    return;
-  }
-  
-  final dxvkPath = '$_dxvkDirectory/$_selectedDxvk';
-  final file = File(dxvkPath);
-  
-  if (!await file.exists()) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('File not found: $dxvkPath'),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-    return;
-  }
-  
-  final targetDir = Directory('/home/xodos/.wine/drive_c/windows');
-  if (!await targetDir.exists()) {
-    await targetDir.create(recursive: true);
-    print('Created target directory: ${targetDir.path}');
-  }
-  
-  Navigator.of(context).pop();
-  
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('Starting extraction of $_selectedDxvk...'),
-      duration: const Duration(seconds: 3),
-    ),
-  );
-  
-  await Future.delayed(const Duration(milliseconds: 500));
-  
-  print('Executing extraction command for: $dxvkPath');
-  
-  Util.termWrite("echo '================================'");
-  Util.termWrite("echo 'Starting DXVK installation'");
-  Util.termWrite("echo 'Extracting: $_selectedDxvk'");
-  Util.termWrite("echo '================================'");
-  
-  // Check for required tools and install if missing
-  Util.termWrite("""
-if ! command -v unzip &> /dev/null; then
-    echo "Installing unzip..."
-    sudo apt update && sudo apt install -y unzip
-fi
-if ! command -v 7z &> /dev/null; then
-    echo "Installing p7zip..."
-    sudo apt update && sudo apt install -y p7zip-full
-fi
-if ! command -v tar &> /dev/null; then
-    echo "tar is required but not found!"
-fi
-""");
-  
-  // Create target directory
-  Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
-  
-  if (_selectedDxvk!.endsWith('.zip')) {
-    Util.termWrite("unzip -o '$dxvkPath' -d '/home/xodos/.wine/drive_c/windows'");
-  } else if (_selectedDxvk!.endsWith('.7z')) {
-    Util.termWrite("7z x '$dxvkPath' -o'/home/xodos/.wine/drive_c/windows' -y");
-  } else {
-    Util.termWrite("tar -xaf '$dxvkPath' -C '/home/xodos/.wine/drive_c/windows'");
-  }
-  
-  // Verify installation
-  Util.termWrite("""
-echo 'Verifying installation...'
-if [ -f "/home/xodos/.wine/drive_c/windows/system32/d3d11.dll" ] || [ -f "/home/xodos/.wine/drive_c/windows/syswow64/d3d11.dll" ]; then
-    echo '✓ DXVK installed successfully!'
-    echo 'Please restart Wine applications for changes to take effect.'
-else
-    echo '✗ DXVK files not found in expected location'
-    echo 'Extraction may have placed files in a different directory'
-    echo 'Check /home/xodos/.wine/drive_c/windows/ for extracted files'
-fi
-""");
-  
-  Util.termWrite("echo '================================'");
-  Util.termWrite("echo 'DXVK installation complete!'");
-  Util.termWrite("echo '================================'");
-  
-  // Switch to terminal tab
   try {
-    if (G.pageIndex != null) {
-      G.pageIndex.value = 0;
-    }
-  } catch (e) {
-    print('Could not switch to terminal tab: $e');
-  }
-  
-  Future.delayed(const Duration(seconds: 3), () {
-    if (context.mounted) {
+    if (_selectedDxvk == null || _dxvkDirectory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$_selectedDxvk installation completed! Check terminal for details.'),
+          content: Text('Please select a DXVK version'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    final dxvkPath = '$_dxvkDirectory/$_selectedDxvk';
+    final file = File(dxvkPath);
+    
+    // Check if file exists
+    if (!await file.exists()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('File not found: $dxvkPath'),
           duration: const Duration(seconds: 3),
         ),
       );
+      return;
     }
-  });
+    
+    // First, close the dialog
+    Navigator.of(context).pop();
+    
+    // Show extraction message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Starting DXVK extraction...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    
+    // Switch to terminal tab
+    G.pageIndex.value = 0;
+    
+    // Wait a moment for tab switch
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Send echo command first (same approach as other commands)
+    Util.termWrite("echo '================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Starting DXVK installation'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Extracting: $_selectedDxvk'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo '================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Create target directory if it doesn't exist
+    Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Check file type and extract accordingly (using relative path from container root)
+    // Since the file is in /wincomponents/d3d/ directory in the container
+    String containerPath = "/wincomponents/d3d/$_selectedDxvk";
+    
+    if (_selectedDxvk!.endsWith('.zip')) {
+      Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
+    } else if (_selectedDxvk!.endsWith('.7z')) {
+      Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
+    } else {
+      // Assume it's a tar archive (most common for DXVK)
+      Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
+    }
+    
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Add completion message
+    Util.termWrite("echo '================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'DXVK installation complete!'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo '================================'");
+    
+    // Show completion snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$_selectedDxvk extraction started successfully!'),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+    
+  } catch (e) {
+    print('Error in _extractDxvk: $e');
+    // Ensure dialog closes even on error
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error during extraction: $e'),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
 }
 
   @override
@@ -323,20 +306,13 @@ fi
       title: const Text('Install DXVK'),
       content: Container(
         width: double.maxFinite,
-        constraints: const BoxConstraints(maxHeight: 400),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Scanning for DXVK files...'),
-                  ],
-                ),
+                child: CircularProgressIndicator(),
               ),
             if (!_isLoading && _dxvkFiles.isEmpty)
               Padding(
@@ -351,62 +327,35 @@ fi
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Please download DXVK files to:\n/wincomponents/d3d/',
+                      'Please place DXVK files in:\n/wincomponents/d3d/',
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Text(
-                      'Directory searched: $_dxvkDirectory',
+                      'Directory: $_dxvkDirectory',
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Supported formats: .tzst, .tar.gz, .tgz, .tar.xz, .txz, .tar, .zip, .7z',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
             if (!_isLoading && _dxvkFiles.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Select DXVK version to install:'),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: _selectedDxvk,
-                      underline: const SizedBox(),
-                      items: _dxvkFiles.map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(
-                            value,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedDxvk = newValue;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_dxvkDirectory != null)
-                    Text(
-                      'Directory: $_dxvkDirectory',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                ],
+              DropdownButtonFormField<String>(
+                value: _selectedDxvk,
+                decoration: const InputDecoration(
+                  labelText: 'Select DXVK Version',
+                  border: OutlineInputBorder(),
+                ),
+                items: _dxvkFiles.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedDxvk = newValue;
+                  });
+                },
               ),
           ],
         ),
@@ -416,10 +365,10 @@ fi
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        if (_dxvkFiles.isNotEmpty && !_isLoading)
+        if (_dxvkFiles.isNotEmpty && !_isLoading && _selectedDxvk != null)
           ElevatedButton(
-            onPressed: _selectedDxvk == null ? null : _extractDxvk,
-            child: const Text('Install DXVK'),
+            onPressed: _extractDxvk,
+            child: const Text('Install'),
           ),
       ],
     );
@@ -456,17 +405,19 @@ class RTLWrapper extends StatelessWidget {
 
 
 
-//限制最大宽高比1:1
+//Limit maximum aspect ratio to 1:1
 class AspectRatioMax1To1 extends StatelessWidget {
   final Widget child;
+  //final double aspectRatio;
 
-  const AspectRatioMax1To1({super.key, required this.child});
+  const AspectRatioMax1To1({super.key, required this.child/*, required this.aspectRatio*/});
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final s = MediaQuery.of(context).size;
+        //double size = (s.width < s.height * aspectRatio) ? s.width : (s.height * aspectRatio);
         double size = s.width < s.height ? constraints.maxWidth : s.height;
 
         return Center(
@@ -503,6 +454,7 @@ class _FakeLoadingStatusState extends State<FakeLoadingStatus> {
   }
 
   void _loadInitialProgress() async {
+    // Load any existing progress
     final savedProgressT = await ExtractionManager.getExtractionProgressT();
     final savedComplete = await ExtractionManager.isExtractionComplete();
     
@@ -513,6 +465,7 @@ class _FakeLoadingStatusState extends State<FakeLoadingStatus> {
       });
     }
 
+    // Only start timer if not already complete
     if (!_extractionComplete) {
       _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) async {
         if (_extractionComplete) {
@@ -524,8 +477,10 @@ class _FakeLoadingStatusState extends State<FakeLoadingStatus> {
           _progressT += 0.1;
         });
         
+        // Save progress to SharedPreferences
         await ExtractionManager.setExtractionProgressT(_progressT);
         
+        // Check if complete
         final progress = 1 - pow(10, _progressT / -300).toDouble();
         if (progress >= 0.999 && !_extractionComplete) {
           _extractionComplete = true;
@@ -738,9 +693,11 @@ class _SettingPageState extends State<SettingPage> {
           const SizedBox.square(dimension: 8),
           SwitchListTile(title: Text(AppLocalizations.of(context)!.hidpiSupport), subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch), value: Util.getGlobal("isHidpiEnabled") as bool, onChanged:(value) {
             G.prefs.setBool("isHidpiEnabled", value);
+            // 开启高分辨率后把缩放比调为原来的两倍 +log4(2) = 0.5
             _avncScaleFactor += value ? 0.5 : -0.5;
             _avncScaleFactor = _avncScaleFactor.clamp(-1, 1);
             G.prefs.setDouble("avncScaleFactor", _avncScaleFactor);
+            // Termux:X11 并不是设置缩放比例本身，而是倍率
             X11Flutter.setX11ScaleFactor(value ? 0.5 : 2.0);
             setState(() {});
           },),
@@ -955,6 +912,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
     Util.termWrite("rm -rf ~/.wine");
     G.pageIndex.value = 0;
   }),
+  // ADD THIS NEW DXVK BUTTON:
   OutlinedButton(
     style: D.commandButtonStyle,
     child: Text('Install DXVK'),
@@ -1082,6 +1040,7 @@ class _InfoPageState extends State<InfoPage> {
       elevation: 1,
       expandedHeaderPadding: const EdgeInsets.all(0),
       expansionCallback: (panelIndex, isExpanded) {
+        // Control music based on games panel expansion
         if (panelIndex == 1) {
           if (isExpanded) {
             _startGamesMusic();
@@ -1171,6 +1130,7 @@ class _InfoPageState extends State<InfoPage> {
       margin: const EdgeInsets.all(8),
       child: Column(
         children: [
+          // Status indicator
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -1312,7 +1272,7 @@ class _TerminalPageState extends State<TerminalPage> {
   builder: (context, value, child) {
     return TerminalView(
       G.termPtys[G.currentContainer]!.terminal, 
-      controller: G.termPtys[G.currentContainer]!.controller,
+      controller: G.termPtys[G.currentContainer]!.controller, // Make sure to pass the controller
       textScaler: TextScaler.linear(G.termFontScale.value), 
       keyboardType: TextInputType.multiline,
     );
@@ -1339,12 +1299,14 @@ class _TerminalPageState extends State<TerminalPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Start GUI button
           _buildTopActionButton(
             Icons.play_arrow,
             'Start Desktop,',
             _startGUI,
           ),
           
+          // Exit/Stop button
           _buildTopActionButton(
             Icons.stop,
             'Exit Desktop',
@@ -1418,10 +1380,12 @@ class _TerminalPageState extends State<TerminalPage> {
   }
 
   void _forceExitContainer() {
+    // Send exit commands to stop the container
     Util.termWrite('stopvnc');
     Util.termWrite('exit');
     Util.termWrite('exit');
     
+    // Show confirmation
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Container stopped. Starting fresh terminal...'),
@@ -1432,6 +1396,7 @@ class _TerminalPageState extends State<TerminalPage> {
 
 
 
+// Update your copy function
 Future<void> _copyTerminalText() async {
   try {
     final termPty = G.termPtys[G.currentContainer]!;
@@ -1441,6 +1406,7 @@ Future<void> _copyTerminalText() async {
       final selectedText = termPty.terminal.buffer.getText(selection);
       
       if (selectedText.isNotEmpty) {
+        // Use Flutter's built-in clipboard - this shares with Android system
         await Clipboard.setData(ClipboardData(text: selectedText));
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1476,8 +1442,10 @@ Future<void> _copyTerminalText() async {
   }
 }
 
+// Update your paste function too
 Future<void> _pasteToTerminal() async {
   try {
+    // Use Flutter's built-in clipboard to get data from Android system
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final clipboardText = data?.text;
     
@@ -1508,16 +1476,20 @@ Future<void> _pasteToTerminal() async {
       padding: const EdgeInsets.all(8),
       child: Column(
         children: [
+          // First row: Modifier keys + Copy/Paste
           Row(
             children: [
+              // Modifier keys
               Expanded(
                 child: _buildModifierKeys(),
               ),
               const SizedBox(width: 8),
+              // Copy/Paste buttons
               _buildCopyPasteButtons(),
             ],
           ),
           const SizedBox(height: 8),
+          // Second row: Function keys
           _buildFunctionKeys(),
         ],
       ),
@@ -1635,18 +1607,22 @@ class FastCommands extends StatefulWidget {
 }
 
 class _FastCommandsState extends State<FastCommands> {
+  // We'll keep the old edit functionality but use grouped display
   final List<bool> _sectionExpanded = [false, false, false];
 
   @override
   Widget build(BuildContext context) {
+    // Get commands directly instead of using grouped commands
     final commands = Util.getCurrentProp("commands") as List<dynamic>;
     
+    // Manually separate commands into categories
     final installCommands = _getInstallCommands(commands);
     final otherCommands = _getOtherCommands(commands);
     final systemCommands = _getSystemCommands(commands);
     
     return Column(
       children: [
+        // Install Commands Section
         if (installCommands.isNotEmpty)
           Card(
             child: ExpansionTile(
@@ -1678,6 +1654,7 @@ class _FastCommandsState extends State<FastCommands> {
             ),
           ),
         
+        // Other Commands Section
         if (otherCommands.isNotEmpty)
           Card(
             child: ExpansionTile(
@@ -1709,6 +1686,7 @@ class _FastCommandsState extends State<FastCommands> {
             ),
           ),
         
+        // System Commands Section
         if (systemCommands.isNotEmpty)
           Card(
             child: ExpansionTile(
@@ -1740,6 +1718,7 @@ class _FastCommandsState extends State<FastCommands> {
             ),
           ),
         
+        // Add Command Button (kept at the bottom)
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: OutlinedButton(
@@ -1855,20 +1834,27 @@ class _FastCommandsState extends State<FastCommands> {
           TextButton(
             onPressed: () async {
               try {
+                // Get current commands
                 List<dynamic> currentCommands = Util.getCurrentProp("commands");
                 
+                // Find the index of the command to delete
                 int commandIndex = currentCommands.indexWhere((c) => 
                   c["name"] == cmd["name"] && c["command"] == cmd["command"]);
                 
                 if (commandIndex != -1) {
+                  // Remove the command
                   currentCommands.removeAt(commandIndex);
                   
+                  // Update the commands
                   await Util.setCurrentProp("commands", currentCommands);
                   
+                  // Update UI
                   setState(() {});
                   
+                  // Close dialog
                   Navigator.of(context).pop();
                   
+                  // Show success message
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Command "${cmd["name"]}" deleted!'),
@@ -1897,20 +1883,27 @@ class _FastCommandsState extends State<FastCommands> {
           TextButton(
             onPressed: () async {
               try {
+                // Get current commands
                 List<dynamic> currentCommands = Util.getCurrentProp("commands");
                 
+                // Find the index of the command to update
                 int commandIndex = currentCommands.indexWhere((c) => 
                   c["name"] == cmd["name"] && c["command"] == cmd["command"]);
                 
                 if (commandIndex != -1) {
+                  // Update the command
                   currentCommands[commandIndex] = {"name": name, "command": command};
                   
+                  // Update the commands
                   await Util.setCurrentProp("commands", currentCommands);
                   
+                  // Update UI
                   setState(() {});
                   
+                  // Close dialog
                   Navigator.of(context).pop();
                   
+                  // Show success message
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Command "$name" updated!'),
@@ -1939,7 +1932,7 @@ class _FastCommandsState extends State<FastCommands> {
   void _addCommand() {
   String name = "";
   String command = "";
-  final BuildContext dialogContext = context;
+  final BuildContext dialogContext = context; // Store context before showing dialog
   
   showDialog(
     context: context,
@@ -1991,18 +1984,25 @@ class _FastCommandsState extends State<FastCommands> {
           TextButton(
             onPressed: () async {
               try {
+                // Get current commands
                 List<dynamic> currentCommands = Util.getCurrentProp("commands");
                 
+                // Create new command
                 final newCommand = {"name": name, "command": command};
                 
+                // Create new list with added command
                 List<dynamic> newCommands = [...currentCommands, newCommand];
                 
+                // Update the commands
                 await Util.setCurrentProp("commands", newCommands);
                 
+                // Close dialog
                 Navigator.of(context).pop();
                 
+                // Update UI
                 setState(() {});
                 
+                // Show success message
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
                     content: Text('Command "$name" added successfully!'),
@@ -2213,7 +2213,7 @@ Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap
     child: Container(
       constraints: const BoxConstraints(
         minWidth: 40,
-        maxWidth: 80,
+        maxWidth: 80, // Limit maximum width
         minHeight: 32,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -2231,7 +2231,7 @@ Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap
           label,
           style: TextStyle(
             color: isActive ? Colors.black : AppColors.textPrimary,
-            fontSize: 10,
+            fontSize: 10, // Smaller font size
             fontWeight: FontWeight.w500,
           ),
           textAlign: TextAlign.center,
@@ -2247,8 +2247,13 @@ Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap
 // ========== ADD THIS FUNCTION ==========
 Widget buildWaitingGamesSection(BuildContext context) {
   return Container(
-    height: 600,
+    height: 600, // Fixed height for the games section
     margin: const EdgeInsets.all(8),
     child: const SpiritedMiniGamesView(),
   );
 }
+
+
+
+
+
