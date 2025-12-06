@@ -144,7 +144,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
 
   Future<void> _loadDxvkFiles() async {
     try {
-      final dir = Directory('/wincomponents/d3d');
+      final dir = Directory('containers/0/wincomponents/d3d');
       if (!await dir.exists()) {
         setState(() {
           _dxvkFiles = [];
@@ -182,7 +182,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
       await homeDir.create(recursive: true);
     }
     
-    final dxvkPath = '/wincomponents/d3d/$_selectedDxvk';
+    final dxvkPath = 'containers/0/wincomponents/d3d/$_selectedDxvk';
     
     Navigator.of(context).pop(); // Close dialog
     
@@ -214,7 +214,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
                 child: CircularProgressIndicator(),
               ),
             if (!_isLoading && _dxvkFiles.isEmpty)
-              Text('No DXVK files found in /wincomponents/d3d/'),
+              Text('No DXVK files found in /wincomponents/d3d/ please install full version'),
             if (!_isLoading && _dxvkFiles.isNotEmpty)
               DropdownButtonFormField<String>(
                 value: _selectedDxvk,
@@ -1672,151 +1672,238 @@ class _FastCommandsState extends State<FastCommands> {
   }
 
   void _editCommand(int index, Map<String, String> cmd) {
-    String name = cmd["name"]!;
-    String command = cmd["command"]!;
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.commandEdit),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextFormField(
-                  initialValue: name,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: AppLocalizations.of(context)!.commandName,
-                  ),
-                  onChanged: (value) {
-                    name = value;
-                  },
+  String name = cmd["name"]!;
+  String command = cmd["command"]!;
+  
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(AppLocalizations.of(context)!.commandEdit),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextFormField(
+                initialValue: name,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  labelText: AppLocalizations.of(context)!.commandName,
                 ),
-                const SizedBox.square(dimension: 8),
-                TextFormField(
-                  maxLines: null,
-                  initialValue: command,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: AppLocalizations.of(context)!.commandContent,
-                  ),
-                  onChanged: (value) {
-                    command = value;
-                  },
+                onChanged: (value) {
+                  name = value;
+                },
+              ),
+              const SizedBox.square(dimension: 8),
+              TextFormField(
+                maxLines: null,
+                initialValue: command,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  labelText: AppLocalizations.of(context)!.commandContent,
                 ),
-              ],
-            ),
+                onChanged: (value) {
+                  command = value;
+                },
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                // Delete the command from the main commands list
-                List<Map<String, String>> allCommands = List<Map<String, String>>.from(Util.getCurrentProp("commands"));
-                int globalIndex = allCommands.indexWhere((c) => c["name"] == cmd["name"] && c["command"] == cmd["command"]);
-                if (globalIndex != -1) {
-                  allCommands.removeAt(globalIndex);
-                  await Util.setCurrentProp("commands", allCommands);
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              try {
+                // Get current commands
+                List<dynamic> currentCommands = Util.getCurrentProp("commands");
+                
+                // Find the index of the command to delete
+                int commandIndex = currentCommands.indexWhere((c) => 
+                  c["name"] == cmd["name"] && c["command"] == cmd["command"]);
+                
+                if (commandIndex != -1) {
+                  // Remove the command
+                  currentCommands.removeAt(commandIndex);
+                  
+                  // Update the commands
+                  await Util.setCurrentProp("commands", currentCommands);
+                  
+                  // Update UI
                   setState(() {});
+                  
+                  // Close dialog
+                  Navigator.of(context).pop();
+                  
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Command "${cmd["name"]}" deleted!'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                 }
-                if (!context.mounted) return;
-                Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context)!.deleteItem),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context)!.cancel),
-            ),
-            TextButton(
-              onPressed: () async {
-                // Update the command in the main commands list
-                List<Map<String, String>> allCommands = List<Map<String, String>>.from(Util.getCurrentProp("commands"));
-                int globalIndex = allCommands.indexWhere((c) => c["name"] == cmd["name"] && c["command"] == cmd["command"]);
-                if (globalIndex != -1) {
-                  allCommands[globalIndex] = {"name": name, "command": command};
-                  await Util.setCurrentProp("commands", allCommands);
+              } catch (e) {
+                print('Error deleting command: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error deleting command: $e'),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            child: Text(AppLocalizations.of(context)!.deleteItem),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                // Get current commands
+                List<dynamic> currentCommands = Util.getCurrentProp("commands");
+                
+                // Find the index of the command to update
+                int commandIndex = currentCommands.indexWhere((c) => 
+                  c["name"] == cmd["name"] && c["command"] == cmd["command"]);
+                
+                if (commandIndex != -1) {
+                  // Update the command
+                  currentCommands[commandIndex] = {"name": name, "command": command};
+                  
+                  // Update the commands
+                  await Util.setCurrentProp("commands", currentCommands);
+                  
+                  // Update UI
                   setState(() {});
+                  
+                  // Close dialog
+                  Navigator.of(context).pop();
+                  
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Command "$name" updated!'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                 }
-                if (!context.mounted) return;
-                Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context)!.save),
-            ),
-          ],
-        );
-      },
-    );
-  }
+              } catch (e) {
+                print('Error updating command: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error updating command: $e'),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            child: Text(AppLocalizations.of(context)!.save),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   void _addCommand() {
-    String name = "";
-    String command = "";
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.commandEdit),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextFormField(
-                  initialValue: name,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: AppLocalizations.of(context)!.commandName,
-                  ),
-                  onChanged: (value) {
-                    name = value;
-                  },
+  String name = "";
+  String command = "";
+  final BuildContext dialogContext = context; // Store context before showing dialog
+  
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(AppLocalizations.of(context)!.commandEdit),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextFormField(
+                initialValue: name,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  labelText: AppLocalizations.of(context)!.commandName,
                 ),
-                const SizedBox.square(dimension: 8),
-                TextFormField(
-                  maxLines: null,
-                  initialValue: command,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: AppLocalizations.of(context)!.commandContent,
-                  ),
-                  onChanged: (value) {
-                    command = value;
-                  },
+                onChanged: (value) {
+                  name = value;
+                },
+              ),
+              const SizedBox.square(dimension: 8),
+              TextFormField(
+                maxLines: null,
+                initialValue: command,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  labelText: AppLocalizations.of(context)!.commandContent,
                 ),
-              ],
-            ),
+                onChanged: (value) {
+                  command = value;
+                },
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2/blob/main/extracommand.md"),
-                    mode: LaunchMode.externalApplication);
-              },
-              child: Text(AppLocalizations.of(context)!.more),
-            ),
-            TextButton(
-              onPressed: () {
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              launchUrl(Uri.parse("https://github.com/xodiosx/XoDos2/blob/main/extracommand.md"),
+                  mode: LaunchMode.externalApplication);
+            },
+            child: Text(AppLocalizations.of(context)!.more),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                // Get current commands
+                List<dynamic> currentCommands = Util.getCurrentProp("commands");
+                
+                // Create new command
+                final newCommand = {"name": name, "command": command};
+                
+                // Create new list with added command
+                List<dynamic> newCommands = [...currentCommands, newCommand];
+                
+                // Update the commands
+                await Util.setCurrentProp("commands", newCommands);
+                
+                // Close dialog
                 Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context)!.cancel),
-            ),
-            TextButton(
-              onPressed: () async {
-                List<Map<String, String>> allCommands = List<Map<String, String>>.from(Util.getCurrentProp("commands"));
-                allCommands.add({"name": name, "command": command});
-                await Util.setCurrentProp("commands", allCommands);
+                
+                // Update UI
                 setState(() {});
-                if (!context.mounted) return;
-                Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context)!.add),
-            ),
-          ],
-        );
-      },
-    );
-  }
+                
+                // Show success message
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(
+                    content: Text('Command "$name" added successfully!'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              } catch (e) {
+                print('Error adding command: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error adding command: $e'),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            child: Text(AppLocalizations.of(context)!.add),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   void _resetCommands() {
     showDialog(
