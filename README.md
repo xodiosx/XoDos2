@@ -19,9 +19,7 @@
 
 ## ✨ What is XoDos?
 
-<p align="center">
-  <img src="extra/XoDos2.jpg" alt="XoDos2" width="250" height="180">
-</p>
+![Demo Preview](https://raw.githubusercontent.com/xodiosx/XoDos2/refs/heads/main/extra/demo.gif)
 XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/XoDos) project, now reimagined and rebuilt from the ground up. Inspired by the [tiny computer project](https://github.com/Cateners/tiny_computer), XoDos offers:
 
 - **🔄 Conflict-Free**: Designed not to interfere with Termux, Termux X11, or other Android applications
@@ -52,7 +50,7 @@ XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/X
 
 > ⚠️ **Note**: XoDos is currently under active development. The first official release will be available soon in the [GitHub Releases](https://github.com/xodiosx/XoDos2/releases) section.
 
-Stay tuned for installation instructions when the first release becomes available!
+
 
 ## 🛠️ Development Status
 
@@ -67,8 +65,8 @@ XoDos is currently in active development. We're working hard to deliver a stable
 - [ ] touch gamepad controls
 - [ ] easy wine settings
 - [ ] gamepad support
-- [ ] More GPU drivers for Android devices
-- [ ] Initial release preparation
+- [✓] More GPU drivers for Android devices
+- [✓] Initial release preparation
 
 ## building
 [XoDos Proot(rootfs)](https://github.com/xodiosx/XoDos2/tree/main/extra/rootfs)
