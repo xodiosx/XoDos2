@@ -508,6 +508,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
               await _saveDxvkHudPreference(_dxvkHudEnabled);
               
               // Start extraction (which includes HUD commands)
+              await Future.delayed(const Duration(milliseconds: 1500));
               await _extractDxvk();
             },
             child: const Text('Install'),
