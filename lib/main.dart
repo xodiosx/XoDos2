@@ -263,113 +263,188 @@ class _DxvkDialogState extends State<DxvkDialog> {
     }
   }
 
-  Future<void> _extractDxvk() async {
-    try {
-      if (_selectedDxvk == null || _dxvkDirectory == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Please select a DXVK version'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-      
-      final dxvkPath = '$_dxvkDirectory/$_selectedDxvk';
-      final file = File(dxvkPath);
-      
-      // Check if file exists
-      if (!await file.exists()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('File not found: $dxvkPath'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        return;
-      }
-      
-      // First, close the dialog
-      Navigator.of(context).pop();
-      
-      // Apply HUD commands first
-      await _applyHudCommands();
-           await Future.delayed(const Duration(milliseconds: 1500));
-      // Show extraction message
+Future<void> _extractDxvk() async {
+  try {
+    if (_selectedDxvk == null || _dxvkDirectory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Starting DXVK extraction...'),
+          content: Text('Please select a DXVK version'),
           duration: const Duration(seconds: 2),
         ),
       );
-      
-      // Send echo command first (same approach as other commands)
-      Util.termWrite("echo '================================'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      Util.termWrite("echo 'Starting DXVK installation'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      Util.termWrite("echo 'Extracting: $_selectedDxvk'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      Util.termWrite("echo '================================'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      // Create target directory if it doesn't exist
-      Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      // Check file type and extract accordingly (using relative path from container root)
-      // Since the file is in /wincomponents/d3d/ directory in the container
-      String containerPath = "/wincomponents/d3d/$_selectedDxvk";
-      
-      if (_selectedDxvk!.endsWith('.zip')) {
-        Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
-      } else if (_selectedDxvk!.endsWith('.7z')) {
-        Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
-      } else {
-        // Assume it's a tar archive (most common for DXVK)
-        Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
-      }
-      
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      // Add completion message
-      Util.termWrite("echo '================================'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      Util.termWrite("echo 'DXVK installation complete!'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      Util.termWrite("echo '================================'");
-      
-      // Show completion snackbar
+      return;
+    }
+    
+    final dxvkPath = '$_dxvkDirectory/$_selectedDxvk';
+    final file = File(dxvkPath);
+    
+    // Check if file exists
+    if (!await file.exists()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$_selectedDxvk extraction started successfully!'),
+          content: Text('File not found: $dxvkPath'),
           duration: const Duration(seconds: 3),
         ),
       );
-      
-    } catch (e) {
-      print('Error in _extractDxvk: $e');
-      // Ensure dialog closes even on error
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error during extraction: $e'),
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      return;
     }
+    
+    // First, close the dialog
+    Navigator.of(context).pop();
+    
+    // Switch to terminal tab FIRST
+    G.pageIndex.value = 0;
+    
+    // Wait for tab switch
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // Show extraction message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Starting DXVK extraction...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    
+    // ========== EXTRACTION COMMANDS ONLY ==========
+    // Clear terminal first
+    Util.termWrite("clear");
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    // Start extraction process
+    Util.termWrite("echo '╔══════════════════════════════════════╗'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo '║     DXVK INSTALLATION STARTING      ║'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo '╚══════════════════════════════════════╝'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo ''");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo '📦 Selected file: $_selectedDxvk'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo '📁 Target: ~/.wine/drive_c/windows/'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo ''");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    // Create target directory
+    Util.termWrite("echo '📂 Creating target directory...'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Check file exists
+    Util.termWrite("echo '🔍 Checking DXVK archive...'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("if [ -f '/wincomponents/d3d/$_selectedDxvk' ]; then echo '✓ Archive found'; else echo '✗ Archive not found!'; exit 1; fi");
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Extract based on file type
+    Util.termWrite("echo '📤 Extracting archive...'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    String containerPath = "/wincomponents/d3d/$_selectedDxvk";
+    
+    if (_selectedDxvk!.endsWith('.zip')) {
+      Util.termWrite("echo 'Using: unzip'");
+      await Future.delayed(const Duration(milliseconds: 100));
+      Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
+    } else if (_selectedDxvk!.endsWith('.7z')) {
+      Util.termWrite("echo 'Using: 7z'");
+      await Future.delayed(const Duration(milliseconds: 100));
+      Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
+    } else {
+      Util.termWrite("echo 'Using: tar'");
+      await Future.delayed(const Duration(milliseconds: 100));
+      Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
+    }
+    
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Check if extraction succeeded
+    Util.termWrite("echo ''");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("echo '✅ Checking extraction...'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("if [ \$? -eq 0 ]; then echo '✓ Extraction successful!'; else echo '✗ Extraction failed!'; exit 1; fi");
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // List some extracted files
+    Util.termWrite("echo ''");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("echo '📋 Extracted files:'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("ls -la /home/xodos/.wine/drive_c/windows/ | grep -E '(d3d|dxgi|nvapi)' | head -10");
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Completion message
+    Util.termWrite("echo ''");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("echo '╔══════════════════════════════════════╗'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo '║     DXVK INSTALLATION COMPLETE!     ║'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo '╚══════════════════════════════════════╝'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo ''");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("echo '🎉 DXVK has been installed successfully!'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("echo '📍 Location: ~/.wine/drive_c/windows/'");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("echo ''");
+    await Future.delayed(const Duration(milliseconds: 100));
+    Util.termWrite("echo '💡 Restart Wine applications to apply changes.'");
+    
+    // ========== APPLY HUD SETTINGS SEPARATELY ==========
+    // Now apply HUD settings if needed
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    if (_mangohudEnabled || _dxvkHudEnabled) {
+      Util.termWrite("echo ''");
+      await Future.delayed(const Duration(milliseconds: 100));
+      Util.termWrite("echo '🔄 Applying HUD settings...'");
+      await Future.delayed(const Duration(milliseconds: 100));
+      await _applyHudCommands();
+    }
+    
+    // Show completion snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$_selectedDxvk extraction completed successfully!'),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+    
+  } catch (e) {
+    print('Error in _extractDxvk: $e');
+    // Ensure dialog closes even on error
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    
+    // Send error to terminal
+    G.pageIndex.value = 0;
+    await Future.delayed(const Duration(milliseconds: 500));
+    Util.termWrite("echo '❌ ERROR during DXVK installation: $e'");
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error during installation: $e'),
+        duration: const Duration(seconds: 5),
+      ),
+    );
   }
+}
 
   Future<void> _cancelDialog() async {
     // Save preferences first
@@ -378,7 +453,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
     
     // Close dialog
     Navigator.of(context).pop();
-    
+         await Future.delayed(const Duration(milliseconds: 200));
     // Apply HUD commands
     await _applyHudCommands();
     
@@ -508,7 +583,6 @@ class _DxvkDialogState extends State<DxvkDialog> {
               await _saveDxvkHudPreference(_dxvkHudEnabled);
               
               // Start extraction (which includes HUD commands)
-         
               await _extractDxvk();
             },
             child: const Text('Install'),
