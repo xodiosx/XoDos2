@@ -860,8 +860,8 @@ class D {
   static const links = [
     {"name": "projectUrl", "value": "https://github.com/xodiosx/XoDos2"},
     {"name": "issueUrl", "value": "https://github.com/xodiosx/XoDos2/issues"},
-    {"name": "faqUrl", "value": "https://github.com/xodiosx/XoDos2blob/main/faq.md"},
-    {"name": "solutionUrl", "value": "https://github.com/xodiosx/XoDos2blob/main/fix.md"},
+    {"name": "faqUrl", "value": "https://github.com/xodiosx/XoDos2/blob/main/faq.md"},
+    {"name": "solutionUrl", "value": "https://github.com/xodiosx/XoDos2/blob/main/fix.md"},
     {"name": "discussionUrl", "value": "https://t.me/xodemulatorr"},
   ];
 
