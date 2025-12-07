@@ -202,8 +202,8 @@ class _DxvkDialogState extends State<DxvkDialog> {
     // Send HUD commands
     Util.termWrite("echo '================================'");
     await Future.delayed(const Duration(milliseconds: 50));
-    Util.termWrite("echo 'Applying HUD settings...'");
-    await Future.delayed(const Duration(milliseconds: 50));
+  //  Util.termWrite("echo 'Applying HUD settings...'");
+//    await Future.delayed(const Duration(milliseconds: 50));
     
     // Apply MANGOHUD commands
     if (_currentMangohudEnabled) {
@@ -234,8 +234,8 @@ class _DxvkDialogState extends State<DxvkDialog> {
     
     // Apply DXVK_HUD commands
     if (_currentDxvkHudEnabled) {
-      Util.termWrite("echo 'Enabling DXVK HUD...'");
-      await Future.delayed(const Duration(milliseconds: 50));
+   //   Util.termWrite("echo 'Enabling DXVK HUD...'");
+//      await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/runh >/dev/null 2>&1");
       await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/run >/dev/null 2>&1");
@@ -251,8 +251,8 @@ class _DxvkDialogState extends State<DxvkDialog> {
       Util.termWrite("echo 'DXVK HUD disabled.'");
     }
     
-    Util.termWrite("echo 'HUD settings applied.'");
-    await Future.delayed(const Duration(milliseconds: 50));
+//    Util.termWrite("echo 'HUD settings applied.'");
+//    await Future.delayed(const Duration(milliseconds: 50));
     Util.termWrite("echo '================================'");
   }
 
@@ -300,8 +300,8 @@ class _DxvkDialogState extends State<DxvkDialog> {
       
       // Only extract if DXVK selection changed
       if (_hasDxvkChanged) {
-        Util.termWrite("echo 'Starting DXVK installation'");
-        await Future.delayed(const Duration(milliseconds: 50));
+   //     Util.termWrite("echo 'Starting DXVK installation'");
+     //   await Future.delayed(const Duration(milliseconds: 50));
         
         Util.termWrite("echo 'Extracting: $_selectedDxvk'");
         await Future.delayed(const Duration(milliseconds: 50));
@@ -335,8 +335,8 @@ class _DxvkDialogState extends State<DxvkDialog> {
         Util.termWrite("echo 'DXVK installation complete!'");
         await Future.delayed(const Duration(milliseconds: 50));
         
-        Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
-        await Future.delayed(const Duration(milliseconds: 50));
+   //     Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
+   //     await Future.delayed(const Duration(milliseconds: 50));
         
         Util.termWrite("echo '================================'");
         
