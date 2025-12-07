@@ -2,6 +2,12 @@ name: Build xodos2 APK
 
 on:
   workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag (1.0.3)'
+        required: true
+        default: '1.0.3'
+
 
 permissions:
   contents: write
@@ -159,6 +165,7 @@ jobs:
         id: md5
         run: |
           cd build/app/outputs/flutter-apk
+          cp app-arm64-v8a-release.apk XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk
           md5sum app-arm64-v8a-release.apk > md5.txt
 
           echo "md5_list<<EOF" >> $GITHUB_ENV
@@ -183,16 +190,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "v${{ github.event.inputs.version_tag }}"
-          name: "XoDos APK"
+          tag_name: ${{ github.event.inputs.version_tag }}
+          name: XoDos ${{ github.event.inputs.version_tag }}
           files: |
-            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk
           body: |
             📱 **XoDos APK**
 
             Version: **${{ github.event.inputs.version_tag }}**
             
-            test pre-release of the New XoDos
+            Test pre-release of the New XoDos without data,, please wait until Full version release
             ### 🧾 MD5 Checksum
             ```
             ${{ env.md5_list }}
