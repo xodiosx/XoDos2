@@ -1259,7 +1259,7 @@ done
 sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)
 if [ -f "/usr/share/applications/wined.desktop" ]; then 
 rm -rf /usr/share/applications/wined.desktop
-fi  
+ sed -i 's|<property name="vblank_mode" type="string" value="auto"/>|<property name="vblank_mode" type="string" value="off"/>|' "/home/xodos/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml" 
 """;
       
       final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
