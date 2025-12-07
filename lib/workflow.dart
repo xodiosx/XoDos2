@@ -1255,13 +1255,12 @@ done
       final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
       final String w = (max(s.width, s.height) * 0.75).round().toString();
       final String h = (min(s.width, s.height) * 0.75).round().toString();
-      G.postCommand = """sed -i -E "s@(geometry)=.*@\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
-sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)
+      G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
+sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 if [ -f "/usr/share/applications/wined.desktop" ]; then 
-rm -rf /usr/share/applications/wined.desktop
- sed -i 's|<property name="vblank_mode" type="string" value="auto"/>|<property name="vblank_mode" type="string" value="off"/>|' "/home/xodos/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml"
- fi
-""";
+  rm -rf /usr/share/applications/wined.desktop
+  sed -i 's|<property name="vblank_mode" type="string" value="auto"/>|<property name="vblank_mode" type="string" value="off"/>|' "/home/xodos/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml"
+fi""";
       
       final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
       if (languageCode != 'zh') {
