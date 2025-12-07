@@ -1109,14 +1109,96 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
     Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover");
     G.pageIndex.value = 0;
   }),
-  OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.uninstallHangover), onPressed: () async {
-    Util.termWrite("sudo apt autoremove --purge -y hangover*");
-    G.pageIndex.value = 0;
-  }),
-  OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.clearWineData), onPressed: () async {
-    Util.termWrite("rm -rf ~/.wine");
-    G.pageIndex.value = 0;
-  }),
+  OutlinedButton(style: D.commandButtonStyle, child: Text(AppLocalizations.of(context)!.uninstallHangover), onPressed: () {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.warning, color: Colors.orange, size: 48),
+        title: const Text('Delete Wine hangover?'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('This will delete:'),
+            SizedBox(height: 8),
+            Text('•❌Full Wine🍷 ', style: TextStyle(color: Colors.red)),
+            Text('•with Windows support', style: TextStyle(color: Colors.red)),
+            Text('• for wine hangover!', style: TextStyle(color: Colors.red)),
+            SizedBox(height: 12),
+            Text('This action cannot be undone!'),
+          ],
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.of(context).pop();             
+              G.pageIndex.value = 0;
+              Util.termWrite("sudo apt autoremove --purge -y hangover*");
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Wine hangover deleted'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            child: const Text('Delete Now'),
+          ),
+        ],
+      ),
+    );
+  },
+),
+  OutlinedButton(
+  style: D.commandButtonStyle,
+  child: Text(AppLocalizations.of(context)!.clearWineData),
+  onPressed: () {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.warning, color: Colors.orange, size: 48),
+        title: const Text('Delete Wine Prefix?'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('This will delete:'),
+            SizedBox(height: 8),
+            Text('• All Wine configuration', style: TextStyle(color: Colors.red)),
+            Text('• Installed Windows apps', style: TextStyle(color: Colors.red)),
+            Text('• Registry and save games with settings', style: TextStyle(color: Colors.red)),
+            SizedBox(height: 12),
+            Text('This action cannot be undone!'),
+          ],
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.of(context).pop();
+              G.pageIndex.value = 0;
+              Util.termWrite("rm -rf ~/.wine");
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Wine prefix deleted'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            child: const Text('Delete Now'),
+          ),
+        ],
+      ),
+    );
+  },
+),
   // ADD THIS NEW DXVK BUTTON:
   OutlinedButton(
     style: D.commandButtonStyle,
