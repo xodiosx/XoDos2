@@ -1207,11 +1207,6 @@ cat tmp3 | while read -r group_name group_id; do
 	fi
 done
 \$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
-if [ -f "/usr/share/applications/wined.desktop" ]; then 
-rm -rf /usr/share/applications/wined.desktop
-  
-fi
-
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
@@ -1261,7 +1256,11 @@ fi
       final String w = (max(s.width, s.height) * 0.75).round().toString();
       final String h = (min(s.width, s.height) * 0.75).round().toString();
       G.postCommand = """sed -i -E "s@(geometry)=.*@\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
-sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""";
+sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)
+if [ -f "/usr/share/applications/wined.desktop" ]; then 
+rm -rf /usr/share/applications/wined.desktop
+fi  
+""";
       
       final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
       if (languageCode != 'zh') {
@@ -1373,7 +1372,9 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 ${Util.getCurrentProp("boot")}
 
-${G.postCommand} """);
+${G.postCommand} > /dev/null 2>&1
+
+""");
 // Remove the "clear" command at the end
   }
 
