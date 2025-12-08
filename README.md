@@ -2,7 +2,7 @@
 <p align="center">
   <img src="icon.png" alt="XoDos Logo" width="200" height="200">
 </p>
-
+<div align="center">
 [![GitHub Release](https://img.shields.io/badge/Releases-orange)](https://github.com/xodiosx/XoDos2/releases)
 [![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue)](https://t.me/xodemulatorr)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-7289da)](https://discord.gg/d2ChVhPfnF)
@@ -12,15 +12,16 @@
 > **"The real voyage of discovery consists not in seeking new landscapes, but in having new eyes."** - Marcel Proust
 >
 > **"Awakening is not changing who you are, but discarding who you are not."** - Deepak Chopra
+
 ![splash Preview](https://raw.githubusercontent.com/xodiosx/XoDos2/refs/heads/main/extra/splash.gif)
-
-
 
 ## ✨ What is XoDos?
 **XoDos** is a revolutionary Linux desktop environment that runs seamlessly on Android devices, bringing the full power of Linux to your mobile device without conflicts with other applications.
 ![Demo Preview](https://raw.githubusercontent.com/xodiosx/XoDos2/refs/heads/main/extra/demo.gif)
 XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/XoDos) project, now reimagined and rebuilt from the ground up. Inspired by the [tiny computer project](https://github.com/Cateners/tiny_computer), XoDos offers:
+<!-- Your entire README content here -->
 
+</div>
 - **🔄 Conflict-Free**: Designed not to interfere with Termux, Termux X11, or other Android applications
 - **🚀 Standalone Experience**: A complete Linux desktop environment running natively on Android
 - **📱 Mobile-Optimized**: Tailored specifically for Android devices and touch interfaces
