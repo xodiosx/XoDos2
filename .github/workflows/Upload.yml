@@ -41,7 +41,7 @@ jobs:
       # ✅ Step 4: Download main APK file
       - name: Download Main APK
         run: |
-          gdown --fuzzy "https://drive.google.com/file/d/1-CGXdFxuKGQuYQeTRBJ0x13vkYb8wz4f" \
+          gdown --fuzzy "https://drive.google.com/uc?export=download&id=1AbCdEfGhIjKlMnOpqRsXYZ" \
             -O "XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk" || exit 1
 
       # ✅ Step 5: Download additional files
