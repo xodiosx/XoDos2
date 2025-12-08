@@ -23,23 +23,48 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ✅ Step 2: Install Python and gdown
-      - name: Install dependencies
+      # ✅ Step 2: Install Python dependencies
+      - name: Install Python dependencies
         run: |
           sudo apt update
           sudo apt install -y python3-pip
-          pip install gdown
+          pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
-      # ✅ Step 3: Create Git Tag (after checkout)
-      
+      # ✅ Step 3: Save Google Drive JSON key
+      - name: Save GDrive JSON Key
+        run: |
+          echo '${{ secrets.GDRIVE_KEY }}' > gdrive_key.json
 
-      # ✅ Step 4: Download main APK file
+      # ✅ Step 4: Download APK from Google Drive
       - name: Download Main APK
         run: |
-          gdown "https://drive.google.com/uc?id=1-CGXdFxuKGQuYQeTRBJ0x13vkYb8wz4f" \
-            -O "XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk" || exit 1
+          python3 <<EOF
+          import io
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaIoBaseDownload
 
-      # ✅ Step 5: Download additional files
+          FILE_ID = "1-CGXdFxuKGQuYQeTRBJ0x13vkYb8wz4f"
+          OUTPUT_FILE = f"XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk"
+
+          # Authenticate
+          creds = service_account.Credentials.from_service_account_file("gdrive_key.json")
+          service = build('drive', 'v3', credentials=creds)
+
+          # Prepare download
+          request = service.files().get_media(fileId=FILE_ID)
+          fh = io.FileIO(OUTPUT_FILE, 'wb')
+          downloader = MediaIoBaseDownload(fh, request)
+
+          done = False
+          while not done:
+              status, done = downloader.next_chunk()
+              print(f"Download {int(status.progress() * 100)}%")
+
+          print("Download complete!")
+          EOF
+
+      # ✅ Step 5: Create Git Tag
       - name: Create Git Tag
         run: |
           git config user.name "GitHub Actions"
@@ -47,7 +72,7 @@ jobs:
           git tag "v${{ github.event.inputs.version_tag }}"
           git push origin "v${{ github.event.inputs.version_tag }}"
 
-      # ✅ Step 6: Generate MD5 checksums for all downloaded files
+      # ✅ Step 6: Generate MD5 Checksums
       - name: Generate MD5 Checksums
         id: md5
         run: |
@@ -69,13 +94,11 @@ jobs:
           name: "XoDos v${{ github.event.inputs.version_tag }}"
           files: |
             XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk
-            
           body: |
             🧩 **XoDos v${{ github.event.inputs.version_tag }} full release**
 
             ### ✅ What's New
             - What is new
-
 
             ### 🧾 Checksums
             ${{ env.md5_list }}
