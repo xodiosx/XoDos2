@@ -13,11 +13,11 @@
 >
 > **"Awakening is not changing who you are, but discarding who you are not."** - Deepak Chopra
 ![splash Preview](https://raw.githubusercontent.com/xodiosx/XoDos2/refs/heads/main/extra/splash.gif)
-**XoDos** is a revolutionary Linux desktop environment that runs seamlessly on Android devices, bringing the full power of Linux to your mobile device without conflicts with other applications.
+
 
 
 ## ✨ What is XoDos?
-
+**XoDos** is a revolutionary Linux desktop environment that runs seamlessly on Android devices, bringing the full power of Linux to your mobile device without conflicts with other applications.
 ![Demo Preview](https://raw.githubusercontent.com/xodiosx/XoDos2/refs/heads/main/extra/demo.gif)
 XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/XoDos) project, now reimagined and rebuilt from the ground up. Inspired by the [tiny computer project](https://github.com/Cateners/tiny_computer), XoDos offers:
 
