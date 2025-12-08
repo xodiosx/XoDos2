@@ -3,7 +3,7 @@
   <img src="icon.png" alt="XoDos Logo" width="200" height="200">
 </p>
 
-[![GitHub Release](https://img.shields.io/badge/Release-Coming_Soon-orange)](https://github.com/xodiosx/XoDos2/releases)
+[![GitHub Release](https://img.shields.io/badge/Releases-orange)](https://github.com/xodiosx/XoDos2/releases)
 [![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue)](https://t.me/xodemulatorr)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-7289da)](https://discord.gg/d2ChVhPfnF)
 
@@ -12,10 +12,9 @@
 > **"The real voyage of discovery consists not in seeking new landscapes, but in having new eyes."** - Marcel Proust
 >
 > **"Awakening is not changing who you are, but discarding who you are not."** - Deepak Chopra
-
+![splash Preview](https://raw.githubusercontent.com/xodiosx/XoDos2/refs/heads/main/extra/splash.gif)
 **XoDos** is a revolutionary Linux desktop environment that runs seamlessly on Android devices, bringing the full power of Linux to your mobile device without conflicts with other applications.
 
-> 🚧 **Work in Progress** - First release expected around New Year 🎄!
 
 ## ✨ What is XoDos?
 
@@ -48,7 +47,7 @@ XoDos is the next evolution of the original [XoDos](https://github.com/xodiosx/X
 
 --------------------------------------------------------------------------------------------
 
-> ⚠️ **Note**: XoDos is currently under active development. The first official release will be available soon in the [GitHub Releases](https://github.com/xodiosx/XoDos2/releases) section.
+> 📥 **Download**: XoDo first official release will be available soon in the [GitHub Releases](https://github.com/xodiosx/XoDos2/releases) section.
 
 
 
@@ -70,8 +69,6 @@ XoDos is currently in active development. We're working hard to deliver a stable
 
 ## building
 [XoDos Proot(rootfs)](https://github.com/xodiosx/XoDos2/tree/main/extra/rootfs)
-
-
 
 
 
