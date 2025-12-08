@@ -3,6 +3,7 @@
   <img src="icon.png" alt="XoDos Logo" width="200" height="200">
 </p>
 <div align="center">
+  
 [![GitHub Release](https://img.shields.io/badge/Releases-orange)](https://github.com/xodiosx/XoDos2/releases)
 [![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue)](https://t.me/xodemulatorr)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-7289da)](https://discord.gg/d2ChVhPfnF)
