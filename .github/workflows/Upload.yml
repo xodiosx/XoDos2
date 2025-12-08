@@ -31,12 +31,7 @@ jobs:
           pip install gdown
 
       # ✅ Step 3: Create Git Tag (after checkout)
-      - name: Create Git Tag
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git tag "v${{ github.event.inputs.version_tag }}"
-          git push origin "v${{ github.event.inputs.version_tag }}"
+      
 
       # ✅ Step 4: Download main APK file
       - name: Download Main APK
@@ -45,9 +40,12 @@ jobs:
             -O "XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk" || exit 1
 
       # ✅ Step 5: Download additional files
-      - name: Download Additional Files
+      - name: Create Git Tag
         run: |
-          echo "nothing to download"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag "v${{ github.event.inputs.version_tag }}"
+          git push origin "v${{ github.event.inputs.version_tag }}"
 
       # ✅ Step 6: Generate MD5 checksums for all downloaded files
       - name: Generate MD5 Checksums
