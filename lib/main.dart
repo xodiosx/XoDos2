@@ -126,7 +126,7 @@ class AppColors {
 
 // Add this DxvkDialog class after AppColors
 // DxvkDialog class
-// DxvkDialog class
+// Fixed DxvkDialog class
 class DxvkDialog extends StatefulWidget {
   @override
   _DxvkDialogState createState() => _DxvkDialogState();
@@ -202,8 +202,6 @@ class _DxvkDialogState extends State<DxvkDialog> {
     // Send HUD commands
     Util.termWrite("echo '================================'");
     await Future.delayed(const Duration(milliseconds: 50));
-  //  Util.termWrite("echo 'Applying HUD settings...'");
-//    await Future.delayed(const Duration(milliseconds: 50));
     
     // Apply MANGOHUD commands
     if (_currentMangohudEnabled) {
@@ -234,8 +232,6 @@ class _DxvkDialogState extends State<DxvkDialog> {
     
     // Apply DXVK_HUD commands
     if (_currentDxvkHudEnabled) {
-   //   Util.termWrite("echo 'Enabling DXVK HUD...'");
-//      await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/runh >/dev/null 2>&1");
       await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/run >/dev/null 2>&1");
@@ -251,8 +247,6 @@ class _DxvkDialogState extends State<DxvkDialog> {
       Util.termWrite("echo 'DXVK HUD disabled.'");
     }
     
-//    Util.termWrite("echo 'HUD settings applied.'");
-//    await Future.delayed(const Duration(milliseconds: 50));
     Util.termWrite("echo '================================'");
   }
 
@@ -300,9 +294,6 @@ class _DxvkDialogState extends State<DxvkDialog> {
       
       // Only extract if DXVK selection changed
       if (_hasDxvkChanged) {
-   //     Util.termWrite("echo 'Starting DXVK installation'");
-     //   await Future.delayed(const Duration(milliseconds: 50));
-        
         Util.termWrite("echo 'Extracting: $_selectedDxvk'");
         await Future.delayed(const Duration(milliseconds: 50));
         
@@ -334,9 +325,6 @@ class _DxvkDialogState extends State<DxvkDialog> {
         
         Util.termWrite("echo 'DXVK installation complete!'");
         await Future.delayed(const Duration(milliseconds: 50));
-        
-   //     Util.termWrite("echo 'Files installed to ~/.wine/drive_c/windows'");
-   //     await Future.delayed(const Duration(milliseconds: 50));
         
         Util.termWrite("echo '================================'");
         
@@ -445,125 +433,177 @@ class _DxvkDialogState extends State<DxvkDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    
     return AlertDialog(
       title: const Text('Install DXVK'),
-      content: Container(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.all(20.0),
-                child: CircularProgressIndicator(),
-              ),
-            if (!_isLoading && _dxvkFiles.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.orange, size: 48),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No DXVK files found',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Please place DXVK files in:\n/wincomponents/d3d/',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Directory: $_dxvkDirectory',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * (isLandscape ? 0.8 : 0.6),
+          minWidth: MediaQuery.of(context).size.width * (isLandscape ? 0.6 : 0.8),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-              ),
-            if (!_isLoading && _dxvkFiles.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: _selectedDxvk,
-                    decoration: const InputDecoration(
-                      labelText: 'Select DXVK Version',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _dxvkFiles.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedDxvk = newValue;
-                      });
-                    },
+              if (!_isLoading && _dxvkFiles.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.orange, size: 48),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No DXVK files found',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please place DXVK files in:\n/wincomponents/d3d/',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      if (_dxvkDirectory != null)
+                        Text(
+                          'Directory: $_dxvkDirectory',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  // MANGOHUD Switch
-                  Card(
-                    child: SwitchListTile(
-                      title: const Text('MANGOHUD'),
-                      subtitle: const Text('Overlay for monitoring FPS, CPU, GPU, etc.'),
-                      value: _currentMangohudEnabled,
-                      onChanged: (value) {
+                ),
+              if (!_isLoading && _dxvkFiles.isNotEmpty)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _selectedDxvk,
+                      decoration: const InputDecoration(
+                        labelText: 'Select DXVK Version',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _dxvkFiles.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
                         setState(() {
-                          _currentMangohudEnabled = value;
+                          _selectedDxvk = newValue;
                         });
                       },
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  // DXVK HUD Switch
-                  Card(
-                    child: SwitchListTile(
-                      title: const Text('DXVK HUD'),
-                      subtitle: const Text('DXVK overlay showing FPS, version, device info'),
-                      value: _currentDxvkHudEnabled,
-                      onChanged: (value) {
-                        setState(() {
-                          _currentDxvkHudEnabled = value;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  if (_hasHudChanged || _hasDxvkChanged)
+                    const SizedBox(height: 16),
+                    
+                    // HUD Settings Section
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: AppColors.cardDark,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue,
-                            size: 16,
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Changes detected. Will apply when dialog closes.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue,
-                              ),
+                          const Text(
+                            'HUD Settings',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryPurple,
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Divider(height: 1),
+                          const SizedBox(height: 12),
+                          
+                          // MANGOHUD Switch
+                          SwitchListTile(
+                            dense: isLandscape,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                            title: const Text(
+                              'MANGOHUD',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            subtitle: const Text(
+                              'Overlay for monitoring FPS, CPU, GPU, etc.',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            value: _currentMangohudEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                _currentMangohudEnabled = value;
+                              });
+                            },
+                          ),
+                          
+                          // DXVK HUD Switch
+                          SwitchListTile(
+                            dense: isLandscape,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                            title: const Text(
+                              'DXVK HUD',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            subtitle: const Text(
+                              'DXVK overlay showing FPS, version, device info',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            value: _currentDxvkHudEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                _currentDxvkHudEnabled = value;
+                              });
+                            },
                           ),
                         ],
                       ),
                     ),
-                ],
-              ),
-          ],
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Changes indicator
+                    if (_hasHudChanged || _hasDxvkChanged)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Changes detected. Will apply when dialog closes.',
+                                style: TextStyle(
+                                  fontSize: isLandscape ? 12 : 14,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -577,9 +617,621 @@ class _DxvkDialogState extends State<DxvkDialog> {
             child: const Text('Install'),
           ),
       ],
+      scrollable: true,
     );
   }
 }
+
+///env
+// Add this after your DxvkDialog class
+class EnvironmentDialog extends StatefulWidget {
+  @override
+  _EnvironmentDialogState createState() => _EnvironmentDialogState();
+}
+
+class _EnvironmentDialogState extends State<EnvironmentDialog> {
+  // Box64 Dynarec variables
+  final List<Map<String, dynamic>> _dynarecVariables = [
+    {"name": "BOX64_DYNAREC_SAFEFLAGS", "values": ["0", "1", "2"], "defaultValue": "2"},
+    {"name": "BOX64_DYNAREC_FASTNAN", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "1"},
+    {"name": "BOX64_DYNAREC_FASTROUND", "values": ["0", "1", "2"], "defaultValue": "1"},
+    {"name": "BOX64_DYNAREC_X87DOUBLE", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "0"},
+    {"name": "BOX64_DYNAREC_BIGBLOCK", "values": ["0", "1", "2", "3"], "defaultValue": "1"},
+    {"name": "BOX64_DYNAREC_STRONGMEM", "values": ["0", "1", "2", "3"], "defaultValue": "0"},
+    {"name": "BOX64_DYNAREC_FORWARD", "values": ["0", "128", "256", "512", "1024"], "defaultValue": "128"},
+    {"name": "BOX64_DYNAREC_CALLRET", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "1"},
+    {"name": "BOX64_DYNAREC_WAIT", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "1"},
+    {"name": "BOX64_DYNAREC_NATIVEFLAGS", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "0"},
+    {"name": "BOX64_DYNAREC_WEAKBARRIER", "values": ["0", "1", "2"], "defaultValue": "0"}
+  ];
+
+  // Core checkboxes
+  List<bool> _coreSelections = List.generate(8, (index) => false);
+  
+  // Wine Esync switch
+  bool _wineEsyncEnabled = false;
+  
+  // Custom variables
+  List<Map<String, String>> _customVariables = [];
+  String _selectedKnownVariable = '';
+  final List<String> _knownWineVariables = [
+    'WINEARCH',
+    'WINEDEBUG',
+    'WINEPREFIX',
+    'WINEESYNC',
+    'WINEFSYNC',
+    'WINE_NOBLOB',
+    'WINE_NO_CRASH_DIALOG',
+    'WINEDLLOVERRIDES',
+    'WINEDLLPATH',
+    'WINE_MONO_CACHE_DIR',
+    'WINE_GECKO_CACHE_DIR',
+    'WINEDISABLE',
+    'WINE_ENABLE'
+  ];
+  
+  // Debug switch
+  bool _debugEnabled = false;
+  
+  // Current custom variable being added
+  String _newVarName = '';
+  String _newVarValue = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSettings();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    try {
+      // Load core selections
+      final savedCores = G.prefs.getString('environment_cores');
+      if (savedCores != null && savedCores.isNotEmpty) {
+        _parseCoreSelections(savedCores);
+      } else {
+        // Default: all cores selected
+        setState(() {
+          _coreSelections = List.generate(8, (index) => true);
+        });
+      }
+      
+      // Load wine esync
+      _wineEsyncEnabled = G.prefs.getBool('environment_wine_esync') ?? false;
+      
+      // Load debug setting
+      _debugEnabled = G.prefs.getBool('environment_debug') ?? false;
+      
+      // Load custom variables
+      final savedVars = G.prefs.getStringList('environment_custom_vars') ?? [];
+      _customVariables = savedVars.map((varStr) {
+        final parts = varStr.split('=');
+        return {'name': parts[0], 'value': parts.length > 1 ? parts[1] : ''};
+      }).toList();
+      
+      setState(() {});
+    } catch (e) {
+      print('Error loading environment settings: $e');
+    }
+  }
+
+  void _parseCoreSelections(String coreString) {
+    try {
+      // Reset all cores to false
+      _coreSelections = List.generate(8, (index) => false);
+      
+      // Parse range like "0-7" or "5-7"
+      if (coreString.contains('-')) {
+        final parts = coreString.split('-');
+        final start = int.tryParse(parts[0]) ?? 0;
+        final end = int.tryParse(parts[1]) ?? 7;
+        
+        for (int i = start; i <= end; i++) {
+          if (i < 8) {
+            _coreSelections[i] = true;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error parsing core selections: $e');
+    }
+  }
+
+  String _getCoreString() {
+    final selectedCores = <int>[];
+    for (int i = 0; i < 8; i++) {
+      if (_coreSelections[i]) {
+        selectedCores.add(i);
+      }
+    }
+    
+    if (selectedCores.isEmpty) {
+      return "0-1";
+    } else if (selectedCores.length == 1) {
+      return "${selectedCores[0]}-${selectedCores[0]}";
+    } else {
+      // Find consecutive cores
+      selectedCores.sort();
+      int start = selectedCores.first;
+      int end = selectedCores.first;
+      
+      for (int i = 1; i < selectedCores.length; i++) {
+        if (selectedCores[i] == end + 1) {
+          end = selectedCores[i];
+        } else {
+          break;
+        }
+      }
+      
+      return "$start-$end";
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    try {
+      // Save to SharedPreferences
+      await G.prefs.setString('environment_cores', _getCoreString());
+      await G.prefs.setBool('environment_wine_esync', _wineEsyncEnabled);
+      await G.prefs.setBool('environment_debug', _debugEnabled);
+      
+      // Save custom variables
+      final varStrings = _customVariables.map((varMap) => '${varMap['name']}=${varMap['value']}').toList();
+      await G.prefs.setStringList('environment_custom_vars', varStrings);
+      
+      // Apply settings via terminal
+      await _applyEnvironmentSettings();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Environment settings saved and applied!'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print('Error saving environment settings: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving settings: $e'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _applyEnvironmentSettings() async {
+    // Switch to terminal tab
+    G.pageIndex.value = 0;
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Clear existing files
+    Util.termWrite("echo '' > /opt/dyna");
+    Util.termWrite("echo '' > /opt/sync");
+    Util.termWrite("echo '' > /opt/cores");
+    Util.termWrite("echo '' > /opt/env");
+    Util.termWrite("echo '' > /opt/dbg");
+    
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    // Apply Box64 Dynarec settings
+    for (final variable in _dynarecVariables) {
+      final name = variable['name'] as String;
+      final defaultValue = variable['defaultValue'] as String;
+      final savedValue = G.prefs.getString('dynarec_$name') ?? defaultValue;
+      
+      Util.termWrite("echo 'export $name=$savedValue' >> /opt/dyna");
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
+    
+    // Apply Wine Esync settings
+    if (_wineEsyncEnabled) {
+      Util.termWrite("echo 'export WINEESYNC=1' >> /opt/sync");
+      Util.termWrite("echo 'export WINEESYNC_TERMUX=1' >> /opt/sync");
+    } else {
+      Util.termWrite("echo 'export WINEESYNC=0' >> /opt/sync");
+      Util.termWrite("echo 'export WINEESYNC_TERMUX=0' >> /opt/sync");
+    }
+    
+    // Apply Core settings
+    Util.termWrite("echo 'export PRIMARY_CORES=${_getCoreString()}' >> /opt/cores");
+    
+    // Apply custom variables
+    for (final variable in _customVariables) {
+      Util.termWrite("echo 'export ${variable['name']}=${variable['value']}' >> /opt/env");
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
+    
+    // Apply Debug settings
+    if (_debugEnabled) {
+      // Debug ON (verbose mode)
+      Util.termWrite("echo 'export MESA_NO_ERROR=0' >> /opt/dbg");
+      Util.termWrite("echo 'export WINEDEBUG=all' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_LOG=1' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_NOBANNER=0' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_SHOWSEGV=1' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_DLSYM_ERROR=1' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_DYNAREC_MISSING=1' >> /opt/dbg");
+    } else {
+      // Debug OFF (quiet mode)
+      Util.termWrite("echo 'export MESA_NO_ERROR=1' >> /opt/dbg");
+      Util.termWrite("echo 'export WINEDEBUG=-all' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_LOG=0' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_NOBANNER=1' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_SHOWSEGV=0' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_DLSYM_ERROR=0' >> /opt/dbg");
+      Util.termWrite("echo 'export BOX64_DYNAREC_MISSING=0' >> /opt/dbg");
+    }
+    
+    Util.termWrite("echo '================================'");
+    Util.termWrite("echo 'Environment settings applied!'");
+    Util.termWrite("echo '================================'");
+  }
+
+  void _showDynarecDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _buildDynarecDialog(),
+    );
+  }
+
+  Widget _buildDynarecDialog() {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: const Text('Box64 Dynarec Settings'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: _dynarecVariables.map((variable) {
+                  return _buildDynarecVariableWidget(variable, setState);
+                }).toList(),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Save all dynarec settings
+                for (final variable in _dynarecVariables) {
+                  final name = variable['name'] as String;
+                  final currentValue = variable['currentValue'] ?? variable['defaultValue'];
+                  await G.prefs.setString('dynarec_$name', currentValue);
+                }
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Dynarec settings saved'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDynarecVariableWidget(Map<String, dynamic> variable, StateSetter setState) {
+    final name = variable['name'] as String;
+    final values = variable['values'] as List<String>;
+    final defaultValue = variable['defaultValue'] as String;
+    final isToggle = variable['toggleSwitch'] == true;
+    
+    final savedValue = G.prefs.getString('dynarec_$name') ?? defaultValue;
+    variable['currentValue'] = savedValue;
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            if (isToggle)
+              SwitchListTile(
+                title: Text('Enabled (${savedValue == "1" ? "ON" : "OFF"})'),
+                value: savedValue == "1",
+                onChanged: (value) {
+                  setState(() {
+                    variable['currentValue'] = value ? "1" : "0";
+                  });
+                },
+              )
+            else
+              DropdownButton<String>(
+                value: savedValue,
+                isExpanded: true,
+                items: values.map((value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    variable['currentValue'] = newValue ?? defaultValue;
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addCustomVariable() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Environment Variable'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Autocomplete<String>(
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  if (textEditingValue.text.isEmpty) {
+                    return const Iterable<String>.empty();
+                  }
+                  return _knownWineVariables.where(
+                    (variable) => variable.toLowerCase().contains(textEditingValue.text.toLowerCase()),
+                  );
+                },
+                fieldViewBuilder: (
+                  context,
+                  textEditingController,
+                  focusNode,
+                  onFieldSubmitted,
+                ) {
+                  return TextFormField(
+                    controller: textEditingController,
+                    focusNode: focusNode,
+                    decoration: const InputDecoration(
+                      labelText: 'Variable Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      _newVarName = value;
+                    },
+                  );
+                },
+                onSelected: (String selection) {
+                  _newVarName = selection;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: 'Value',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  _newVarValue = value;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (_newVarName.isNotEmpty && _newVarValue.isNotEmpty) {
+                setState(() {
+                  _customVariables.add({
+                    'name': _newVarName,
+                    'value': _newVarValue,
+                  });
+                  _newVarName = '';
+                  _newVarValue = '';
+                });
+                Navigator.of(context).pop();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter both variable name and value'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeCustomVariable(int index) {
+    setState(() {
+      _customVariables.removeAt(index);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Environment Settings'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Box64 Dynarec Section
+              Card(
+                child: ListTile(
+                  title: const Text('Box64 Dynarec'),
+                  subtitle: const Text('Advanced emulation settings'),
+                  trailing: const Icon(Icons.arrow_forward),
+                  onTap: _showDynarecDialog,
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Wine Esync Section
+              Card(
+                child: SwitchListTile(
+                  title: const Text('Wine Esync'),
+                  subtitle: const Text('Enable Wine Esync for better performance'),
+                  value: _wineEsyncEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _wineEsyncEnabled = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Cores Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'CPU Cores',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Selected: ${_getCoreString()}'),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: List.generate(8, (index) {
+                          return FilterChip(
+                            label: Text('Core $index'),
+                            selected: _coreSelections[index],
+                            onSelected: (selected) {
+                              setState(() {
+                                _coreSelections[index] = selected;
+                              });
+                            },
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _coreSelections = List.generate(8, (index) => true);
+                              });
+                            },
+                            child: const Text('Select All'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _coreSelections = List.generate(8, (index) => false);
+                              });
+                            },
+                            child: const Text('Clear All'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Custom Variables Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Custom Variables',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ..._customVariables.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final variable = entry.value;
+                        return ListTile(
+                          title: Text(variable['name'] ?? ''),
+                          subtitle: Text(variable['value'] ?? ''),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _removeCustomVariable(index),
+                          ),
+                          dense: true,
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        onPressed: _addCustomVariable,
+                        child: const Text('Add Variable'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Debug Section
+              Card(
+                child: SwitchListTile(
+                  title: const Text('Debug Mode'),
+                  subtitle: _debugEnabled
+                      ? const Text('Verbose logging enabled')
+                      : const Text('Quiet mode - minimal logging'),
+                  value: _debugEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _debugEnabled = value;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _saveSettings,
+          child: const Text('Save & Apply'),
+        ),
+      ],
+    );
+  }
+}
+
+// Update your SettingPage to add the Environment button
+// In the SettingPage build method, add this button to the Windows App Support section:
+// Add this button to your existing button list in SettingPage:
+
+
+
+
 
 
 class RTLWrapper extends StatelessWidget {
@@ -1199,6 +1851,18 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
     );
   },
 ),
+
+OutlinedButton(
+  style: D.commandButtonStyle,
+  child: Text('Environment Settings'),
+  onPressed: () {
+    showDialog(
+      context: context,
+      builder: (context) => EnvironmentDialog(),
+    );
+  },
+),
+
   // ADD THIS NEW DXVK BUTTON:
   OutlinedButton(
     style: D.commandButtonStyle,
