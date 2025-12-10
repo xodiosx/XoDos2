@@ -1468,6 +1468,718 @@ Widget _buildDynarecVariableWidget(
 }
 
 
+//// GPU drivers
+// GPU Drivers Dialog
+class GpuDriversDialog extends StatefulWidget {
+  @override
+  _GpuDriversDialogState createState() => _GpuDriversDialogState();
+}
+
+class _GpuDriversDialogState extends State<GpuDriversDialog> {
+  // Driver types
+  String _selectedDriverType = 'virgl';
+  String? _selectedDriverFile;
+  List<String> _driverFiles = [];
+  String? _driversDirectory;
+  bool _isLoading = true;
+  
+  // Turnip options
+  bool _useBuiltInTurnip = true;
+  bool _driEnabled = false;
+  
+  // Settings
+  bool _virglEnabled = false;
+  bool _turnipEnabled = false;
+  bool _dri3Enabled = false;
+  String _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSettings();
+    _loadDriverFiles();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    try {
+      // Load existing graphics settings
+      _virglEnabled = G.prefs.getBool('virgl') ?? false;
+      _turnipEnabled = G.prefs.getBool('turnip') ?? false;
+      _dri3Enabled = G.prefs.getBool('dri3') ?? false;
+      _defaultTurnipOpt = G.prefs.getString('defaultTurnipOpt') ?? 'MESA_LOADER_DRIVER_OVERRIDE=zink';
+      
+      // Load GPU driver specific settings
+      _selectedDriverType = G.prefs.getString('gpu_driver_type') ?? 'virgl';
+      _selectedDriverFile = G.prefs.getString('selected_gpu_driver');
+      _useBuiltInTurnip = G.prefs.getBool('use_builtin_turnip') ?? true;
+      _driEnabled = G.prefs.getBool('gpu_dri_enabled') ?? false;
+      
+      setState(() {});
+    } catch (e) {
+      print('Error loading GPU settings: $e');
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    try {
+      // Save GPU driver specific settings
+      await G.prefs.setString('gpu_driver_type', _selectedDriverType);
+      if (_selectedDriverFile != null) {
+        await G.prefs.setString('selected_gpu_driver', _selectedDriverFile!);
+      }
+      await G.prefs.setBool('use_builtin_turnip', _useBuiltInTurnip);
+      await G.prefs.setBool('gpu_dri_enabled', _driEnabled);
+      
+      // Save existing graphics settings (in case they changed)
+      await G.prefs.setBool('virgl', _virglEnabled);
+      await G.prefs.setBool('turnip', _turnipEnabled);
+      await G.prefs.setBool('dri3', _dri3Enabled);
+      await G.prefs.setString('defaultTurnipOpt', _defaultTurnipOpt);
+      
+      // Apply settings
+      await _applyGpuSettings();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('GPU driver settings saved and applied!'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print('Error saving GPU settings: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving settings: $e'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _applyGpuSettings() async {
+    // Switch to terminal tab
+    G.pageIndex.value = 0;
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Clear existing driver file
+    Util.termWrite("echo '' > /opt/drv");
+    
+    // Apply settings based on driver type
+    if (_selectedDriverType == 'turnip') {
+      await _applyTurnipSettings();
+    } else if (_selectedDriverType == 'virgl') {
+      await _applyVirglSettings();
+    } else if (_selectedDriverType == 'wrapper') {
+      await _applyWrapperSettings();
+    }
+    
+    Util.termWrite("echo '================================'");
+    Util.termWrite("echo 'GPU driver settings applied!'");
+    Util.termWrite("echo '================================'");
+  }
+
+  Future<void> _applyTurnipSettings() async {
+    if (_useBuiltInTurnip) {
+      // Built-in turnip
+      Util.termWrite("echo 'export VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64' >> /opt/drv");
+    } else if (_selectedDriverFile != null) {
+      // Custom turnip driver
+      Util.termWrite("echo 'export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json' >> /opt/drv");
+    }
+    
+    // Set turnip environment
+    if (_turnipEnabled) {
+      Util.termWrite("echo 'export $_defaultTurnipOpt' >> /opt/drv");
+      if (!_dri3Enabled) {
+        Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> /opt/drv");
+      }
+    }
+  }
+
+  Future<void> _applyVirglSettings() async {
+    if (_virglEnabled) {
+      // Start VirGL server with default or custom command
+      final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+      final virglEnv = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
+      
+      Util.termWrite("echo 'export $virglEnv' >> /opt/drv");
+      
+      // If we have a custom virgl driver file, we might need to set additional env vars
+      if (_selectedDriverFile != null) {
+        // Extract or use custom virgl driver
+        Util.termWrite("echo '# Custom VirGL driver: $_selectedDriverFile' >> /opt/drv");
+      }
+    }
+  }
+
+  Future<void> _applyWrapperSettings() async {
+    // Wrapper drivers (like wine wrapper)
+    if (_selectedDriverFile != null) {
+      Util.termWrite("echo '# Using wrapper driver: $_selectedDriverFile' >> /opt/drv");
+    }
+  }
+
+  Future<void> _extractDriver() async {
+    try {
+      if (_selectedDriverFile == null || _driversDirectory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please select a driver file'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+      
+      final driverPath = '$_driversDirectory/$_selectedDriverFile';
+      final file = File(driverPath);
+      
+      // Check if file exists
+      if (!await file.exists()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File not found: $driverPath'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      
+      // First, close the dialog
+      Navigator.of(context).pop();
+      
+      // Save settings first
+      await _saveSettings();
+      
+      // Switch to terminal tab
+      G.pageIndex.value = 0;
+      
+      // Wait a moment for tab switch
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Extract driver
+      Util.termWrite("echo '================================'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo 'Extracting: $_selectedDriverFile'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo '================================'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // Create target directory if it doesn't exist
+      Util.termWrite("mkdir -p /usr/share/vulkan/icd.d");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // Extract based on file type
+      String containerPath = "/drivers/$_selectedDriverFile";
+      
+      if (_selectedDriverFile!.endsWith('.zip')) {
+        Util.termWrite("unzip -o '$containerPath' -d '/usr'");
+      } else if (_selectedDriverFile!.endsWith('.7z')) {
+        Util.termWrite("7z x '$containerPath' -o'/usr' -y");
+      } else if (_selectedDriverFile!.endsWith('.tar.gz') || _selectedDriverFile!.endsWith('.tgz')) {
+        Util.termWrite("tar -xzf '$containerPath' -C '/usr'");
+      } else if (_selectedDriverFile!.endsWith('.tar.xz') || _selectedDriverFile!.endsWith('.txz')) {
+        Util.termWrite("tar -xJf '$containerPath' -C '/usr'");
+      } else {
+        // Assume it's a tar archive
+        Util.termWrite("tar -xf '$containerPath' -C '/usr'");
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // Completion message
+      Util.termWrite("echo '================================'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo 'Driver extraction complete!'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      Util.termWrite("echo '================================'");
+      
+      // Show completion snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$_selectedDriverFile extraction started successfully!'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      
+    } catch (e) {
+      print('Error in _extractDriver: $e');
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error during extraction: $e'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadDriverFiles() async {
+    try {
+      // Look in the container's drivers directory
+      String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
+      String hostDir = "$containerDir/drivers";
+      
+      final dir = Directory(hostDir);
+      if (!await dir.exists()) {
+        print('Drivers directory not found at: $hostDir');
+        setState(() {
+          _driverFiles = [];
+          _driversDirectory = hostDir;
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      _driversDirectory = hostDir;
+      print('Found drivers directory at: $hostDir');
+      
+      final files = await dir.list().toList();
+      
+      // Accept various archive formats
+      final allDriverFiles = files
+          .where((file) => file is File && 
+              RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z|json|so|ko)$').hasMatch(file.path))
+          .map((file) => file.path.split('/').last)
+          .toList();
+      
+      setState(() {
+        _driverFiles = allDriverFiles;
+        if (allDriverFiles.isNotEmpty) {
+          // Load saved driver selection
+          _selectedDriverFile = G.prefs.getString('selected_gpu_driver');
+          
+          // If no saved selection, try to find one matching current driver type
+          if (_selectedDriverFile == null) {
+            _filterDriverFiles();
+          }
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading driver files: $e');
+      setState(() {
+        _driverFiles = [];
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _filterDriverFiles() {
+    // Filter files based on selected driver type
+    List<String> filteredFiles = [];
+    
+    if (_selectedDriverType == 'turnip') {
+      filteredFiles = _driverFiles.where((file) => 
+          file.toLowerCase().contains('turnip') || 
+          file.toLowerCase().contains('freedreno')).toList();
+    } else if (_selectedDriverType == 'virgl') {
+      filteredFiles = _driverFiles.where((file) => 
+          file.toLowerCase().contains('virgl') || 
+          file.toLowerCase().contains('virtio')).toList();
+    } else if (_selectedDriverType == 'wrapper') {
+      filteredFiles = _driverFiles.where((file) => 
+          file.toLowerCase().contains('wrapper') || 
+          file.toLowerCase().contains('wine')).toList();
+    }
+    
+    // If we have filtered files, select the first one
+    if (filteredFiles.isNotEmpty) {
+      setState(() {
+        _selectedDriverFile = filteredFiles.first;
+      });
+    }
+  }
+
+  void _onDriverTypeChanged(String? newType) {
+    if (newType != null) {
+      setState(() {
+        _selectedDriverType = newType;
+        // Reset selection when type changes
+        _selectedDriverFile = null;
+        _useBuiltInTurnip = (newType == 'turnip');
+        _filterDriverFiles();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('GPU Drivers'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Driver Type Selection
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Driver Type',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _selectedDriverType,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Driver Type',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'virgl',
+                            child: Row(
+                              children: [
+                                Icon(Icons.hardware, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text('VirGL (Virtual GL)'),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'turnip',
+                            child: Row(
+                              children: [
+                                Icon(Icons.grain, color: Colors.purple),
+                                SizedBox(width: 8),
+                                Text('Turnip (Vulkan)'),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'wrapper',
+                            child: Row(
+                              children: [
+                                Icon(Icons.wrap_text, color: Colors.green),
+                                SizedBox(width: 8),
+                                Text('Wrapper'),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: _onDriverTypeChanged,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Driver Settings Section
+              if (_selectedDriverType == 'turnip') _buildTurnipSettings(),
+              if (_selectedDriverType == 'virgl') _buildVirglSettings(),
+              if (_selectedDriverType == 'wrapper') _buildWrapperSettings(),
+              
+              // Driver Files Selection (if not using built-in turnip)
+              if (!(_selectedDriverType == 'turnip' && _useBuiltInTurnip))
+                _buildDriverFileSelection(),
+              
+              // DRI Switch (for Turnip/VirGL)
+              if (_selectedDriverType == 'turnip' || _selectedDriverType == 'virgl')
+                Card(
+                  child: SwitchListTile(
+                    title: const Text('Enable DRI3'),
+                    subtitle: const Text('Direct Rendering Infrastructure v3'),
+                    value: _driEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _driEnabled = value;
+                        if (_selectedDriverType == 'turnip') {
+                          _dri3Enabled = value;
+                        }
+                      });
+                    },
+                  ),
+                ),
+              
+              // Graphics Acceleration Toggles
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Graphics Acceleration',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        title: const Text('Enable VirGL'),
+                        subtitle: const Text('Virtual OpenGL acceleration'),
+                        value: _virglEnabled,
+                        onChanged: _selectedDriverType == 'virgl' ? (value) {
+                          setState(() {
+                            _virglEnabled = value;
+                          });
+                        } : null,
+                      ),
+                      SwitchListTile(
+                        title: const Text('Enable Turnip/Zink'),
+                        subtitle: const Text('Vulkan via Zink driver'),
+                        value: _turnipEnabled,
+                        onChanged: _selectedDriverType == 'turnip' ? (value) {
+                          setState(() {
+                            _turnipEnabled = value;
+                            if (!value && _dri3Enabled) {
+                              _dri3Enabled = false;
+                            }
+                          });
+                        } : null,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        if (_selectedDriverFile != null && !(_selectedDriverType == 'turnip' && _useBuiltInTurnip))
+          ElevatedButton(
+            onPressed: _extractDriver,
+            child: const Text('Extract Driver'),
+          ),
+        ElevatedButton(
+          onPressed: _saveSettings,
+          child: const Text('Save Settings'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTurnipSettings() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Turnip Settings',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<bool>(
+                    title: const Text('Built-in Turnip'),
+                    subtitle: const Text('Use bundled freedreno driver'),
+                    value: true,
+                    groupValue: _useBuiltInTurnip,
+                    onChanged: (value) {
+                      setState(() {
+                        _useBuiltInTurnip = value ?? true;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<bool>(
+                    title: const Text('Custom Driver'),
+                    subtitle: const Text('Extract from drivers folder'),
+                    value: false,
+                    groupValue: _useBuiltInTurnip,
+                    onChanged: (value) {
+                      setState(() {
+                        _useBuiltInTurnip = value ?? false;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (!_useBuiltInTurnip) ...[
+              const SizedBox(height: 8),
+              const Divider(),
+              const SizedBox(height: 8),
+              TextFormField(
+                maxLines: 2,
+                initialValue: _defaultTurnipOpt,
+                decoration: const InputDecoration(
+                  labelText: 'Turnip Environment Variables',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _defaultTurnipOpt = value;
+                  });
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVirglSettings() {
+    final defaultVirglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+    final defaultVirglOpt = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'VirGL Settings',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              maxLines: 2,
+              initialValue: defaultVirglCommand,
+              decoration: const InputDecoration(
+                labelText: 'VirGL Server Parameters',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) async {
+                await G.prefs.setString('defaultVirglCommand', value);
+              },
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              maxLines: 2,
+              initialValue: defaultVirglOpt,
+              decoration: const InputDecoration(
+                labelText: 'VirGL Environment Variables',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) async {
+                await G.prefs.setString('defaultVirglOpt', value);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWrapperSettings() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Wrapper Settings',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Wrapper drivers provide compatibility layers for different GPU architectures.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDriverFileSelection() {
+    // Filter files based on selected driver type
+    List<String> filteredFiles = [];
+    
+    if (_selectedDriverType == 'turnip') {
+      filteredFiles = _driverFiles.where((file) => 
+          file.toLowerCase().contains('turnip') || 
+          file.toLowerCase().contains('freedreno')).toList();
+    } else if (_selectedDriverType == 'virgl') {
+      filteredFiles = _driverFiles.where((file) => 
+          file.toLowerCase().contains('virgl') || 
+          file.toLowerCase().contains('virtio')).toList();
+    } else if (_selectedDriverType == 'wrapper') {
+      filteredFiles = _driverFiles.where((file) => 
+          file.toLowerCase().contains('wrapper') || 
+          file.toLowerCase().contains('wine')).toList();
+    }
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select Driver File',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator()),
+            
+            if (!_isLoading && filteredFiles.isEmpty)
+              const Column(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.orange, size: 48),
+                  SizedBox(height: 8),
+                  Text(
+                    'No driver files found',
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Please place driver files in the drivers folder',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            
+            if (!_isLoading && filteredFiles.isNotEmpty)
+              DropdownButtonFormField<String>(
+                value: _selectedDriverFile,
+                decoration: const InputDecoration(
+                  labelText: 'Driver File',
+                  border: OutlineInputBorder(),
+                ),
+                items: filteredFiles.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedDriverFile = newValue;
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Update your Setting
+
+
 
 
 
@@ -2099,6 +2811,18 @@ OutlinedButton(
     );
   },
 ),
+
+OutlinedButton(
+  style: D.commandButtonStyle,
+  child: Text('GPU Drivers'),
+  onPressed: () {
+    showDialog(
+      context: context,
+      builder: (context) => GpuDriversDialog(),
+    );
+  },
+),
+
 
   // ADD THIS NEW DXVK BUTTON:
   OutlinedButton(
