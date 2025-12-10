@@ -1055,6 +1055,7 @@ class Workflow {
       print('Created internal DXVK directory: $internalDxvkPath');
       
       // Also try to create in external storage (for user convenience)
+    /*
       String externalDxvkPath = '/storage/emulated/0/Android/data/com.xodos/files/containers/0/wincomponents/d3d';
       try {
         await Directory(externalDxvkPath).create(recursive: true);
@@ -1093,7 +1094,8 @@ Note: DXVK will be extracted to ~/.wine/drive_c/windows/
       print('Error creating DXVK directory: $e');
     }
     // ========== folders making  ======
- 
+ */
+ Util.createDirFromString("/storage/emulated/0/Android/data/com.xodos/files/containers/0/wincomponents/d3d");
     // Folder for sharing data files
     Util.createDirFromString("${G.dataPath}/share");
     // Folder for storing executable files
@@ -1254,10 +1256,8 @@ done
       final String h = (min(s.width, s.height) * 0.75).round().toString();
       G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
 sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
-if [ -f "/usr/share/applications/wined.desktop" ]; then 
-  rm -rf /usr/share/applications/wined.desktop
-  sed -i 's|<property name="vblank_mode" type="string" value="auto"/>|<property name="vblank_mode" type="string" value="off"/>|' "/home/xodos/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml"
-fi""";
+
+""";
       
       final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
       if (languageCode != 'zh') {
