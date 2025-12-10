@@ -1062,8 +1062,9 @@ void _showDynarecDialog() {
                     ...localVariables.map((variable) {
                       return _buildDynarecVariableWidget(
                         variable, 
-                        setState, 
-                        () {
+                        setState,
+                        localVariables, // Pass the localVariables list
+                        onVariableChanged: () {
                           // When any variable changes manually, set preset to Custom
                           setState(() {
                             selectedPreset = 'Custom';
@@ -1115,7 +1116,13 @@ void _showDynarecDialog() {
   );
 }
 
-  Widget _buildDynarecVariableWidget(Map<String, dynamic> variable, StateSetter setState, List<Map<String, dynamic>> localVariables) {
+// Update the function signature to include optional callback
+Widget _buildDynarecVariableWidget(
+  Map<String, dynamic> variable, 
+  StateSetter setState,
+  List<Map<String, dynamic>> localVariables, {
+  VoidCallback? onVariableChanged,
+}) {
   final name = variable['name'] as String;
   final values = variable['values'] as List<String>;
   final isToggle = variable['toggleSwitch'] == true;
@@ -1140,6 +1147,7 @@ void _showDynarecDialog() {
               onChanged: (value) {
                 setState(() {
                   variable['currentValue'] = value ? "1" : "0";
+                  onVariableChanged?.call();
                 });
               },
             )
@@ -1157,6 +1165,7 @@ void _showDynarecDialog() {
                 if (newValue != null) {
                   setState(() {
                     variable['currentValue'] = newValue;
+                    onVariableChanged?.call();
                   });
                 }
               },
