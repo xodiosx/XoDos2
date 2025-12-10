@@ -1469,7 +1469,8 @@ Widget _buildDynarecVariableWidget(
 
 
 //// GPU drivers
-// GPU Drivers Dialog
+
+// GPU Drivers Dialog - Fixed Version
 class GpuDriversDialog extends StatefulWidget {
   @override
   _GpuDriversDialogState createState() => _GpuDriversDialogState();
@@ -1520,9 +1521,9 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
     }
   }
 
-  Future<void> _saveSettings() async {
+  Future<void> _saveAndExtract() async {
     try {
-      // Save GPU driver specific settings
+      // Save settings first
       await G.prefs.setString('gpu_driver_type', _selectedDriverType);
       if (_selectedDriverFile != null) {
         await G.prefs.setString('selected_gpu_driver', _selectedDriverFile!);
@@ -1530,14 +1531,23 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       await G.prefs.setBool('use_builtin_turnip', _useBuiltInTurnip);
       await G.prefs.setBool('gpu_dri_enabled', _driEnabled);
       
-      // Save existing graphics settings (in case they changed)
+      // Save existing graphics settings
       await G.prefs.setBool('virgl', _virglEnabled);
       await G.prefs.setBool('turnip', _turnipEnabled);
       await G.prefs.setBool('dri3', _dri3Enabled);
       await G.prefs.setString('defaultTurnipOpt', _defaultTurnipOpt);
       
-      // Apply settings
-      await _applyGpuSettings();
+      // Extract driver if needed (custom driver selected)
+      if (!(_selectedDriverType == 'turnip' && _useBuiltInTurnip) && 
+          _selectedDriverFile != null) {
+        await _extractDriver();
+      } else {
+        // Just apply settings without extraction
+        await _applyGpuSettings();
+      }
+      
+      // Close dialog
+      Navigator.of(context).pop();
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1580,16 +1590,19 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
 
   Future<void> _applyTurnipSettings() async {
     if (_useBuiltInTurnip) {
-      // Built-in turnip
-      Util.termWrite("echo 'export VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64' >> /opt/drv");
+      // Built-in turnip - use the bundled driver
+      Util.termWrite("echo 'export VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json' >> /opt/drv");
     } else if (_selectedDriverFile != null) {
-      // Custom turnip driver
+      // Custom turnip driver - use the extracted driver
       Util.termWrite("echo 'export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json' >> /opt/drv");
     }
     
-    // Set turnip environment
+    // Set turnip environment if enabled
     if (_turnipEnabled) {
+      // Use the default turnip opt from settings
       Util.termWrite("echo 'export $_defaultTurnipOpt' >> /opt/drv");
+      
+      // Add DRI3 debug if DRI3 is disabled
       if (!_dri3Enabled) {
         Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> /opt/drv");
       }
@@ -1604,9 +1617,11 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       
       Util.termWrite("echo 'export $virglEnv' >> /opt/drv");
       
+      // Start VirGL server
+      Util.termWrite("echo '# Starting VirGL server: $virglCommand' >> /opt/drv");
+      
       // If we have a custom virgl driver file, we might need to set additional env vars
       if (_selectedDriverFile != null) {
-        // Extract or use custom virgl driver
         Util.termWrite("echo '# Custom VirGL driver: $_selectedDriverFile' >> /opt/drv");
       }
     }
@@ -1622,13 +1637,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
   Future<void> _extractDriver() async {
     try {
       if (_selectedDriverFile == null || _driversDirectory == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Please select a driver file'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return;
+        throw Exception('Please select a driver file');
       }
       
       final driverPath = '$_driversDirectory/$_selectedDriverFile';
@@ -1636,20 +1645,8 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       
       // Check if file exists
       if (!await file.exists()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('File not found: $driverPath'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        return;
+        throw Exception('File not found: $driverPath');
       }
-      
-      // First, close the dialog
-      Navigator.of(context).pop();
-      
-      // Save settings first
-      await _saveSettings();
       
       // Switch to terminal tab
       G.pageIndex.value = 0;
@@ -1689,35 +1686,12 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       
       await Future.delayed(const Duration(milliseconds: 50));
       
-      // Completion message
-      Util.termWrite("echo '================================'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      Util.termWrite("echo 'Driver extraction complete!'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      Util.termWrite("echo '================================'");
-      
-      // Show completion snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$_selectedDriverFile extraction started successfully!'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      // Apply GPU settings after extraction
+      await _applyGpuSettings();
       
     } catch (e) {
       print('Error in _extractDriver: $e');
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error during extraction: $e'),
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      throw e;
     }
   }
 
@@ -1955,14 +1929,9 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        if (_selectedDriverFile != null && !(_selectedDriverType == 'turnip' && _useBuiltInTurnip))
-          ElevatedButton(
-            onPressed: _extractDriver,
-            child: const Text('Extract Driver'),
-          ),
         ElevatedButton(
-          onPressed: _saveSettings,
-          child: const Text('Save Settings'),
+          onPressed: _saveAndExtract,
+          child: const Text('Save & Apply'),
         ),
       ],
     );
@@ -1980,32 +1949,81 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
+            // Horizontal radio buttons
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text('Built-in Turnip'),
-                    subtitle: const Text('Use bundled freedreno driver'),
-                    value: true,
-                    groupValue: _useBuiltInTurnip,
-                    onChanged: (value) {
-                      setState(() {
-                        _useBuiltInTurnip = value ?? true;
-                      });
-                    },
+                  child: Row(
+                    children: [
+                      Radio<bool>(
+                        value: true,
+                        groupValue: _useBuiltInTurnip,
+                        onChanged: (value) {
+                          setState(() {
+                            _useBuiltInTurnip = value ?? true;
+                          });
+                        },
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Built-in Turnip',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              'Use bundled driver',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text('Custom Driver'),
-                    subtitle: const Text('Extract from drivers folder'),
-                    value: false,
-                    groupValue: _useBuiltInTurnip,
-                    onChanged: (value) {
-                      setState(() {
-                        _useBuiltInTurnip = value ?? false;
-                      });
-                    },
+                  child: Row(
+                    children: [
+                      Radio<bool>(
+                        value: false,
+                        groupValue: _useBuiltInTurnip,
+                        onChanged: (value) {
+                          setState(() {
+                            _useBuiltInTurnip = value ?? false;
+                          });
+                        },
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Custom Driver',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: !_useBuiltInTurnip ? Colors.blue : Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              'Extract from drivers folder',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: !_useBuiltInTurnip ? Colors.blue : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
