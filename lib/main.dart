@@ -948,167 +948,182 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     Util.termWrite("echo '================================'");
   }
 
-  void _showDynarecDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => _buildDynarecDialog(),
-    );
-  }
+void _showDynarecDialog() {
+  showDialog(
+    context: context,
+    builder: (context) {
+      // Create a local copy of dynarec variables with current values
+      final localVariables = _dynarecVariables.map((variable) {
+        final name = variable['name'] as String;
+        final defaultValue = variable['defaultValue'] as String;
+        final savedValue = G.prefs.getString('dynarec_$name') ?? defaultValue;
+        return {
+          'name': name,
+          'values': variable['values'],
+          'defaultValue': defaultValue,
+          'toggleSwitch': variable['toggleSwitch'] ?? false,
+          'currentValue': savedValue,
+        };
+      }).toList();
 
-  Widget _buildDynarecDialog() {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        // Load saved values or defaults
-        for (final variable in _dynarecVariables) {
-          final name = variable['name'] as String;
-          final defaultValue = variable['defaultValue'] as String;
-          final savedValue = G.prefs.getString('dynarec_$name') ?? defaultValue;
-          variable['currentValue'] = savedValue;
-        }
-        
-        return AlertDialog(
-          title: const Text('Box64 Dynarec Settings'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Preset dropdown
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Preset',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                          const SizedBox(height: 8),
-                          DropdownButton<String>(
-                            value: 'Custom',
-                            isExpanded: true,
-                            items: [
-                              const DropdownMenuItem<String>(
-                                value: 'Custom',
-                                child: Text('Custom'),
-                              ),
-                              ..._box64Presets.keys.map((presetName) {
-                                return DropdownMenuItem<String>(
-                                  value: presetName,
-                                  child: Text(presetName),
-                                );
-                              }).toList(),
-                            ],
-                            onChanged: (String? newValue) {
-                              if (newValue != null && newValue != 'Custom') {
-                                final preset = _box64Presets[newValue]!;
-                                
-                                setState(() {
-                                  for (final variable in _dynarecVariables) {
-                                    final name = variable['name'] as String;
-                                    if (preset.containsKey(name)) {
-                                      variable['currentValue'] = preset[name]!;
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Box64 Dynarec Settings'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Preset dropdown
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Preset',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButton<String>(
+                              value: 'Custom',
+                              isExpanded: true,
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  value: 'Custom',
+                                  child: Text('Custom'),
+                                ),
+                                ..._box64Presets.keys.map((presetName) {
+                                  return DropdownMenuItem<String>(
+                                    value: presetName,
+                                    child: Text(presetName),
+                                  );
+                                }).toList(),
+                              ],
+                              onChanged: (String? newValue) {
+                                if (newValue != null && newValue != 'Custom') {
+                                  final preset = _box64Presets[newValue]!;
+                                  
+                                  setState(() {
+                                    for (final variable in localVariables) {
+                                      final name = variable['name'] as String;
+                                      if (preset.containsKey(name)) {
+                                        variable['currentValue'] = preset[name]!;
+                                      }
                                     }
-                                  }
-                                });
-                              }
-                            },
-                          ),
-                        ],
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                    
+                    // Dynarec variables
+                    ...localVariables.map((variable) {
+                      return _buildDynarecVariableWidget(variable, setState, localVariables);
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // Save all dynarec settings
+                  for (final variable in localVariables) {
+                    final name = variable['name'] as String;
+                    final currentValue = variable['currentValue'];
+                    await G.prefs.setString('dynarec_$name', currentValue);
+                  }
                   
-                  // Dynarec variables
-                  ..._dynarecVariables.map((variable) {
-                    return _buildDynarecVariableWidget(variable, setState);
-                  }).toList(),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                // Save all dynarec settings
-                for (final variable in _dynarecVariables) {
-                  final name = variable['name'] as String;
-                  final currentValue = variable['currentValue'];
-                  await G.prefs.setString('dynarec_$name', currentValue);
-                }
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Dynarec settings saved'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDynarecVariableWidget(Map<String, dynamic> variable, StateSetter setState) {
-    final name = variable['name'] as String;
-    final values = variable['values'] as List<String>;
-    final defaultValue = variable['defaultValue'] as String;
-    final isToggle = variable['toggleSwitch'] == true;
-    final currentValue = variable['currentValue'] ?? defaultValue;
-    
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            if (isToggle)
-              SwitchListTile(
-                title: Text('Enabled (${currentValue == "1" ? "ON" : "OFF"})'),
-                value: currentValue == "1",
-                onChanged: (value) {
-                  setState(() {
-                    variable['currentValue'] = value ? "1" : "0";
-                  });
-                },
-              )
-            else
-              DropdownButton<String>(
-                value: currentValue,
-                isExpanded: true,
-                items: values.map((value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
+                  // Also update the main list
+                  for (final localVar in localVariables) {
+                    final index = _dynarecVariables.indexWhere((v) => v['name'] == localVar['name']);
+                    if (index != -1) {
+                      _dynarecVariables[index]['currentValue'] = localVar['currentValue'];
+                    }
+                  }
+                  
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Dynarec settings saved'),
+                      duration: const Duration(seconds: 2),
+                    ),
                   );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    variable['currentValue'] = newValue ?? defaultValue;
-                  });
                 },
+                child: const Text('Save'),
               ),
-          ],
-        ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+
+  Widget _buildDynarecVariableWidget(Map<String, dynamic> variable, StateSetter setState, List<Map<String, dynamic>> localVariables) {
+  final name = variable['name'] as String;
+  final values = variable['values'] as List<String>;
+  final isToggle = variable['toggleSwitch'] == true;
+  final currentValue = variable['currentValue'] as String;
+  
+  return Card(
+    margin: const EdgeInsets.symmetric(vertical: 4),
+    child: Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          if (isToggle)
+            SwitchListTile(
+              title: Text('Enabled (${currentValue == "1" ? "ON" : "OFF"})'),
+              value: currentValue == "1",
+              onChanged: (value) {
+                setState(() {
+                  variable['currentValue'] = value ? "1" : "0";
+                });
+              },
+            )
+          else
+            DropdownButton<String>(
+              value: currentValue,
+              isExpanded: true,
+              items: values.map((value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    variable['currentValue'] = newValue;
+                  });
+                }
+              },
+            ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _addCustomVariable() {
     showDialog(
