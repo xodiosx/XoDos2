@@ -966,8 +966,38 @@ void _showDynarecDialog() {
         };
       }).toList();
 
+      String selectedPreset = 'Custom';
+
       return StatefulBuilder(
         builder: (context, setState) {
+          // Function to check if current values match any preset
+          void _updatePresetSelection() {
+            // Check if current values match any preset
+            for (final presetName in _box64Presets.keys) {
+              final preset = _box64Presets[presetName]!;
+              bool matches = true;
+              
+              for (final variable in localVariables) {
+                final name = variable['name'] as String;
+                final currentValue = variable['currentValue'] as String;
+                
+                if (preset.containsKey(name) && preset[name] != currentValue) {
+                  matches = false;
+                  break;
+                }
+              }
+              
+              if (matches) {
+                selectedPreset = presetName;
+                return;
+              }
+            }
+            selectedPreset = 'Custom';
+          }
+
+          // Initialize preset selection
+          _updatePresetSelection();
+
           return AlertDialog(
             title: const Text('Box64 Dynarec Settings'),
             content: SizedBox(
@@ -990,7 +1020,7 @@ void _showDynarecDialog() {
                             ),
                             const SizedBox(height: 8),
                             DropdownButton<String>(
-                              value: 'Custom',
+                              value: selectedPreset,
                               isExpanded: true,
                               items: [
                                 const DropdownMenuItem<String>(
@@ -1005,14 +1035,18 @@ void _showDynarecDialog() {
                                 }).toList(),
                               ],
                               onChanged: (String? newValue) {
-                                if (newValue != null && newValue != 'Custom') {
-                                  final preset = _box64Presets[newValue]!;
-                                  
+                                if (newValue != null) {
                                   setState(() {
-                                    for (final variable in localVariables) {
-                                      final name = variable['name'] as String;
-                                      if (preset.containsKey(name)) {
-                                        variable['currentValue'] = preset[name]!;
+                                    selectedPreset = newValue;
+                                    
+                                    if (newValue != 'Custom') {
+                                      final preset = _box64Presets[newValue]!;
+                                      
+                                      for (final variable in localVariables) {
+                                        final name = variable['name'] as String;
+                                        if (preset.containsKey(name)) {
+                                          variable['currentValue'] = preset[name]!;
+                                        }
                                       }
                                     }
                                   });
@@ -1026,7 +1060,16 @@ void _showDynarecDialog() {
                     
                     // Dynarec variables
                     ...localVariables.map((variable) {
-                      return _buildDynarecVariableWidget(variable, setState, localVariables);
+                      return _buildDynarecVariableWidget(
+                        variable, 
+                        setState, 
+                        () {
+                          // When any variable changes manually, set preset to Custom
+                          setState(() {
+                            selectedPreset = 'Custom';
+                          });
+                        }
+                      );
                     }).toList(),
                   ],
                 ),
@@ -1042,7 +1085,7 @@ void _showDynarecDialog() {
                   // Save all dynarec settings
                   for (final variable in localVariables) {
                     final name = variable['name'] as String;
-                    final currentValue = variable['currentValue'];
+                    final currentValue = variable['currentValue'] as String;
                     await G.prefs.setString('dynarec_$name', currentValue);
                   }
                   
@@ -1071,7 +1114,6 @@ void _showDynarecDialog() {
     },
   );
 }
-
 
   Widget _buildDynarecVariableWidget(Map<String, dynamic> variable, StateSetter setState, List<Map<String, dynamic>> localVariables) {
   final name = variable['name'] as String;

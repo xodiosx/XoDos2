@@ -438,9 +438,6 @@ rm /tmp/wps.deb"""},
 
 // DXVK Installer Class
 
-// DXVK Dialog Widget
-
-
 class Util {
 
   static Future<void> copyAsset(String src, String dst) async {
