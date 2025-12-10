@@ -623,6 +623,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
 }
 
 ///env
+
 // Add this after your DxvkDialog class
 class EnvironmentDialog extends StatefulWidget {
   @override
@@ -630,7 +631,7 @@ class EnvironmentDialog extends StatefulWidget {
 }
 
 class _EnvironmentDialogState extends State<EnvironmentDialog> {
-  // Box64 Dynarec variables
+  // Box64 Dynarec variables (updated with new switches)
   final List<Map<String, dynamic>> _dynarecVariables = [
     {"name": "BOX64_DYNAREC_SAFEFLAGS", "values": ["0", "1", "2"], "defaultValue": "2"},
     {"name": "BOX64_DYNAREC_FASTNAN", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "1"},
@@ -642,11 +643,62 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     {"name": "BOX64_DYNAREC_CALLRET", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "1"},
     {"name": "BOX64_DYNAREC_WAIT", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "1"},
     {"name": "BOX64_DYNAREC_NATIVEFLAGS", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "0"},
-    {"name": "BOX64_DYNAREC_WEAKBARRIER", "values": ["0", "1", "2"], "defaultValue": "0"}
+    {"name": "BOX64_DYNAREC_WEAKBARRIER", "values": ["0", "1", "2"], "defaultValue": "0"},
+    // New switches
+    {"name": "BOX64_MMAP32", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "0"},
+    {"name": "BOX64_AVX", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "0"},
+    {"name": "BOX64_UNITYPLAYER", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "0"},
   ];
 
-  // Core checkboxes
-  List<bool> _coreSelections = List.generate(8, (index) => false);
+  // Box64 presets
+  final Map<String, Map<String, String>> _box64Presets = {
+    'Stability': {
+      'BOX64_DYNAREC_SAFEFLAGS': '2',
+      'BOX64_DYNAREC_FASTNAN': '0',
+      'BOX64_DYNAREC_FASTROUND': '0',
+      'BOX64_DYNAREC_X87DOUBLE': '1',
+      'BOX64_DYNAREC_BIGBLOCK': '0',
+      'BOX64_DYNAREC_STRONGMEM': '2',
+      'BOX64_DYNAREC_FORWARD': '128',
+      'BOX64_DYNAREC_CALLRET': '0',
+      'BOX64_DYNAREC_WAIT': '0',
+      'BOX64_AVX': '0',
+      'BOX64_UNITYPLAYER': '1',
+      'BOX64_MMAP32': '0',
+    },
+    'Compatibility': {
+      'BOX64_DYNAREC_SAFEFLAGS': '2',
+      'BOX64_DYNAREC_FASTNAN': '0',
+      'BOX64_DYNAREC_FASTROUND': '0',
+      'BOX64_DYNAREC_X87DOUBLE': '1',
+      'BOX64_DYNAREC_BIGBLOCK': '0',
+      'BOX64_DYNAREC_STRONGMEM': '1',
+      'BOX64_DYNAREC_FORWARD': '128',
+      'BOX64_DYNAREC_CALLRET': '0',
+      'BOX64_DYNAREC_WAIT': '1',
+      'BOX64_AVX': '0',
+      'BOX64_UNITYPLAYER': '1',
+      'BOX64_MMAP32': '0',
+    },
+    'Intermediate': {
+      'BOX64_DYNAREC_SAFEFLAGS': '2',
+      'BOX64_DYNAREC_FASTNAN': '1',
+      'BOX64_DYNAREC_FASTROUND': '0',
+      'BOX64_DYNAREC_X87DOUBLE': '1',
+      'BOX64_DYNAREC_BIGBLOCK': '1',
+      'BOX64_DYNAREC_STRONGMEM': '0',
+      'BOX64_DYNAREC_FORWARD': '128',
+      'BOX64_DYNAREC_CALLRET': '1',
+      'BOX64_DYNAREC_WAIT': '1',
+      'BOX64_AVX': '0',
+      'BOX64_UNITYPLAYER': '0',
+      'BOX64_MMAP32': '1',
+    },
+  };
+
+  // Core checkboxes - will be initialized with actual CPU count
+  List<bool> _coreSelections = [];
+  int _availableCores = 8; // Default, will be updated
   
   // Wine Esync switch
   bool _wineEsyncEnabled = false;
@@ -670,8 +722,12 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     'WINE_ENABLE'
   ];
   
-  // Debug switch
+  // Debug settings
   bool _debugEnabled = false;
+  String _winedebugValue = '-all'; // Default value
+  final List<String> _winedebugOptions = [
+    '-all', 'err', 'warn', 'fixme', 'all', 'trace', 'message', 'heap', 'fps'
+  ];
   
   // Current custom variable being added
   String _newVarName = '';
@@ -680,7 +736,26 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
   @override
   void initState() {
     super.initState();
+    _initializeCores();
     _loadSavedSettings();
+  }
+
+  Future<void> _initializeCores() async {
+    try {
+      // Get available processor count like Winlator does
+      // We'll use Platform.numberOfProcessors for Dart
+      _availableCores = Platform.numberOfProcessors;
+      
+      // Initialize core selections with actual available cores
+      setState(() {
+        _coreSelections = List.generate(_availableCores, (index) => true);
+      });
+    } catch (e) {
+      print('Error getting CPU count: $e');
+      // Fallback to 8 cores if we can't detect
+      _availableCores = 8;
+      _coreSelections = List.generate(8, (index) => true);
+    }
   }
 
   Future<void> _loadSavedSettings() async {
@@ -692,7 +767,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
       } else {
         // Default: all cores selected
         setState(() {
-          _coreSelections = List.generate(8, (index) => true);
+          _coreSelections = List.generate(_availableCores, (index) => true);
         });
       }
       
@@ -701,6 +776,9 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
       
       // Load debug setting
       _debugEnabled = G.prefs.getBool('environment_debug') ?? false;
+      
+      // Load WINEDEBUG value
+      _winedebugValue = G.prefs.getString('environment_winedebug') ?? '-all';
       
       // Load custom variables
       final savedVars = G.prefs.getStringList('environment_custom_vars') ?? [];
@@ -718,18 +796,25 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
   void _parseCoreSelections(String coreString) {
     try {
       // Reset all cores to false
-      _coreSelections = List.generate(8, (index) => false);
+      _coreSelections = List.generate(_availableCores, (index) => false);
       
-      // Parse range like "0-7" or "5-7"
-      if (coreString.contains('-')) {
+      if (coreString.contains(',')) {
+        // Comma-separated list (like "0,1,3")
+        final selectedIndices = coreString.split(',');
+        for (final indexStr in selectedIndices) {
+          final index = int.tryParse(indexStr);
+          if (index != null && index < _availableCores) {
+            _coreSelections[index] = true;
+          }
+        }
+      } else if (coreString.contains('-')) {
+        // Range format (like "0-7")
         final parts = coreString.split('-');
         final start = int.tryParse(parts[0]) ?? 0;
-        final end = int.tryParse(parts[1]) ?? 7;
+        final end = int.tryParse(parts[1]) ?? (_availableCores - 1);
         
-        for (int i = start; i <= end; i++) {
-          if (i < 8) {
-            _coreSelections[i] = true;
-          }
+        for (int i = start; i <= end && i < _availableCores; i++) {
+          _coreSelections[i] = true;
         }
       }
     } catch (e) {
@@ -738,33 +823,20 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
   }
 
   String _getCoreString() {
-    final selectedCores = <int>[];
-    for (int i = 0; i < 8; i++) {
+    // Winlator-style: comma-separated list of selected cores
+    final selectedIndices = <int>[];
+    for (int i = 0; i < _availableCores; i++) {
       if (_coreSelections[i]) {
-        selectedCores.add(i);
+        selectedIndices.add(i);
       }
     }
     
-    if (selectedCores.isEmpty) {
-      return "0-1";
-    } else if (selectedCores.length == 1) {
-      return "${selectedCores[0]}-${selectedCores[0]}";
-    } else {
-      // Find consecutive cores
-      selectedCores.sort();
-      int start = selectedCores.first;
-      int end = selectedCores.first;
-      
-      for (int i = 1; i < selectedCores.length; i++) {
-        if (selectedCores[i] == end + 1) {
-          end = selectedCores[i];
-        } else {
-          break;
-        }
-      }
-      
-      return "$start-$end";
+    if (selectedIndices.isEmpty) {
+      return "0";
     }
+    
+    // Return comma-separated list
+    return selectedIndices.join(',');
   }
 
   Future<void> _saveSettings() async {
@@ -773,10 +845,18 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
       await G.prefs.setString('environment_cores', _getCoreString());
       await G.prefs.setBool('environment_wine_esync', _wineEsyncEnabled);
       await G.prefs.setBool('environment_debug', _debugEnabled);
+      await G.prefs.setString('environment_winedebug', _winedebugValue);
       
       // Save custom variables
       final varStrings = _customVariables.map((varMap) => '${varMap['name']}=${varMap['value']}').toList();
       await G.prefs.setStringList('environment_custom_vars', varStrings);
+      
+      // Save dynarec settings
+      for (final variable in _dynarecVariables) {
+        final name = variable['name'] as String;
+        final currentValue = variable['currentValue'] ?? variable['defaultValue'];
+        await G.prefs.setString('dynarec_$name', currentValue);
+      }
       
       // Apply settings via terminal
       await _applyEnvironmentSettings();
@@ -787,6 +867,8 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
           duration: const Duration(seconds: 2),
         ),
       );
+      Navigator.of(context).pop();
+      
     } catch (e) {
       print('Error saving environment settings: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -844,7 +926,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     if (_debugEnabled) {
       // Debug ON (verbose mode)
       Util.termWrite("echo 'export MESA_NO_ERROR=0' >> /opt/dbg");
-      Util.termWrite("echo 'export WINEDEBUG=all' >> /opt/dbg");
+      Util.termWrite("echo 'export WINEDEBUG=$_winedebugValue' >> /opt/dbg");
       Util.termWrite("echo 'export BOX64_LOG=1' >> /opt/dbg");
       Util.termWrite("echo 'export BOX64_NOBANNER=0' >> /opt/dbg");
       Util.termWrite("echo 'export BOX64_SHOWSEGV=1' >> /opt/dbg");
@@ -853,7 +935,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     } else {
       // Debug OFF (quiet mode)
       Util.termWrite("echo 'export MESA_NO_ERROR=1' >> /opt/dbg");
-      Util.termWrite("echo 'export WINEDEBUG=-all' >> /opt/dbg");
+      Util.termWrite("echo 'export WINEDEBUG=$_winedebugValue' >> /opt/dbg");
       Util.termWrite("echo 'export BOX64_LOG=0' >> /opt/dbg");
       Util.termWrite("echo 'export BOX64_NOBANNER=1' >> /opt/dbg");
       Util.termWrite("echo 'export BOX64_SHOWSEGV=0' >> /opt/dbg");
@@ -876,6 +958,14 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
   Widget _buildDynarecDialog() {
     return StatefulBuilder(
       builder: (context, setState) {
+        // Load saved values or defaults
+        for (final variable in _dynarecVariables) {
+          final name = variable['name'] as String;
+          final defaultValue = variable['defaultValue'] as String;
+          final savedValue = G.prefs.getString('dynarec_$name') ?? defaultValue;
+          variable['currentValue'] = savedValue;
+        }
+        
         return AlertDialog(
           title: const Text('Box64 Dynarec Settings'),
           content: SizedBox(
@@ -883,9 +973,60 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: _dynarecVariables.map((variable) {
-                  return _buildDynarecVariableWidget(variable, setState);
-                }).toList(),
+                children: [
+                  // Preset dropdown
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Preset',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButton<String>(
+                            value: 'Custom',
+                            isExpanded: true,
+                            items: [
+                              const DropdownMenuItem<String>(
+                                value: 'Custom',
+                                child: Text('Custom'),
+                              ),
+                              ..._box64Presets.keys.map((presetName) {
+                                return DropdownMenuItem<String>(
+                                  value: presetName,
+                                  child: Text(presetName),
+                                );
+                              }).toList(),
+                            ],
+                            onChanged: (String? newValue) {
+                              if (newValue != null && newValue != 'Custom') {
+                                final preset = _box64Presets[newValue]!;
+                                
+                                setState(() {
+                                  for (final variable in _dynarecVariables) {
+                                    final name = variable['name'] as String;
+                                    if (preset.containsKey(name)) {
+                                      variable['currentValue'] = preset[name]!;
+                                    }
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  // Dynarec variables
+                  ..._dynarecVariables.map((variable) {
+                    return _buildDynarecVariableWidget(variable, setState);
+                  }).toList(),
+                ],
               ),
             ),
           ),
@@ -899,7 +1040,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
                 // Save all dynarec settings
                 for (final variable in _dynarecVariables) {
                   final name = variable['name'] as String;
-                  final currentValue = variable['currentValue'] ?? variable['defaultValue'];
+                  final currentValue = variable['currentValue'];
                   await G.prefs.setString('dynarec_$name', currentValue);
                 }
                 Navigator.of(context).pop();
@@ -923,9 +1064,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     final values = variable['values'] as List<String>;
     final defaultValue = variable['defaultValue'] as String;
     final isToggle = variable['toggleSwitch'] == true;
-    
-    final savedValue = G.prefs.getString('dynarec_$name') ?? defaultValue;
-    variable['currentValue'] = savedValue;
+    final currentValue = variable['currentValue'] ?? defaultValue;
     
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -941,8 +1080,8 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
             const SizedBox(height: 8),
             if (isToggle)
               SwitchListTile(
-                title: Text('Enabled (${savedValue == "1" ? "ON" : "OFF"})'),
-                value: savedValue == "1",
+                title: Text('Enabled (${currentValue == "1" ? "ON" : "OFF"})'),
+                value: currentValue == "1",
                 onChanged: (value) {
                   setState(() {
                     variable['currentValue'] = value ? "1" : "0";
@@ -951,7 +1090,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
               )
             else
               DropdownButton<String>(
-                value: savedValue,
+                value: currentValue,
                 isExpanded: true,
                 items: values.map((value) {
                   return DropdownMenuItem<String>(
@@ -1112,14 +1251,15 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
+                      Text('Available CPUs: $_availableCores'),
                       Text('Selected: ${_getCoreString()}'),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: List.generate(8, (index) {
+                        children: List.generate(_availableCores, (index) {
                           return FilterChip(
-                            label: Text('Core $index'),
+                            label: Text('CPU$index'),
                             selected: _coreSelections[index],
                             onSelected: (selected) {
                               setState(() {
@@ -1135,7 +1275,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
                           TextButton(
                             onPressed: () {
                               setState(() {
-                                _coreSelections = List.generate(8, (index) => true);
+                                _coreSelections = List.generate(_availableCores, (index) => true);
                               });
                             },
                             child: const Text('Select All'),
@@ -1143,7 +1283,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
                           TextButton(
                             onPressed: () {
                               setState(() {
-                                _coreSelections = List.generate(8, (index) => false);
+                                _coreSelections = List.generate(_availableCores, (index) => false);
                               });
                             },
                             child: const Text('Clear All'),
@@ -1194,17 +1334,53 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
               
               // Debug Section
               Card(
-                child: SwitchListTile(
-                  title: const Text('Debug Mode'),
-                  subtitle: _debugEnabled
-                      ? const Text('Verbose logging enabled')
-                      : const Text('Quiet mode - minimal logging'),
-                  value: _debugEnabled,
-                  onChanged: (value) {
-                    setState(() {
-                      _debugEnabled = value;
-                    });
-                  },
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SwitchListTile(
+                        title: const Text('Debug Mode'),
+                        subtitle: _debugEnabled
+                            ? const Text('Verbose logging enabled')
+                            : const Text('Quiet mode - minimal logging'),
+                        value: _debugEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            _debugEnabled = value;
+                          });
+                        },
+                      ),
+                      if (_debugEnabled) ...[
+                        const SizedBox(height: 12),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'WINEDEBUG Level',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: _winedebugValue,
+                          decoration: const InputDecoration(
+                            labelText: 'WINEDEBUG',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: _winedebugOptions.map((option) {
+                            return DropdownMenuItem<String>(
+                              value: option,
+                              child: Text(option),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _winedebugValue = value ?? '-all';
+                            });
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -1224,11 +1400,6 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     );
   }
 }
-
-// Update your SettingPage to add the Environment button
-// In the SettingPage build method, add this button to the Windows App Support section:
-// Add this button to your existing button list in SettingPage:
-
 
 
 
