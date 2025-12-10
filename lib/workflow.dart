@@ -1048,14 +1048,14 @@ class Workflow {
 
   static Future<void> setupBootstrap() async {
   
-      try {
+   /*   try {
       // Create DXVK directory in internal storage (for container 0)
       String internalDxvkPath = '${G.dataPath}/containers/0/wincomponents/d3d';
       await Directory(internalDxvkPath).create(recursive: true);
       print('Created internal DXVK directory: $internalDxvkPath');
       
       // Also try to create in external storage (for user convenience)
-    /*
+    
       String externalDxvkPath = '/storage/emulated/0/Android/data/com.xodos/files/containers/0/wincomponents/d3d';
       try {
         await Directory(externalDxvkPath).create(recursive: true);
