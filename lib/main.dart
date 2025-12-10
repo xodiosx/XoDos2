@@ -1501,26 +1501,33 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
     _loadDriverFiles();
   }
 
-  Future<void> _loadSavedSettings() async {
-    try {
-      // Load existing graphics settings
-      _virglEnabled = G.prefs.getBool('virgl') ?? false;
-      _turnipEnabled = G.prefs.getBool('turnip') ?? false;
-      _dri3Enabled = G.prefs.getBool('dri3') ?? false;
-      _defaultTurnipOpt = G.prefs.getString('defaultTurnipOpt') ?? 'MESA_LOADER_DRIVER_OVERRIDE=zink';
-      
-      // Load GPU driver specific settings
-      _selectedDriverType = G.prefs.getString('gpu_driver_type') ?? 'virgl';
-      _selectedDriverFile = G.prefs.getString('selected_gpu_driver');
-      _useBuiltInTurnip = G.prefs.getBool('use_builtin_turnip') ?? true;
-      _driEnabled = G.prefs.getBool('gpu_dri_enabled') ?? false;
-      
-      setState(() {});
-    } catch (e) {
-      print('Error loading GPU settings: $e');
+Future<void> _loadSavedSettings() async {
+  try {
+    // Load existing graphics settings
+    _virglEnabled = G.prefs.getBool('virgl') ?? false;
+    _turnipEnabled = G.prefs.getBool('turnip') ?? false;
+    _dri3Enabled = G.prefs.getBool('dri3') ?? false;
+    
+    // Load the default turnip opt, but clean it up if it contains VK_ICD_FILENAMES
+    String savedTurnipOpt = G.prefs.getString('defaultTurnipOpt') ?? 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+    _defaultTurnipOpt = _removeVkIcdFromEnvString(savedTurnipOpt);
+    
+    // If it's empty after cleaning, set a default
+    if (_defaultTurnipOpt.isEmpty) {
+      _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
     }
+    
+    // Load GPU driver specific settings
+    _selectedDriverType = G.prefs.getString('gpu_driver_type') ?? 'virgl';
+    _selectedDriverFile = G.prefs.getString('selected_gpu_driver');
+    _useBuiltInTurnip = G.prefs.getBool('use_builtin_turnip') ?? true;
+    _driEnabled = G.prefs.getBool('gpu_dri_enabled') ?? false;
+    
+    setState(() {});
+  } catch (e) {
+    print('Error loading GPU settings: $e');
   }
-
+}
   Future<void> _saveAndExtract() async {
     try {
       // Save settings first
@@ -1566,6 +1573,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
     }
   }
 
+
   Future<void> _applyGpuSettings() async {
     // Switch to terminal tab
     G.pageIndex.value = 0;
@@ -1589,26 +1597,43 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
   }
 
   Future<void> _applyTurnipSettings() async {
-    if (_useBuiltInTurnip) {
-      // Built-in turnip - use the bundled driver
-      Util.termWrite("echo 'export VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json' >> /opt/drv");
-    } else if (_selectedDriverFile != null) {
-      // Custom turnip driver - use the extracted driver
-      Util.termWrite("echo 'export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json' >> /opt/drv");
+Future<void> _applyTurnipSettings() async {
+  if (_useBuiltInTurnip) {
+    // Built-in turnip - use the bundled driver
+    Util.termWrite("echo 'export VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json' >> /opt/drv");
+  } else if (_selectedDriverFile != null) {
+    // Custom turnip driver - use the extracted driver
+    Util.termWrite("echo 'export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json' >> /opt/drv");
+  }
+  
+  // Set turnip environment if enabled
+  if (_turnipEnabled) {
+    // First, let's clean up the _defaultTurnipOpt to remove any VK_ICD_FILENAMES from it
+    String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
+    
+    if (cleanTurnipOpt.isNotEmpty) {
+      Util.termWrite("echo 'export $cleanTurnipOpt' >> /opt/drv");
     }
     
-    // Set turnip environment if enabled
-    if (_turnipEnabled) {
-      // Use the default turnip opt from settings
-      Util.termWrite("echo 'export $_defaultTurnipOpt' >> /opt/drv");
-      
-      // Add DRI3 debug if DRI3 is disabled
-      if (!_dri3Enabled) {
-        Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> /opt/drv");
-      }
+    // Add DRI3 debug if DRI3 is disabled
+    if (!_dri3Enabled) {
+      Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> /opt/drv");
     }
   }
+}
 
+
+String _removeVkIcdFromEnvString(String envString) {
+  // Remove VK_ICD_FILENAMES variable from the environment string
+  // Split by space to separate environment variables
+  List<String> envVars = envString.split(' ');
+  
+  // Filter out any variable that starts with VK_ICD_FILENAMES
+  envVars.removeWhere((varStr) => varStr.trim().startsWith('VK_ICD_FILENAMES='));
+  
+  // Join back together
+  return envVars.join(' ').trim();
+}
   Future<void> _applyVirglSettings() async {
     if (_virglEnabled) {
       // Start VirGL server with default or custom command
@@ -1630,7 +1655,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
   Future<void> _applyWrapperSettings() async {
     // Wrapper drivers (like wine wrapper)
     if (_selectedDriverFile != null) {
-      Util.termWrite("echo '# Using wrapper driver: $_selectedDriverFile' >> /opt/drv");
+      Util.termWrite("echo '# Using wrapper driver: $_selectedDriverFile' > /opt/drv");
     }
   }
 
@@ -2029,23 +2054,24 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
               ],
             ),
             if (!_useBuiltInTurnip) ...[
-              const SizedBox(height: 8),
-              const Divider(),
-              const SizedBox(height: 8),
-              TextFormField(
-                maxLines: 2,
-                initialValue: _defaultTurnipOpt,
-                decoration: const InputDecoration(
-                  labelText: 'Turnip Environment Variables',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _defaultTurnipOpt = value;
-                  });
-                },
-              ),
-            ],
+  const SizedBox(height: 8),
+  const Divider(),
+  const SizedBox(height: 8),
+  TextFormField(
+    maxLines: 2,
+    initialValue: _defaultTurnipOpt,
+    decoration: const InputDecoration(
+      labelText: 'Turnip Environment Variables (without VK_ICD_FILENAMES)',
+      hintText: 'Example: MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform',
+      border: OutlineInputBorder(),
+    ),
+    onChanged: (value) {
+      setState(() {
+        _defaultTurnipOpt = value;
+      });
+    },
+  ),
+],
           ],
         ),
       ),
