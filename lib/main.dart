@@ -1470,7 +1470,7 @@ Widget _buildDynarecVariableWidget(
 
 //// GPU drivers
 
-// GPU Drivers Dialog - Fixed Version
+// GPU Drivers Dialog - Complete Fixed Version
 class GpuDriversDialog extends StatefulWidget {
   @override
   _GpuDriversDialogState createState() => _GpuDriversDialogState();
@@ -1492,7 +1492,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
   bool _virglEnabled = false;
   bool _turnipEnabled = false;
   bool _dri3Enabled = false;
-  String _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink';
+  String _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
 
   @override
   void initState() {
@@ -1501,33 +1501,46 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
     _loadDriverFiles();
   }
 
-Future<void> _loadSavedSettings() async {
-  try {
-    // Load existing graphics settings
-    _virglEnabled = G.prefs.getBool('virgl') ?? false;
-    _turnipEnabled = G.prefs.getBool('turnip') ?? false;
-    _dri3Enabled = G.prefs.getBool('dri3') ?? false;
-    
-    // Load the default turnip opt, but clean it up if it contains VK_ICD_FILENAMES
-    String savedTurnipOpt = G.prefs.getString('defaultTurnipOpt') ?? 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
-    _defaultTurnipOpt = _removeVkIcdFromEnvString(savedTurnipOpt);
-    
-    // If it's empty after cleaning, set a default
-    if (_defaultTurnipOpt.isEmpty) {
-      _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+  Future<void> _loadSavedSettings() async {
+    try {
+      // Load existing graphics settings
+      _virglEnabled = G.prefs.getBool('virgl') ?? false;
+      _turnipEnabled = G.prefs.getBool('turnip') ?? false;
+      _dri3Enabled = G.prefs.getBool('dri3') ?? false;
+      
+      // Load the default turnip opt
+      String savedTurnipOpt = G.prefs.getString('defaultTurnipOpt') ?? 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+      _defaultTurnipOpt = _removeVkIcdFromEnvString(savedTurnipOpt);
+      
+      // If it's empty after cleaning, set a default
+      if (_defaultTurnipOpt.isEmpty) {
+        _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+      }
+      
+      // Load GPU driver specific settings
+      _selectedDriverType = G.prefs.getString('gpu_driver_type') ?? 'virgl';
+      _selectedDriverFile = G.prefs.getString('selected_gpu_driver');
+      _useBuiltInTurnip = G.prefs.getBool('use_builtin_turnip') ?? true;
+      _driEnabled = G.prefs.getBool('gpu_dri_enabled') ?? false;
+      
+      setState(() {});
+    } catch (e) {
+      print('Error loading GPU settings: $e');
     }
-    
-    // Load GPU driver specific settings
-    _selectedDriverType = G.prefs.getString('gpu_driver_type') ?? 'virgl';
-    _selectedDriverFile = G.prefs.getString('selected_gpu_driver');
-    _useBuiltInTurnip = G.prefs.getBool('use_builtin_turnip') ?? true;
-    _driEnabled = G.prefs.getBool('gpu_dri_enabled') ?? false;
-    
-    setState(() {});
-  } catch (e) {
-    print('Error loading GPU settings: $e');
   }
-}
+
+  String _removeVkIcdFromEnvString(String envString) {
+    // Remove VK_ICD_FILENAMES variable from the environment string
+    // Split by space to separate environment variables
+    List<String> envVars = envString.split(' ');
+    
+    // Filter out any variable that starts with VK_ICD_FILENAMES
+    envVars.removeWhere((varStr) => varStr.trim().startsWith('VK_ICD_FILENAMES='));
+    
+    // Join back together
+    return envVars.join(' ').trim();
+  }
+
   Future<void> _saveAndExtract() async {
     try {
       // Save settings first
@@ -1542,7 +1555,13 @@ Future<void> _loadSavedSettings() async {
       await G.prefs.setBool('virgl', _virglEnabled);
       await G.prefs.setBool('turnip', _turnipEnabled);
       await G.prefs.setBool('dri3', _dri3Enabled);
-      await G.prefs.setString('defaultTurnipOpt', _defaultTurnipOpt);
+      
+      // Clean and save the turnip opt
+      String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
+      if (cleanTurnipOpt.isEmpty) {
+        cleanTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+      }
+      await G.prefs.setString('defaultTurnipOpt', cleanTurnipOpt);
       
       // Extract driver if needed (custom driver selected)
       if (!(_selectedDriverType == 'turnip' && _useBuiltInTurnip) && 
@@ -1573,7 +1592,6 @@ Future<void> _loadSavedSettings() async {
     }
   }
 
-
   Future<void> _applyGpuSettings() async {
     // Switch to terminal tab
     G.pageIndex.value = 0;
@@ -1597,43 +1615,30 @@ Future<void> _loadSavedSettings() async {
   }
 
   Future<void> _applyTurnipSettings() async {
-Future<void> _applyTurnipSettings() async {
-  if (_useBuiltInTurnip) {
-    // Built-in turnip - use the bundled driver
-    Util.termWrite("echo 'export VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json' >> /opt/drv");
-  } else if (_selectedDriverFile != null) {
-    // Custom turnip driver - use the extracted driver
-    Util.termWrite("echo 'export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json' >> /opt/drv");
-  }
-  
-  // Set turnip environment if enabled
-  if (_turnipEnabled) {
-    // First, let's clean up the _defaultTurnipOpt to remove any VK_ICD_FILENAMES from it
-    String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
-    
-    if (cleanTurnipOpt.isNotEmpty) {
-      Util.termWrite("echo 'export $cleanTurnipOpt' >> /opt/drv");
+    if (_useBuiltInTurnip) {
+      // Built-in turnip - use the bundled driver
+      Util.termWrite("echo 'export VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json' >> /opt/drv");
+    } else if (_selectedDriverFile != null) {
+      // Custom turnip driver - use the extracted driver
+      Util.termWrite("echo 'export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json' >> /opt/drv");
     }
     
-    // Add DRI3 debug if DRI3 is disabled
-    if (!_dri3Enabled) {
-      Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> /opt/drv");
+    // Set turnip environment if enabled
+    if (_turnipEnabled) {
+      // Clean the turnip opt to remove any VK_ICD_FILENAMES
+      String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
+      
+      if (cleanTurnipOpt.isNotEmpty) {
+        Util.termWrite("echo 'export $cleanTurnipOpt' >> /opt/drv");
+      }
+      
+      // Add DRI3 debug if DRI3 is disabled
+      if (!_dri3Enabled) {
+        Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> /opt/drv");
+      }
     }
   }
-}
 
-
-String _removeVkIcdFromEnvString(String envString) {
-  // Remove VK_ICD_FILENAMES variable from the environment string
-  // Split by space to separate environment variables
-  List<String> envVars = envString.split(' ');
-  
-  // Filter out any variable that starts with VK_ICD_FILENAMES
-  envVars.removeWhere((varStr) => varStr.trim().startsWith('VK_ICD_FILENAMES='));
-  
-  // Join back together
-  return envVars.join(' ').trim();
-}
   Future<void> _applyVirglSettings() async {
     if (_virglEnabled) {
       // Start VirGL server with default or custom command
@@ -1641,9 +1646,6 @@ String _removeVkIcdFromEnvString(String envString) {
       final virglEnv = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
       
       Util.termWrite("echo 'export $virglEnv' >> /opt/drv");
-      
-      // Start VirGL server
-      Util.termWrite("echo '# Starting VirGL server: $virglCommand' >> /opt/drv");
       
       // If we have a custom virgl driver file, we might need to set additional env vars
       if (_selectedDriverFile != null) {
@@ -1655,7 +1657,7 @@ String _removeVkIcdFromEnvString(String envString) {
   Future<void> _applyWrapperSettings() async {
     // Wrapper drivers (like wine wrapper)
     if (_selectedDriverFile != null) {
-      Util.termWrite("echo '# Using wrapper driver: $_selectedDriverFile' > /opt/drv");
+      Util.termWrite("echo '# Using wrapper driver: $_selectedDriverFile' >> /opt/drv");
     }
   }
 
@@ -1683,7 +1685,7 @@ String _removeVkIcdFromEnvString(String envString) {
       Util.termWrite("echo '================================'");
       await Future.delayed(const Duration(milliseconds: 50));
       
-      Util.termWrite("echo 'Extracting: $_selectedDriverFile'");
+      Util.termWrite("echo 'Extracting GPU driver: $_selectedDriverFile'");
       await Future.delayed(const Duration(milliseconds: 50));
       
       Util.termWrite("echo '================================'");
@@ -1716,7 +1718,13 @@ String _removeVkIcdFromEnvString(String envString) {
       
     } catch (e) {
       print('Error in _extractDriver: $e');
-      throw e;
+      // Show error but don't rethrow - let the dialog close
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error extracting driver: $e'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -1979,99 +1987,139 @@ String _removeVkIcdFromEnvString(String envString) {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: Row(
-                    children: [
-                      Radio<bool>(
-                        value: true,
-                        groupValue: _useBuiltInTurnip,
-                        onChanged: (value) {
-                          setState(() {
-                            _useBuiltInTurnip = value ?? true;
-                          });
-                        },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _useBuiltInTurnip ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
+                        width: 1,
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _useBuiltInTurnip = true;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
                           children: [
-                            Text(
-                              'Built-in Turnip',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
-                              ),
+                            Radio<bool>(
+                              value: true,
+                              groupValue: _useBuiltInTurnip,
+                              onChanged: (value) {
+                                setState(() {
+                                  _useBuiltInTurnip = value ?? true;
+                                });
+                              },
                             ),
-                            Text(
-                              'Use bundled driver',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Built-in Turnip',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Use bundled driver',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Row(
-                    children: [
-                      Radio<bool>(
-                        value: false,
-                        groupValue: _useBuiltInTurnip,
-                        onChanged: (value) {
-                          setState(() {
-                            _useBuiltInTurnip = value ?? false;
-                          });
-                        },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: !_useBuiltInTurnip ? Colors.purple.withOpacity(0.1) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: !_useBuiltInTurnip ? Colors.purple : Colors.grey,
+                        width: 1,
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _useBuiltInTurnip = false;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
                           children: [
-                            Text(
-                              'Custom Driver',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: !_useBuiltInTurnip ? Colors.blue : Colors.grey,
-                              ),
+                            Radio<bool>(
+                              value: false,
+                              groupValue: _useBuiltInTurnip,
+                              onChanged: (value) {
+                                setState(() {
+                                  _useBuiltInTurnip = value ?? false;
+                                });
+                              },
                             ),
-                            Text(
-                              'Extract from drivers folder',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: !_useBuiltInTurnip ? Colors.blue : Colors.grey,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Custom Driver',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: !_useBuiltInTurnip ? Colors.purple : Colors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Extract from drivers folder',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: !_useBuiltInTurnip ? Colors.purple : Colors.grey,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
             if (!_useBuiltInTurnip) ...[
-  const SizedBox(height: 8),
-  const Divider(),
-  const SizedBox(height: 8),
-  TextFormField(
-    maxLines: 2,
-    initialValue: _defaultTurnipOpt,
-    decoration: const InputDecoration(
-      labelText: 'Turnip Environment Variables (without VK_ICD_FILENAMES)',
-      hintText: 'Example: MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform',
-      border: OutlineInputBorder(),
-    ),
-    onChanged: (value) {
-      setState(() {
-        _defaultTurnipOpt = value;
-      });
-    },
-  ),
-],
+              const SizedBox(height: 8),
+              const Divider(),
+              const SizedBox(height: 8),
+              TextFormField(
+                maxLines: 2,
+                initialValue: _defaultTurnipOpt,
+                decoration: const InputDecoration(
+                  labelText: 'Turnip Environment Variables (without VK_ICD_FILENAMES)',
+                  hintText: 'Example: MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _defaultTurnipOpt = value;
+                  });
+                },
+              ),
+            ],
           ],
         ),
       ),
