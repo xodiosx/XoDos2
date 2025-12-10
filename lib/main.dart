@@ -124,9 +124,8 @@ class AppColors {
   static const Color pressedColor = Color(0xFF3A3A3A);
 }
 
-// Add this DxvkDialog class after AppColors
-// DxvkDialog class
-// Fixed DxvkDialog class
+// Add this DxvkDialog class
+// DxvkDialog class with HUD settings to /opt/hud and automatic vkd3d/d8vk extraction
 class DxvkDialog extends StatefulWidget {
   @override
   _DxvkDialogState createState() => _DxvkDialogState();
@@ -163,6 +162,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
       // Load saved DXVK selection
       _savedSelectedDxvk = G.prefs.getString('selected_dxvk');
       
+      // Set current states from saved values
       setState(() {
         _currentMangohudEnabled = _savedMangohudEnabled;
         _currentDxvkHudEnabled = _savedDxvkHudEnabled;
@@ -189,64 +189,49 @@ class _DxvkDialogState extends State<DxvkDialog> {
     return _selectedDxvk != null && _selectedDxvk != _savedSelectedDxvk;
   }
 
-  Future<void> _sendHudCommands() async {
-    // Only send commands if HUD settings have changed
-    if (!_hasHudChanged) return;
-    
+  Future<void> _writeHudSettings() async {
     // Switch to terminal tab
     G.pageIndex.value = 0;
     
     // Wait a moment for tab switch
     await Future.delayed(const Duration(milliseconds: 300));
     
-    // Send HUD commands
+    // Clear the hud file first
+    Util.termWrite("echo '' > /opt/hud");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Write HUD settings to /opt/hud
     Util.termWrite("echo '================================'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    // Apply MANGOHUD commands
+    // Apply MANGOHUD settings
     if (_currentMangohudEnabled) {
-      Util.termWrite("echo 'Enabling MANGOHUD...'");
+      Util.termWrite("echo 'export MANGOHUD=1' >> /opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export MANGOHUD=0/export MANGOHUD=1/' /bin/runh >/dev/null 2>&1");
+      Util.termWrite("echo 'export MANGOHUD_DLSYM=1' >> /opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export MANGOHUD_DLSYM=0/export MANGOHUD_DLSYM=1/' /bin/runh >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export MANGOHUD=0/export MANGOHUD=1/' /bin/run >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export MANGOHUD_DLSYM=0/export MANGOHUD_DLSYM=1/' /bin/run >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo 'MANGOHUD enabled.'");
+      Util.termWrite("echo '# MANGOHUD enabled' >> /opt/hud");
     } else {
-      Util.termWrite("echo 'Disabling MANGOHUD...'");
+      Util.termWrite("echo 'export MANGOHUD=0' >> /opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export MANGOHUD=1/export MANGOHUD=0/' /bin/runh >/dev/null 2>&1");
+      Util.termWrite("echo 'export MANGOHUD_DLSYM=0' >> /opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export MANGOHUD_DLSYM=1/export MANGOHUD_DLSYM=0/' /bin/runh >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export MANGOHUD=1/export MANGOHUD=0/' /bin/run >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export MANGOHUD_DLSYM=1/export MANGOHUD_DLSYM=0/' /bin/run >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo 'MANGOHUD disabled.'");
+      Util.termWrite("echo '# MANGOHUD disabled' >> /opt/hud");
     }
     
-    // Apply DXVK_HUD commands
+    // Apply DXVK_HUD settings
     if (_currentDxvkHudEnabled) {
-      Util.termWrite("sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/runh >/dev/null 2>&1");
+      Util.termWrite("echo 'export DXVK_HUD=fps,version,devinfo' >> /opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export DXVK_HUD=0/export DXVK_HUD=fps,version,devinfo/' /bin/run >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo 'DXVK HUD enabled.'");
+      Util.termWrite("echo '# DXVK HUD enabled' >> /opt/hud");
     } else {
-      Util.termWrite("echo 'Disabling DXVK HUD...'");
+      Util.termWrite("echo 'export DXVK_HUD=0' >> /opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export DXVK_HUD=fps,version,devinfo/export DXVK_HUD=0/' /bin/runh >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("sed -i 's/export DXVK_HUD=fps,version,devinfo/export DXVK_HUD=0/' /bin/run >/dev/null 2>&1");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo 'DXVK HUD disabled.'");
+      Util.termWrite("echo '# DXVK HUD disabled' >> /opt/hud");
     }
     
+    Util.termWrite("echo 'HUD settings saved to /opt/hud'");
+    await Future.delayed(const Duration(milliseconds: 50));
     Util.termWrite("echo '================================'");
   }
 
@@ -276,11 +261,16 @@ class _DxvkDialogState extends State<DxvkDialog> {
         return;
       }
       
-      // First, close the dialog
-      Navigator.of(context).pop();
-      
-      // Save preferences
+      // First, save preferences
       await _savePreferences();
+      
+      // Write HUD settings if changed
+      if (_hasHudChanged) {
+        await _writeHudSettings();
+      }
+      
+      // Close dialog
+      Navigator.of(context).pop();
       
       // Switch to terminal tab
       G.pageIndex.value = 0;
@@ -288,64 +278,8 @@ class _DxvkDialogState extends State<DxvkDialog> {
       // Wait a moment for tab switch
       await Future.delayed(const Duration(milliseconds: 300));
       
-      // Send echo command first (same approach as other commands)
-      Util.termWrite("echo '================================'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      // Only extract if DXVK selection changed
-      if (_hasDxvkChanged) {
-        Util.termWrite("echo 'Extracting: $_selectedDxvk'");
-        await Future.delayed(const Duration(milliseconds: 50));
-        
-        Util.termWrite("echo '================================'");
-        await Future.delayed(const Duration(milliseconds: 50));
-        
-        // Create target directory if it doesn't exist
-        Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
-        await Future.delayed(const Duration(milliseconds: 50));
-        
-        // Check file type and extract accordingly (using relative path from container root)
-        // Since the file is in /wincomponents/d3d/ directory in the container
-        String containerPath = "/wincomponents/d3d/$_selectedDxvk";
-        
-        if (_selectedDxvk!.endsWith('.zip')) {
-          Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
-        } else if (_selectedDxvk!.endsWith('.7z')) {
-          Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
-        } else {
-          // Assume it's a tar archive (most common for DXVK)
-          Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
-        }
-        
-        await Future.delayed(const Duration(milliseconds: 50));
-        
-        // Add completion message
-        Util.termWrite("echo '================================'");
-        await Future.delayed(const Duration(milliseconds: 50));
-        
-        Util.termWrite("echo 'DXVK installation complete!'");
-        await Future.delayed(const Duration(milliseconds: 50));
-        
-        Util.termWrite("echo '================================'");
-        
-        // Show completion snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$_selectedDxvk extraction started successfully!'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      } else {
-        Util.termWrite("echo 'DXVK already installed: $_selectedDxvk'");
-        await Future.delayed(const Duration(milliseconds: 50));
-        Util.termWrite("echo '================================'");
-      }
-      
-      // Wait a bit, then send HUD commands if changed
-      await Future.delayed(const Duration(seconds: 1));
-      if (_hasHudChanged) {
-        await _sendHudCommands();
-      }
+      // Extract DXVK and related files
+      await _extractDxvkAndRelated();
       
     } catch (e) {
       print('Error in _extractDxvk: $e');
@@ -363,27 +297,98 @@ class _DxvkDialogState extends State<DxvkDialog> {
     }
   }
 
+  Future<void> _extractDxvkAndRelated() async {
+    // Check if we need to extract DXVK
+    if (_hasDxvkChanged && _selectedDxvk != null) {
+      await _extractSingleFile(_selectedDxvk!, 'DXVK');
+      
+      // Check and extract vkd3d if available (any file with 'vkd3d' in the name)
+      final vkd3dFiles = await _findRelatedFiles('vkd3d');
+      for (final vkd3dFile in vkd3dFiles) {
+        await _extractSingleFile(vkd3dFile, 'VKD3D');
+      }
+      
+      // Check and extract d8vk if available (any file with 'd8vk' in the name)
+      final d8vkFiles = await _findRelatedFiles('d8vk');
+      for (final d8vkFile in d8vkFiles) {
+        await _extractSingleFile(d8vkFile, 'D8VK');
+      }
+    } else {
+      Util.termWrite("echo 'DXVK already installed: $_selectedDxvk'");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("echo '================================'");
+    }
+  }
+
+  Future<void> _extractSingleFile(String fileName, String fileType) async {
+    Util.termWrite("echo '================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Extracting $fileType: $fileName'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Create target directory if it doesn't exist
+    Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Extract based on file type
+    String containerPath = "/wincomponents/d3d/$fileName";
+    
+    if (fileName.endsWith('.zip')) {
+      Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
+    } else if (fileName.endsWith('.7z')) {
+      Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
+    } else {
+      // Assume it's a tar archive (most common for DXVK)
+      Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
+    }
+    
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo '$fileType extraction complete!'");
+    await Future.delayed(const Duration(milliseconds: 50));
+  }
+
+  Future<List<String>> _findRelatedFiles(String pattern) async {
+    if (_dxvkDirectory == null) return [];
+    
+    try {
+      final dir = Directory(_dxvkDirectory!);
+      final files = await dir.list().toList();
+      
+      return files
+          .where((file) => file is File)
+          .map((file) => file.path.split('/').last)
+          .where((fileName) => fileName.toLowerCase().contains(pattern.toLowerCase()))
+          .where((fileName) => RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z)$').hasMatch(fileName))
+          .toList();
+    } catch (e) {
+      print('Error finding related files: $e');
+      return [];
+    }
+  }
+
   Future<void> _cancelDialog() async {
     // Save preferences first
     await _savePreferences();
     
-    // Close dialog
-    Navigator.of(context).pop();
-    
-    // Send HUD commands if changed
+    // Write HUD settings if changed
     if (_hasHudChanged) {
-      await _sendHudCommands();
+      await _writeHudSettings();
       
       // Show confirmation
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('HUD settings saved and applied.'),
+            content: Text('HUD settings saved to /opt/hud'),
             duration: const Duration(seconds: 2),
           ),
         );
       });
     }
+    
+    // Close dialog
+    Navigator.of(context).pop();
   }
 
   Future<void> _loadDxvkFiles() async {
@@ -515,7 +520,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'HUD Settings',
+                            'HUD Settings (Saved to /opt/hud)',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -571,6 +576,33 @@ class _DxvkDialogState extends State<DxvkDialog> {
                     
                     const SizedBox(height: 16),
                     
+                    // Auto-extraction info
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.green, size: 20),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Automatic extraction: DXVK, VKD3D, and D8VK files will be extracted together',
+                              style: TextStyle(
+                                fontSize: isLandscape ? 12 : 14,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
                     // Changes indicator
                     if (_hasHudChanged || _hasDxvkChanged)
                       Container(
@@ -590,7 +622,11 @@ class _DxvkDialogState extends State<DxvkDialog> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Changes detected. Will apply when dialog closes.',
+                                _hasHudChanged && _hasDxvkChanged
+                                    ? 'HUD settings and DXVK will be updated'
+                                    : _hasHudChanged
+                                        ? 'HUD settings will be saved to /opt/hud'
+                                        : 'DXVK will be extracted',
                                 style: TextStyle(
                                   fontSize: isLandscape ? 12 : 14,
                                   color: Colors.blue,
@@ -621,6 +657,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
     );
   }
 }
+/
 
 ///env
 
@@ -891,6 +928,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     Util.termWrite("echo '' > /opt/cores");
     Util.termWrite("echo '' > /opt/env");
     Util.termWrite("echo '' > /opt/dbg");
+    Util.termWrite("echo '' > /opt/hud");
     
     await Future.delayed(const Duration(milliseconds: 100));
     
