@@ -297,11 +297,17 @@ class _DxvkDialogState extends State<DxvkDialog> {
     }
   }
 
-  Future<void> _extractDxvkAndRelated() async {
-    // Check if we need to extract DXVK
-    if (_hasDxvkChanged && _selectedDxvk != null) {
-      await _extractSingleFile(_selectedDxvk!, 'DXVK');
-      
+Future<void> _extractDxvkAndRelated() async {
+  // Check if we need to extract DXVK
+  if (_hasDxvkChanged && _selectedDxvk != null) {
+    // Extract the main DXVK file
+    await _extractSingleFile(_selectedDxvk!, 'DXVK');
+    
+    // Check if the selected file has "dxvk" in its name (case insensitive)
+    bool isDxvkFile = _selectedDxvk!.toLowerCase().contains('dxvk');
+    
+    // Only extract vkd3d and d8vk if the main file is a DXVK file
+    if (isDxvkFile) {
       // Check and extract vkd3d if available (any file with 'vkd3d' in the name)
       final vkd3dFiles = await _findRelatedFiles('vkd3d');
       for (final vkd3dFile in vkd3dFiles) {
@@ -313,12 +319,13 @@ class _DxvkDialogState extends State<DxvkDialog> {
       for (final d8vkFile in d8vkFiles) {
         await _extractSingleFile(d8vkFile, 'D8VK');
       }
-    } else {
-      Util.termWrite("echo 'DXVK already installed: $_selectedDxvk'");
-      await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo '================================'");
     }
+  } else {
+    Util.termWrite("echo 'DXVK already installed: $_selectedDxvk'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    Util.termWrite("echo '================================'");
   }
+}
 
   Future<void> _extractSingleFile(String fileName, String fileType) async {
     Util.termWrite("echo '================================'");
@@ -590,7 +597,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Automatic extraction: DXVK, VKD3D, and D8VK files will be extracted together',
+                              'installing: DXVK, VKD3D, and D8VK files will be Installed together',
                               style: TextStyle(
                                 fontSize: isLandscape ? 12 : 14,
                                 color: Colors.green,
@@ -1579,56 +1586,67 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
     return envVars.join(' ').trim();
   }
 
-  Future<void> _saveAndExtract() async {
-    try {
-      // Save settings first
-      await G.prefs.setString('gpu_driver_type', _selectedDriverType);
-      if (_selectedDriverFile != null) {
-        await G.prefs.setString('selected_gpu_driver', _selectedDriverFile!);
-      }
-      await G.prefs.setBool('use_builtin_turnip', _useBuiltInTurnip);
-      await G.prefs.setBool('gpu_dri_enabled', _driEnabled);
-      
-      // Save existing graphics settings
-      await G.prefs.setBool('virgl', _virglEnabled);
-      await G.prefs.setBool('turnip', _turnipEnabled);
-      await G.prefs.setBool('dri3', _dri3Enabled);
-      
-      // Clean and save the turnip opt
-      String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
-      if (cleanTurnipOpt.isEmpty) {
-        cleanTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
-      }
-      await G.prefs.setString('defaultTurnipOpt', cleanTurnipOpt);
-      
-      // Extract driver if needed (custom driver selected)
-      if (!(_selectedDriverType == 'turnip' && _useBuiltInTurnip) && 
-          _selectedDriverFile != null) {
-        await _extractDriver();
-      } else {
-        // Just apply settings without extraction
-        await _applyGpuSettings();
-      }
-      
-      // Close dialog
-      Navigator.of(context).pop();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('GPU driver settings saved and applied!'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      print('Error saving GPU settings: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error saving settings: $e'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+
+Future<void> _saveAndExtract() async {
+  try {
+    // Save settings first
+    await G.prefs.setString('gpu_driver_type', _selectedDriverType);
+    if (_selectedDriverFile != null) {
+      await G.prefs.setString('selected_gpu_driver', _selectedDriverFile!);
     }
+    await G.prefs.setBool('use_builtin_turnip', _useBuiltInTurnip);
+    await G.prefs.setBool('gpu_dri_enabled', _driEnabled);
+    
+    // Save existing graphics settings
+    await G.prefs.setBool('virgl', _virglEnabled);
+    await G.prefs.setBool('turnip', _turnipEnabled);
+    await G.prefs.setBool('dri3', _dri3Enabled);
+    
+    // Clean and save the turnip opt
+    String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
+    if (cleanTurnipOpt.isEmpty) {
+      cleanTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+    }
+    await G.prefs.setString('defaultTurnipOpt', cleanTurnipOpt);
+    
+    // Switch to terminal tab
+    G.pageIndex.value = 0;
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Extract driver if needed (custom driver selected)
+    if (!(_selectedDriverType == 'turnip' && _useBuiltInTurnip) && 
+        _selectedDriverFile != null) {
+      await _extractDriver();
+    } else {
+      // Just apply settings without extraction
+      await _applyGpuSettings();
+    }
+    
+    // If VirGL is enabled, start the server
+    if (_virglEnabled && _selectedDriverType == 'virgl') {
+      final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+      await _startVirglServer(virglCommand);
+    }
+    
+    // Close dialog
+    Navigator.of(context).pop();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('GPU driver settings saved and applied!'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  } catch (e) {
+    print('Error saving GPU settings: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error saving settings: $e'),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
+}
 
   Future<void> _applyGpuSettings() async {
     // Switch to terminal tab
@@ -1677,20 +1695,73 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
     }
   }
 
-  Future<void> _applyVirglSettings() async {
-    if (_virglEnabled) {
-      // Start VirGL server with default or custom command
-      final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
-      final virglEnv = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
-      
-      Util.termWrite("echo 'export $virglEnv' >> /opt/drv");
-      
-      // If we have a custom virgl driver file, we might need to set additional env vars
-      if (_selectedDriverFile != null) {
-        Util.termWrite("echo '# Custom VirGL driver: $_selectedDriverFile' >> /opt/drv");
-      }
+Future<void> _applyVirglSettings() async {
+  if (_virglEnabled) {
+    // Get VirGL server parameters
+    final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+    final virglEnv = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
+    
+    // Write VirGL environment to /opt/drv
+    Util.termWrite("echo 'export $virglEnv' >> /opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // If we have a custom virgl driver file, we might need to set additional env vars
+    if (_selectedDriverFile != null) {
+      Util.termWrite("echo '# Custom VirGL driver: $_selectedDriverFile' >> /opt/drv");
     }
   }
+}
+
+Future<void> _startVirglServer(String virglCommand) async {
+  // Switch to terminal tab first
+  G.pageIndex.value = 0;
+  await Future.delayed(const Duration(milliseconds: 300));
+  
+  // First, kill any existing virgl_test_server
+  Util.termWrite("pkill -f virgl_test_server");
+  await Future.delayed(const Duration(milliseconds: 100));
+  
+  // Start the VirGL server
+  Util.termWrite("echo '================================'");
+  await Future.delayed(const Duration(milliseconds: 50));
+  
+  Util.termWrite("echo 'Starting VirGL server...'");
+  await Future.delayed(const Duration(milliseconds: 50));
+  
+  // Create the socket directory
+  Util.termWrite("mkdir -p /tmp/.virgl_test");
+  await Future.delayed(const Duration(milliseconds: 50));
+  
+  // Get the correct paths for the virgl_test_server binary
+  // The binary is in the host's data directory, not in the container
+  String dataDir = G.dataPath;
+  String containerDir = "$dataDir/containers/${G.currentContainer}";
+  
+  // Replace $CONTAINER_DIR variable in the command
+  String processedCommand = virglCommand.replaceAll('\$CONTAINER_DIR', containerDir);
+  
+  // Start the VirGL server from the host's binary location
+  Util.termWrite("echo 'Using data directory: $dataDir'");
+  await Future.delayed(const Duration(milliseconds: 50));
+  
+  Util.termWrite("echo 'Container directory: $containerDir'");
+  await Future.delayed(const Duration(milliseconds: 50));
+  
+  // This will be executed on the host, not in the container
+  // We need to use the host's virgl_test_server binary
+  Util.termWrite("$dataDir/bin/virgl_test_server $processedCommand &");
+  
+  await Future.delayed(const Duration(milliseconds: 50));
+  
+  // Check if server started successfully
+  Util.termWrite("sleep 1 && if pgrep -f virgl_test_server > /dev/null; then echo 'VirGL server started successfully'; else echo 'Failed to start VirGL server'; fi");
+  
+  await Future.delayed(const Duration(milliseconds: 50));
+  Util.termWrite("echo '================================'");
+}
+
+
+
 
   Future<void> _applyWrapperSettings() async {
     // Wrapper drivers (like wine wrapper)
@@ -1925,6 +1996,39 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
               
               const SizedBox(height: 16),
               
+              // ADD THIS NEW CARD RIGHT HERE:
+Card(
+  child: ListTile(
+    title: const Text('VirGL Server Status'),
+    subtitle: FutureBuilder<String>(
+      future: _checkVirglServerStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text('Checking...');
+        }
+        return Text(snapshot.data ?? 'Unknown');
+      },
+    ),
+    trailing: IconButton(
+      icon: const Icon(Icons.refresh),
+      onPressed: () {
+        if (_virglEnabled && _selectedDriverType == 'virgl') {
+          final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+          _startVirglServer(virglCommand);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Restarting VirGL server...'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    ),
+  ),
+),
+
+const SizedBox(height: 16),
+                          
               // Driver Settings Section
               if (_selectedDriverType == 'turnip') _buildTurnipSettings(),
               if (_selectedDriverType == 'virgl') _buildVirglSettings(),
