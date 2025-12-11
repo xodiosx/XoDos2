@@ -1997,36 +1997,28 @@ Future<void> _startVirglServer(String virglCommand) async {
               const SizedBox(height: 16),
               
               // ADD THIS NEW CARD RIGHT HERE:
-Card(
-  child: ListTile(
-    title: const Text('VirGL Server Status'),
-    subtitle: FutureBuilder<String>(
-      future: _checkVirglServerStatus(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text('Checking...');
-        }
-        return Text(snapshot.data ?? 'Unknown');
-      },
-    ),
-    trailing: IconButton(
-      icon: const Icon(Icons.refresh),
-      onPressed: () {
-        if (_virglEnabled && _selectedDriverType == 'virgl') {
-          final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
-          _startVirglServer(virglCommand);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Restarting VirGL server...'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      },
+if (_selectedDriverType == 'virgl')
+  Card(
+    child: ListTile(
+      title: const Text('VirGL Server'),
+      subtitle: Text(_virglEnabled ? 'Enabled - Click restart to start server' : 'Disabled - Enable VirGL above'),
+      trailing: IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: () {
+          if (_virglEnabled) {
+            final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+            _startVirglServer(virglCommand);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Restarting VirGL server...'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+      ),
     ),
   ),
-),
-
 const SizedBox(height: 16),
                           
               // Driver Settings Section
@@ -2409,6 +2401,23 @@ const SizedBox(height: 16),
       ),
     );
   }
+  
+
+Future<String> _checkVirglServerStatus() async {
+  try {
+    // Try to check if virgl_test_server is running
+    final result = await Process.run('sh', ['-c', 'pgrep -f virgl_test_server']);
+    final isRunning = result.stdout.toString().trim().isNotEmpty;
+    
+    return isRunning ? 'Running' : 'Not running';
+  } catch (e) {
+    // Fallback to showing the enabled state
+    if (_virglEnabled && _selectedDriverType == 'virgl') {
+      return 'Enabled (status unknown)';
+    }
+    return 'Disabled';
+  }
+}
 }
 
 // Update your Setting
