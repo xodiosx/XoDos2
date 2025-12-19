@@ -18,7 +18,7 @@ class MainApplication : Application() {
         DynamicColors.applyToActivitiesIfAvailable(this)
 
         // Start logcat capture
-        startLogcatCapture()
+        //startLogcatCapture()
     }
 
     override fun attachBaseContext(base: Context?) {
