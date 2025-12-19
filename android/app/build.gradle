@@ -55,7 +55,7 @@ android {
         minSdk 28 // glob() version //proot version //ffmpeg_kit; flutter.minSdkVersion
         targetSdk 28 //https://github.com/termux/termux-app/issues/1072; native; linker; flutter.targetSdkVersion
         versionCode 1
-        versionName "1.0.3"
+        versionName "1.0.4"
 
         buildConfigField "String", "COMMIT", "\"" + ("git rev-parse HEAD\n".execute().getText().trim() ?: (System.getenv('CURRENT_COMMIT') ?: "NO_COMMIT")) + "\""
 
