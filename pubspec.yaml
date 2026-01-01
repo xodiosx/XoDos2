@@ -30,8 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  file_picker: ^8.1.2
   xterm: ^4.0.0
-#  flutter_midi_pro: ^2.0.0
   audioplayers: ^5.2.0
   flutter_pty: ^0.4.2
   path_provider: ^2.1.5
@@ -49,6 +49,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
+#  xterm:
+ #   path: ./xterm
   x11_flutter:
     path: ./x11_flutter
   avnc_flutter:
