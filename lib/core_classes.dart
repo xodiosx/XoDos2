@@ -378,8 +378,7 @@ static VoidCallback? onExtractionComplete;
 }
 
 class Workflow {
-// Add this method to the Workflow class
-static Future<void> showBootSelectionDialog(BuildContext context) async {
+static Future<bool> showBootSelectionDialog(BuildContext context) async {
   final result = await showDialog<int>(
     context: context,
     barrierDismissible: false,
@@ -465,6 +464,7 @@ static Future<void> showBootSelectionDialog(BuildContext context) async {
       break;
     default:
       // If dialog is dismissed, default to Proot desktop
+      result = 2;
       break;
   }
   
@@ -620,10 +620,10 @@ export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/sys
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
-export PATH=\$DATA_DIR/usr/bin:$PATH:/system/bin
+export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=$PREFIX/etc/fonts        
-export FONTCONFIG_FILE=$PREFIX/etc/fonts/fonts.conf 
+export FONTCONFIG_PATH=\$PREFIX/etc/fonts        
+export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
 export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$DATA_DIR/usr/lib
@@ -635,8 +635,8 @@ export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.js
 export TMPDIR=\$DATA_DIR/usr/tmp
 export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 cd 
-export XDG_RUNTIME_DIR=$TMPDIR/runtime
-export XDG_CACHE_HOME=$PREFIX/tmp/.cache
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
+export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
 mkdir -p \$XDG_CACHE_HOME
 
 """);
@@ -650,7 +650,7 @@ mkdir -p \$XDG_CACHE_HOME
     final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
     
     await G.prefs.setStringList("containersInfo", ["""{
-"name":"XoDos Debian",
+"name":"XoDos Terminal",
 "boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
 "vnc":"startnovnc &",
 "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
@@ -942,7 +942,7 @@ static Future<void> workflow() async {
   await initTerminalForCurrent();
   
   // Show boot selection dialog
-  final shouldContinueWithProot = await showBootSelectionDialog(G.homePageStateContext);
+  final bool shouldContinueWithProot = await showBootSelectionDialog(G.homePageStateContext);
   
   // If user selected Proot desktop (option 2), continue with normal workflow
   if (shouldContinueWithProot) {
