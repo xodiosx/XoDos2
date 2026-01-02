@@ -40,59 +40,6 @@ import 'default_values.dart';
 
 class Util {
 
-
-static Map<String, String> getEnvironmentVariables() {
-  // We assume G.dataPath is already set by initData()
-  if (G.dataPath.isEmpty) {
-    // Return default environment if dataPath is not set
-    return Platform.environment;
-  }
-
-  String dataDir = G.dataPath;
-  String prefix = "$dataDir/usr";
-  String home = "$dataDir/home";
-  String tmpdir = "$dataDir/usr/tmp";
-  String xdgRuntimeDir = "$tmpdir/runtime";
-  String xdgCacheHome = "$prefix/tmp/.cache";
-  
-  // Create the directories
-  try {
-    Directory(tmpdir).createSync(recursive: true);
-    Directory(home).createSync(recursive: true);
-    Directory(xdgRuntimeDir).createSync(recursive: true);
-    Directory(xdgCacheHome).createSync(recursive: true);
-  } catch (e) {
-    print("Error creating directories: $e");
-  }
-  
-  // Get current environment
-  Map<String, String> env = Platform.environment;
-  
-  // Get existing values or empty strings
-  String existingLdLibraryPath = env["LD_LIBRARY_PATH"] ?? "";
-  String existingPath = env["PATH"] ?? "";
-  
-  // Set our custom environment variables
-  // Note: No $ signs needed here - we're building the strings directly
-  env["DATA_DIR"] = dataDir;
-  env["LD_LIBRARY_PATH"] = "$dataDir/lib:$prefix/lib:$prefix/libexec/:$existingLdLibraryPath:/system/lib64";
-  env["PATH"] = "$dataDir/bin:$existingPath:$prefix/libexec:$prefix/bin:/system/bin:$prefix/libexec/binutils";
-  env["PREFIX"] = prefix;
-  env["HOME"] = home;
-  env["TMPDIR"] = tmpdir;
-  env["DISPLAY"] = ":4";
-  env["XDG_RUNTIME_DIR"] = "$prefix/tmp/";
-  env["X11_UNIX_PATH"] = "$prefix/tmp/.X11-unix";
-  env["VK_ICD_FILENAMES"] = "$prefix/share/vulkan/icd.d/wrapper_icd.aarch64.json";
-  env["XDG_RUNTIME_DIR"] = xdgRuntimeDir;
-  env["XDG_CACHE_HOME"] = xdgCacheHome;
-  env["FONTCONFIG_PATH"] = "$prefix/etc/fonts";
-  env["FONTCONFIG_FILE"] = "$prefix/etc/fonts/fonts.conf";
-  
-  return env;
-}
-
-
   static Future<void> copyAsset(String src, String dst) async {
     await File(dst).writeAsBytes((await rootBundle.load(src)).buffer.asUint8List());
   }
@@ -358,18 +305,12 @@ class TermPty{
       inputHandler: G.keyboard, 
       maxLines: Util.getGlobal("termMaxLines") as int,
     );
-    
-    // Get environment variables
-    Map<String, String> env = Util.getEnvironmentVariables();
-    
     pty = Pty.start(
       "/system/bin/sh",
       workingDirectory: G.dataPath,
       columns: terminal.viewWidth,
       rows: terminal.viewHeight,
-      environment: env, // Pass environment variables here
     );
-    
     pty.output
       .cast<List<int>>()
       .transform(const Utf8Decoder())
@@ -565,7 +506,6 @@ static Future<bool> showBootSelectionDialog(BuildContext context) async {
     "${G.dataPath}/patch.tar.gz",
     );
     await Util.execute(
-    
 """
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
@@ -675,19 +615,15 @@ done
 
 \$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
-export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
 export FONTCONFIG_PATH=\$PREFIX/etc/fonts        
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
-export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$DATA_DIR/usr/lib
-export PATH=\$PATH:\$DATA_DIR/usr/bin:/system/bin:
 export DISPLAY=:4
 export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
 export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
@@ -795,27 +731,25 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     // Write environment variables at the very beginning
     String envCommands = """
 export DATA_DIR=${G.dataPath}
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
-export PREFIX=\$DATA_DIR/usr
-export HOME=\$DATA_DIR/home
-export TMPDIR=\$DATA_DIR/usr/tmp
-export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
-export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
-mkdir -p \$TMPDIR
-mkdir -p \$HOME
+export LD_LIBRARY_PATH=\\$DATA_DIR/lib:\\$DATA_DIR/usr/lib:\\$DATA_DIR/usr/libexec/:\\$LD_LIBRARY_PATH
+export PATH=\\$DATA_DIR/bin:\\$PATH:\\$DATA_DIR/usr/libexec:\\$DATA_DIR/usr/bin
+export PREFIX=\\$DATA_DIR/usr
+export HOME=\\$DATA_DIR/home
+export TMPDIR=\\$DATA_DIR/usr/tmp
+export FONTCONFIG_PATH=\\$PREFIX/etc/fonts       
+export FONTCONFIG_FILE=\\$PREFIX/etc/fonts/fonts.conf 
+mkdir -p \\$TMPDIR
+mkdir -p \\$HOME
 export DISPLAY=:4
-export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
-export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
-export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
-export TMPDIR=\$DATA_DIR/usr/tmp
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
+export XDG_RUNTIME_DIR=\\$DATA_DIR/usr/tmp/
+export X11_UNIX_PATH=\\$DATA_DIR/usr/tmp/.X11-unix
+
+export TMPDIR=\\$DATA_DIR/usr/tmp
+export XDG_RUNTIME_DIR=\\$TMPDIR/runtime
 cd 
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
-mkdir -p \$XDG_CACHE_HOME
+export XDG_RUNTIME_DIR=\\$TMPDIR/runtime
+export XDG_CACHE_HOME=\\$PREFIX/tmp/.cache
+mkdir -p \\$XDG_CACHE_HOME
 """;
     
     // Write the commands to the terminal
@@ -833,18 +767,12 @@ mkdir -p \$XDG_CACHE_HOME
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/lib
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
-ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
-export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=\$PREFIX/etc/fonts        
-export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf  
-mkdir -p \$TMPDIR
-mkdir -p \$HOME
+
 
 \$DATA_DIR/bin/busybox sed "s/4713/${Util.getGlobal("defaultAudioPort") as int}/g" \$DATA_DIR/bin/pulseaudio.conf > \$DATA_DIR/bin/pulseaudio.conf.tmp
 rm -rf \$DATA_DIR/pulseaudio_tmp/*
@@ -1022,7 +950,35 @@ static Future<void> workflow() async {
   
   // Show boot selection dialog
   final bool shouldContinueWithProot = await showBootSelectionDialog(G.homePageStateContext);
+  // Write environment variables to terminal
+  String envCommands = """
+export DATA_DIR=${G.dataPath}
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:\$DATA_DIR/usr/libexec/binutils
+export PREFIX=\$DATA_DIR/usr
+export HOME=\$DATA_DIR/home
+export TMPDIR=\$DATA_DIR/usr/tmp
+export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
+export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
+export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
+mkdir -p \$TMPDIR
+mkdir -p \$HOME
+export DISPLAY=:4
+export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
+export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
+export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
+export TMPDIR=\$DATA_DIR/usr/tmp
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
+cd 
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
+export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
+mkdir -p \$XDG_CACHE_HOME
+""";
   
+  // Write environment commands to terminal
+  G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert(envCommands));
+
   // If user selected Proot desktop (option 2), continue with normal workflow
   if (shouldContinueWithProot) {
     setupAudio();
