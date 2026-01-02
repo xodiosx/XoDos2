@@ -350,29 +350,6 @@ class G {
 
 static VoidCallback? onExtractionComplete;
   
-  static void handleHardwareKeyRepeat(RawKeyEvent event) {
-  if (event is RawKeyDownEvent && event.repeat) {
-    final term = G.termPtys[G.currentContainer]?.terminal;
-    if (term == null) return;
-
-    final String? char = event.character;
-    if (char != null && char.isNotEmpty) {
-      term.keyInput(
-        TerminalKey.character(
-          char,
-          ctrl: G.keyboard.ctrl,
-          alt: G.keyboard.alt,
-          shift: G.keyboard.shift,
-        ),
-      );
-    }
-  }
-}
-  
-  
-  
-  
-  
   static late final String dataPath;
   static Pty? audioPty;
   static late WebViewController controller;
