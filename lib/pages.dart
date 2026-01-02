@@ -1396,8 +1396,6 @@ class LoadingPage extends StatelessWidget {
 }
 
 // Terminal Page
-
-// Terminal Page (xterm 4.0.0 compatible)
 class TerminalPage extends StatefulWidget {
   const TerminalPage({super.key});
 
@@ -1414,32 +1412,30 @@ class _TerminalPageState extends State<TerminalPage> {
         Expanded(
           child: forceScaleGestureDetector(
             onScaleUpdate: (details) {
-              G.termFontScale.value =
-                  (details.scale * (Util.getGlobal("termFontScale") as double))
-                      .clamp(0.2, 5);
-            },
+              G.termFontScale.value = (details.scale * (Util.getGlobal("termFontScale") as double)).clamp(0.2, 5);
+            }, 
             onScaleEnd: (details) async {
               await G.prefs.setDouble("termFontScale", G.termFontScale.value);
-            },
-            child: ValueListenableBuilder(
-              valueListenable: G.termFontScale,
-              builder: (context, value, child) {
-                return TerminalView(
-                  G.termPtys[G.currentContainer]!.terminal,
-                  controller: G.termPtys[G.currentContainer]!.controller,
-                  textScaler: TextScaler.linear(G.termFontScale.value),
-                  keyboardType: TextInputType.multiline,
-                );
-              },
-            ),
+            }, 
+           child: ValueListenableBuilder(
+  valueListenable: G.termFontScale, 
+  builder: (context, value, child) {
+    return TerminalView(
+      G.termPtys[G.currentContainer]!.terminal, 
+      controller: G.termPtys[G.currentContainer]!.controller,
+      textScaler: TextScaler.linear(G.termFontScale.value), 
+      keyboardType: TextInputType.multiline,
+    );
+  },
+),
           ),
-        ),
+        ), 
         ValueListenableBuilder(
-          valueListenable: G.terminalPageChange,
+          valueListenable: G.terminalPageChange, 
           builder: (context, value, child) {
-            return (Util.getGlobal("isTerminalCommandsEnabled") as bool)
-                ? _buildTermuxStyleControlBar()
-                : const SizedBox.shrink();
+            return (Util.getGlobal("isTerminalCommandsEnabled") as bool) 
+              ? _buildTermuxStyleControlBar()
+              : const SizedBox.shrink();
           },
         ),
       ],
@@ -1455,9 +1451,10 @@ class _TerminalPageState extends State<TerminalPage> {
         children: [
           _buildTopActionButton(
             Icons.play_arrow,
-            'Start Desktop',
+            'Start Desktop,',
             _startGUI,
           ),
+          
           _buildTopActionButton(
             Icons.stop,
             'Exit Desktop',
@@ -1512,8 +1509,7 @@ class _TerminalPageState extends State<TerminalPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Exit 🛑'),
-        content: const Text(
-            'This will stop the current container and exit. Are you sure?'),
+        content: const Text('This will stop the current container and exit. Are you sure?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -1539,43 +1535,48 @@ class _TerminalPageState extends State<TerminalPage> {
     Util.termWrite('pkill -f lxqt');
     Util.termWrite('exit');
     Util.termWrite('exit');
-
+    
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Session stopped. Closing app...'),
+        content: Text(' session stopped. closing app...'),
         duration: Duration(seconds: 3),
       ),
     );
     SystemNavigator.pop();
   }
 
+// In the _copyTerminalText method:
 Future<void> _copyTerminalText() async {
   try {
     final termPty = G.termPtys[G.currentContainer]!;
-
-    // Use the buffer to get all visible text
-    final buffer = termPty.terminal.buffer;
-    final lineCount = buffer.lines.length;
-    final textBuffer = StringBuffer();
-
-    for (int i = 0; i < lineCount; i++) {
-      textBuffer.writeln(buffer.lines[i].toString()); // <-- use toString() instead of .string
-    }
-
-    final text = textBuffer.toString().trim();
-    if (text.isNotEmpty) {
-      await Clipboard.setData(ClipboardData(text: text));
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Text copied to clipboard'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    final selection = termPty.controller.selection;
+    
+    if (selection != null) {
+      final selectedText = termPty.terminal.buffer.getText(selection);
+      
+      if (selectedText.isNotEmpty) {
+        // Use the correct Clipboard API
+        await Clipboard.setData(ClipboardData(text: selectedText));
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selected text copied to clipboard'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No text selected'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No text available to copy'),
+          content: Text('No text selected - please select text by long-pressing and dragging'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -1584,20 +1585,39 @@ Future<void> _copyTerminalText() async {
     print('Copy error: $e');
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Failed to copy text'),
+        content: Text('Failed to copy selected text'),
         duration: Duration(seconds: 2),
       ),
     );
   }
 }
 
-  Future<void> _pasteToTerminal() async {
+// In the _pasteToTerminal method:
+Future<void> _pasteToTerminal() async {
+  try {
+    // Use the correct Clipboard API
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null && data!.text!.isNotEmpty) {
-      Util.termWrite(data.text!);
+    final clipboardText = data?.text;
+    
+    if (clipboardText != null && clipboardText.isNotEmpty) {
+      Util.termWrite(clipboardText);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Clipboard is empty'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to paste from clipboard'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
-
+}
   Widget _buildTermuxStyleControlBar() {
     return Container(
       color: AppColors.surfaceDark,
@@ -1606,7 +1626,9 @@ Future<void> _copyTerminalText() async {
         children: [
           Row(
             children: [
-              Expanded(child: _buildModifierKeys()),
+              Expanded(
+                child: _buildModifierKeys(),
+              ),
               const SizedBox(width: 8),
               _buildCopyPasteButtons(),
             ],
@@ -1621,9 +1643,15 @@ Future<void> _copyTerminalText() async {
   Widget _buildCopyPasteButtons() {
     return Row(
       children: [
-        _buildTermuxKey('COPY', onTap: _copyTerminalText),
+        _buildTermuxKey(
+          'COPY',
+          onTap: _copyTerminalText,
+        ),
         const SizedBox(width: 4),
-        _buildTermuxKey('PASTE', onTap: _pasteToTerminal),
+        _buildTermuxKey(
+          'PASTE', 
+          onTap: _pasteToTerminal,
+        ),
       ],
     );
   }
@@ -1634,15 +1662,21 @@ Future<void> _copyTerminalText() async {
       builder: (context, child) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildTermuxKey('CTRL',
-              isActive: G.keyboard.ctrl,
-              onTap: () => G.keyboard.ctrl = !G.keyboard.ctrl),
-          _buildTermuxKey('ALT',
-              isActive: G.keyboard.alt,
-              onTap: () => G.keyboard.alt = !G.keyboard.alt),
-          _buildTermuxKey('SHIFT',
-              isActive: G.keyboard.shift,
-              onTap: () => G.keyboard.shift = !G.keyboard.shift),
+          _buildTermuxKey(
+            'CTRL',
+            isActive: G.keyboard.ctrl,
+            onTap: () => G.keyboard.ctrl = !G.keyboard.ctrl,
+          ),
+          _buildTermuxKey(
+            'ALT', 
+            isActive: G.keyboard.alt,
+            onTap: () => G.keyboard.alt = !G.keyboard.alt,
+          ),
+          _buildTermuxKey(
+            'SHIFT',
+            isActive: G.keyboard.shift, 
+            onTap: () => G.keyboard.shift = !G.keyboard.shift,
+          ),
         ],
       ),
     );
@@ -1654,33 +1688,38 @@ Future<void> _copyTerminalText() async {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: D.termCommands.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 4),
+        separatorBuilder: (context, index) => const SizedBox(width: 4),
         itemBuilder: (context, index) {
-          final cmd = D.termCommands[index];
-          final key = cmd["key"];
-          return _buildTermuxKey(cmd["name"]! as String, onTap: () {
-            if (key is TerminalKey) {
-              G.termPtys[G.currentContainer]!.terminal.keyInput(key);
-            }
-          });
+          return _buildTermuxKey(
+            D.termCommands[index]["name"]! as String,
+            onTap: () {
+              G.termPtys[G.currentContainer]!.terminal.keyInput(
+                D.termCommands[index]["key"]! as TerminalKey
+              );
+            },
+          );
         },
       ),
     );
   }
 
-  Widget _buildTermuxKey(String label,
-      {bool isActive = false, VoidCallback? onTap}) {
+  Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minWidth: 40, maxWidth: 80, minHeight: 32),
+        constraints: const BoxConstraints(
+          minWidth: 40,
+          maxWidth: 80,
+          minHeight: 32,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isActive ? AppColors.primaryPurple : AppColors.cardDark,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-              color: isActive ? AppColors.primaryPurple : AppColors.divider,
-              width: 1),
+            color: isActive ? AppColors.primaryPurple : AppColors.divider,
+            width: 1,
+          ),
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -1700,6 +1739,9 @@ Future<void> _copyTerminalText() async {
     );
   }
 }
+
+
+
 
 
 
