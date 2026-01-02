@@ -773,7 +773,7 @@ mkdir -p \\$XDG_CACHE_HOME
     // Write the commands to the terminal
     G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert(envCommands));
   }
-}
+
 
 
   static Future<void> setupAudio() async {
