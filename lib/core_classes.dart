@@ -40,6 +40,46 @@ import 'default_values.dart';
 
 class Util {
 
+static Map<String, String> getEnvironmentVariables() {
+  String dataDir = G.dataPath;
+  String prefix = "$dataDir/usr";
+  String home = "$dataDir/home";
+  String tmpdir = "$dataDir/usr/tmp";
+  String xdgRuntimeDir = "$tmpdir/runtime";
+  String xdgCacheHome = "$prefix/tmp/.cache";
+  
+  // Create the directories
+  Directory(tmpdir).createSync(recursive: true);
+  Directory(home).createSync(recursive: true);
+  Directory(xdgRuntimeDir).createSync(recursive: true);
+  Directory(xdgCacheHome).createSync(recursive: true);
+  
+  // Get current environment
+  Map<String, String> env = Platform.environment;
+  
+  // Set our custom environment variables
+  env["DATA_DIR"] = dataDir;
+  env["LD_LIBRARY_PATH"] = "$dataDir/lib:$prefix/lib:$prefix/libexec/:${env["LD_LIBRARY_PATH"] ?? ""}:/system/lib64";
+  env["PATH"] = "$dataDir/bin:${env["PATH"] ?? ""}:$prefix/libexec:$prefix/bin:/system/bin:$prefix/libexec/binutils";
+  env["PREFIX"] = prefix;
+  env["HOME"] = home;
+  env["TMPDIR"] = tmpdir;
+  env["DISPLAY"] = ":4";
+  env["XDG_RUNTIME_DIR"] = "$dataDir/usr/tmp/";
+  env["X11_UNIX_PATH"] = "$dataDir/usr/tmp/.X11-unix";
+  env["VK_ICD_FILENAMES"] = "$dataDir/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json";
+  env["TMPDIR"] = tmpdir;
+  env["XDG_RUNTIME_DIR"] = xdgRuntimeDir;
+  env["XDG_CACHE_HOME"] = xdgCacheHome;
+  env["FONTCONFIG_PATH"] = "$prefix/etc/fonts";
+  env["FONTCONFIG_FILE"] = "$prefix/etc/fonts/fonts.conf";
+  
+  return env;
+}
+
+
+
+
   static Future<void> copyAsset(String src, String dst) async {
     await File(dst).writeAsBytes((await rootBundle.load(src)).buffer.asUint8List());
   }
@@ -294,56 +334,28 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
 }
 
 // A class combining terminal and pty
-class TermPty{
-  late final Terminal terminal;
-  late final Pty pty;
-  late final TerminalController controller;
-
-  TermPty() {
-    controller = TerminalController();
-    terminal = Terminal(
-      inputHandler: G.keyboard, 
-      maxLines: Util.getGlobal("termMaxLines") as int,
-    );
-    pty = Pty.start(
-      "/system/bin/sh",
-      workingDirectory: G.dataPath,
-      columns: terminal.viewWidth,
-      rows: terminal.viewHeight,
-    );
-    pty.output
-      .cast<List<int>>()
-      .transform(const Utf8Decoder())
-      .listen(terminal.write);
-    pty.exitCode.then((code) {
-      terminal.write('the process exited with exit code $code');
-      if (code == 0) {
-        SystemChannels.platform.invokeMethod("SystemNavigator.pop");
-      }
-      //Signal 9 hint
-      if (code == -9) {
-        D.androidChannel.invokeMethod("launchSignal9Page", {});
-      }
-    });
-    terminal.onOutput = (data) {
-      if (!(Util.getGlobal("isTerminalWriteEnabled") as bool)) {
-        return;
-      }
-      // Due to apparent issues with handling carriage returns, handle them separately
-      data.split("").forEach((element) {
-        if (element == "\n" && !G.maybeCtrlJ) {
-          terminal.keyInput(TerminalKey.enter);
-          return;
-        }
-        G.maybeCtrlJ = false;
-        pty.write(const Utf8Encoder().convert(element));
-      });
-    };
-    terminal.onResize = (w, h, pw, ph) {
-      pty.resize(h, w);
-    };
-  }
+static Future<void> setupAudio() async {
+  G.audioPty?.kill();
+  
+  // Get environment variables
+  Map<String, String> env = Util.getEnvironmentVariables();
+  
+  G.audioPty = Pty.start(
+    "/system/bin/sh",
+    environment: env, // Pass environment variables here
+  );
+  
+  G.audioPty!.write(const Utf8Encoder().convert("""
+ln -sf \\$DATA_DIR/containers/0/tmp \\$DATA_DIR/usr/tmp
+\\$DATA_DIR/bin/busybox sed "s/4713/${Util.getGlobal("defaultAudioPort") as int}/g" \\$DATA_DIR/bin/pulseaudio.conf > \\$DATA_DIR/bin/pulseaudio.conf.tmp
+rm -rf \\$DATA_DIR/pulseaudio_tmp/*
+TMPDIR=\\$DATA_DIR/pulseaudio_tmp HOME=\\$DATA_DIR/pulseaudio_tmp XDG_CONFIG_HOME=\\$DATA_DIR/pulseaudio_tmp LD_LIBRARY_PATH=\\$DATA_DIR/bin:\\$LD_LIBRARY_PATH \\$DATA_DIR/bin/pulseaudio -F \\$DATA_DIR/bin/pulseaudio.conf.tmp
+exit
+"""));
+  await G.audioPty?.exitCode;
 }
+
+
 
 // Global variables
 class G {
@@ -729,10 +741,40 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
   }
 
   static Future<void> initTerminalForCurrent() async {
-    if (!G.termPtys.containsKey(G.currentContainer)) {
-      G.termPtys[G.currentContainer] = TermPty();
-    }
+  if (!G.termPtys.containsKey(G.currentContainer)) {
+    G.termPtys[G.currentContainer] = TermPty();
+    
+    // Write environment variables at the very beginning
+    String envCommands = """
+export DATA_DIR=${G.dataPath}
+export LD_LIBRARY_PATH=\\$DATA_DIR/lib:\\$DATA_DIR/usr/lib:\\$DATA_DIR/usr/libexec/:\\$LD_LIBRARY_PATH:/system/lib64
+export PATH=\\$DATA_DIR/bin:\\$PATH:\\$DATA_DIR/usr/libexec:\\$DATA_DIR/usr/bin:/system/bin:\\$DATA_DIR/usr/libexec/binutils
+export PREFIX=\\$DATA_DIR/usr
+export HOME=\\$DATA_DIR/home
+export TMPDIR=\\$DATA_DIR/usr/tmp
+export PATH=\\$DATA_DIR/usr/bin:\\$PATH:/system/bin
+export LD_LIBRARY_PATH=\\$DATA_DIR/usr/lib:/system/lib64
+export FONTCONFIG_PATH=\\$PREFIX/etc/fonts       
+export FONTCONFIG_FILE=\\$PREFIX/etc/fonts/fonts.conf 
+mkdir -p \\$TMPDIR
+mkdir -p \\$HOME
+export DISPLAY=:4
+export XDG_RUNTIME_DIR=\\$DATA_DIR/usr/tmp/
+export X11_UNIX_PATH=\\$DATA_DIR/usr/tmp/.X11-unix
+export VK_ICD_FILENAMES=\\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
+export TMPDIR=\\$DATA_DIR/usr/tmp
+export XDG_RUNTIME_DIR=\\$TMPDIR/runtime
+cd 
+export XDG_RUNTIME_DIR=\\$TMPDIR/runtime
+export XDG_CACHE_HOME=\\$PREFIX/tmp/.cache
+mkdir -p \\$XDG_CACHE_HOME
+""";
+    
+    // Write the commands to the terminal
+    G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert(envCommands));
   }
+}
+
 
   static Future<void> setupAudio() async {
     G.audioPty?.kill();
@@ -779,19 +821,8 @@ exit
       extraMount += "--mount=\$DATA_DIR/tiny/wechat/uos-lsb:/etc/lsb-release --mount=\$DATA_DIR/tiny/wechat/uos-release:/usr/lib/os-release ";
       extraMount += "--mount=\$DATA_DIR/tiny/wechat/license/var/uos:/var/uos --mount=\$DATA_DIR/tiny/wechat/license/var/lib/uos-license:/var/lib/uos-license ";
     }
- /*   if (Util.getGlobal("venus")) {
-  String venusCommand = Util.getGlobal("defaultVenusCommand") as String;
-  
-  Util.execute("""
-export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
-export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
-ANDROID_VENUS=1 LD_PRELOAD=/system/lib64/libvulkan.so:/system/lib/libvulkan.so \$DATA_DIR/bin/virgl_test_server $venusCommand &
-""");
-  extraOpt += "${Util.getGlobal("defaultVenusOpt")} ";
-}
-    */
+    
+ /*   GPU   */
     // Hardware acceleration section - now includes Venus
 bool virglEnabled = Util.getGlobal("virgl") as bool;
 bool venusEnabled = Util.getGlobal("venus") as bool;
