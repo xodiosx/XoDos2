@@ -42,12 +42,13 @@ class Util {
 
 
 static Map<String, String> getEnvironmentVariables() {
-  String dataDir = G.dataPath;
-  String prefix = "$dataDir/usr";
-  String home = "$dataDir/home";
-  String tmpdir = "$dataDir/usr/tmp";
-  String xdgRuntimeDir = "$tmpdir/runtime";
-  String xdgCacheHome = "$prefix/tmp/.cache";
+String dataDir = G.dataPath ?? (await getApplicationSupportDirectory()).path;
+ // String dataDir = G.dataPath;
+  String prefix = "\$dataDir/usr";
+  String home = "\$dataDir/home";
+  String tmpdir = "\$dataDir/usr/tmp";
+  String xdgRuntimeDir = "\$tmpdir/runtime";
+  String xdgCacheHome = "\$prefix/tmp/.cache";
   
   // Create the directories
   Directory(tmpdir).createSync(recursive: true);
@@ -60,20 +61,20 @@ static Map<String, String> getEnvironmentVariables() {
   
   // Set our custom environment variables
   env["DATA_DIR"] = dataDir;
-  env["LD_LIBRARY_PATH"] = "$dataDir/lib:$prefix/lib:$prefix/libexec/:${env["LD_LIBRARY_PATH"] ?? ""}:/system/lib64";
-  env["PATH"] = "$dataDir/bin:${env["PATH"] ?? ""}:$prefix/libexec:$prefix/bin:/system/bin:$prefix/libexec/binutils";
+  env["LD_LIBRARY_PATH"] = "\$dataDir/lib:\$prefix/lib:\$prefix/libexec/:\${env["LD_LIBRARY_PATH"] ?? ""}:/system/lib64";
+  env["PATH"] = "\$dataDir/bin:\${env["PATH"] ?? ""}:\$prefix/libexec:\$prefix/bin:/system/bin:\$prefix/libexec/binutils";
   env["PREFIX"] = prefix;
   env["HOME"] = home;
   env["TMPDIR"] = tmpdir;
   env["DISPLAY"] = ":4";
-  env["XDG_RUNTIME_DIR"] = "$dataDir/usr/tmp/";
-  env["X11_UNIX_PATH"] = "$dataDir/usr/tmp/.X11-unix";
-  env["VK_ICD_FILENAMES"] = "$dataDir/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json";
+  env["XDG_RUNTIME_DIR"] = "\$dataDir/usr/tmp/";
+  env["X11_UNIX_PATH"] = "\$dataDir/usr/tmp/.X11-unix";
+  env["VK_ICD_FILENAMES"] = "\$dataDir/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json";
   env["TMPDIR"] = tmpdir;
   env["XDG_RUNTIME_DIR"] = xdgRuntimeDir;
   env["XDG_CACHE_HOME"] = xdgCacheHome;
-  env["FONTCONFIG_PATH"] = "$prefix/etc/fonts";
-  env["FONTCONFIG_FILE"] = "$prefix/etc/fonts/fonts.conf";
+  env["FONTCONFIG_PATH"] = "\$prefix/etc/fonts";
+  env["FONTCONFIG_FILE"] = "\$prefix/etc/fonts/fonts.conf";
   
   return env;
 }
@@ -551,6 +552,7 @@ static Future<bool> showBootSelectionDialog(BuildContext context) async {
     "${G.dataPath}/patch.tar.gz",
     );
     await Util.execute(
+    
 """
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
@@ -780,27 +782,27 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     // Write environment variables at the very beginning
     String envCommands = """
 export DATA_DIR=${G.dataPath}
-export LD_LIBRARY_PATH=\\$DATA_DIR/lib:\\$DATA_DIR/usr/lib:\\$DATA_DIR/usr/libexec/:\\$LD_LIBRARY_PATH:/system/lib64
-export PATH=\\$DATA_DIR/bin:\\$PATH:\\$DATA_DIR/usr/libexec:\\$DATA_DIR/usr/bin:/system/bin:\\$DATA_DIR/usr/libexec/binutils
-export PREFIX=\\$DATA_DIR/usr
-export HOME=\\$DATA_DIR/home
-export TMPDIR=\\$DATA_DIR/usr/tmp
-export PATH=\\$DATA_DIR/usr/bin:\\$PATH:/system/bin
-export LD_LIBRARY_PATH=\\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=\\$PREFIX/etc/fonts       
-export FONTCONFIG_FILE=\\$PREFIX/etc/fonts/fonts.conf 
-mkdir -p \\$TMPDIR
-mkdir -p \\$HOME
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
+export PREFIX=\$DATA_DIR/usr
+export HOME=\$DATA_DIR/home
+export TMPDIR=\$DATA_DIR/usr/tmp
+export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
+export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
+export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
+mkdir -p \$TMPDIR
+mkdir -p \$HOME
 export DISPLAY=:4
-export XDG_RUNTIME_DIR=\\$DATA_DIR/usr/tmp/
-export X11_UNIX_PATH=\\$DATA_DIR/usr/tmp/.X11-unix
-export VK_ICD_FILENAMES=\\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
-export TMPDIR=\\$DATA_DIR/usr/tmp
-export XDG_RUNTIME_DIR=\\$TMPDIR/runtime
+export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
+export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
+export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
+export TMPDIR=\$DATA_DIR/usr/tmp
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 cd 
-export XDG_RUNTIME_DIR=\\$TMPDIR/runtime
-export XDG_CACHE_HOME=\\$PREFIX/tmp/.cache
-mkdir -p \\$XDG_CACHE_HOME
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
+export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
+mkdir -p \$XDG_CACHE_HOME
 """;
     
     // Write the commands to the terminal
