@@ -284,11 +284,11 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
       alt: event.alt || _alt,
     ));
     G.maybeCtrlJ = event.key.name == "keyJ"; // This is to distinguish whether the key pressed is Enter or Ctrl+J later
-if (!(Util.getGlobal("isStickyKey") as bool) && !event.repeat) {
-  G.keyboard.ctrl = false;
-  G.keyboard.shift = false;
-  G.keyboard.alt = false;
-}
+    if (!(Util.getGlobal("isStickyKey") as bool)) {
+      G.keyboard.ctrl = false;
+      G.keyboard.shift = false;
+      G.keyboard.alt = false;
+    }
     return ret;
   }
 }
