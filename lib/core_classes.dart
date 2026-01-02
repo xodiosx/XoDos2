@@ -40,6 +40,7 @@ import 'default_values.dart';
 
 class Util {
 
+
 static Map<String, String> getEnvironmentVariables() {
   String dataDir = G.dataPath;
   String prefix = "$dataDir/usr";
@@ -76,8 +77,6 @@ static Map<String, String> getEnvironmentVariables() {
   
   return env;
 }
-
-
 
 
   static Future<void> copyAsset(String src, String dst) async {
@@ -334,28 +333,62 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
 }
 
 // A class combining terminal and pty
-static Future<void> setupAudio() async {
-  G.audioPty?.kill();
-  
-  // Get environment variables
-  Map<String, String> env = Util.getEnvironmentVariables();
-  
-  G.audioPty = Pty.start(
-    "/system/bin/sh",
-    environment: env, // Pass environment variables here
-  );
-  
-  G.audioPty!.write(const Utf8Encoder().convert("""
-ln -sf \\$DATA_DIR/containers/0/tmp \\$DATA_DIR/usr/tmp
-\\$DATA_DIR/bin/busybox sed "s/4713/${Util.getGlobal("defaultAudioPort") as int}/g" \\$DATA_DIR/bin/pulseaudio.conf > \\$DATA_DIR/bin/pulseaudio.conf.tmp
-rm -rf \\$DATA_DIR/pulseaudio_tmp/*
-TMPDIR=\\$DATA_DIR/pulseaudio_tmp HOME=\\$DATA_DIR/pulseaudio_tmp XDG_CONFIG_HOME=\\$DATA_DIR/pulseaudio_tmp LD_LIBRARY_PATH=\\$DATA_DIR/bin:\\$LD_LIBRARY_PATH \\$DATA_DIR/bin/pulseaudio -F \\$DATA_DIR/bin/pulseaudio.conf.tmp
-exit
-"""));
-  await G.audioPty?.exitCode;
+class TermPty{
+  late final Terminal terminal;
+  late final Pty pty;
+  late final TerminalController controller;
+
+  TermPty() {
+    controller = TerminalController();
+    terminal = Terminal(
+      inputHandler: G.keyboard, 
+      maxLines: Util.getGlobal("termMaxLines") as int,
+    );
+    
+    // Get environment variables
+    Map<String, String> env = Util.getEnvironmentVariables();
+    
+    pty = Pty.start(
+      "/system/bin/sh",
+      workingDirectory: G.dataPath,
+      columns: terminal.viewWidth,
+      rows: terminal.viewHeight,
+      environment: env, // Pass environment variables here
+    );
+    
+    pty.output
+      .cast<List<int>>()
+      .transform(const Utf8Decoder())
+      .listen(terminal.write);
+    pty.exitCode.then((code) {
+      terminal.write('the process exited with exit code $code');
+      if (code == 0) {
+        SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+      }
+      //Signal 9 hint
+      if (code == -9) {
+        D.androidChannel.invokeMethod("launchSignal9Page", {});
+      }
+    });
+    terminal.onOutput = (data) {
+      if (!(Util.getGlobal("isTerminalWriteEnabled") as bool)) {
+        return;
+      }
+      // Due to apparent issues with handling carriage returns, handle them separately
+      data.split("").forEach((element) {
+        if (element == "\n" && !G.maybeCtrlJ) {
+          terminal.keyInput(TerminalKey.enter);
+          return;
+        }
+        G.maybeCtrlJ = false;
+        pty.write(const Utf8Encoder().convert(element));
+      });
+    };
+    terminal.onResize = (w, h, pw, ph) {
+      pty.resize(h, w);
+    };
+  }
 }
-
-
 
 // Global variables
 class G {
@@ -773,7 +806,7 @@ mkdir -p \\$XDG_CACHE_HOME
     // Write the commands to the terminal
     G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert(envCommands));
   }
-
+}
 
 
   static Future<void> setupAudio() async {
