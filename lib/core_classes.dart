@@ -36,10 +36,7 @@ import 'spirited_mini_games.dart';
 // Import the split files
 import 'constants.dart';
 import 'default_values.dart';
-
-// ============================================================================
 // DXVK Installer Class
-// ============================================================================
 
 class Util {
 
@@ -64,74 +61,6 @@ class Util {
 
   static void termWrite(String str) {
     G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert("$str\n"));
-  }
-
-  // Setup environment variables in the terminal before container starts (Termux-style)
-  static void setupEnvironment() {
-    final dataPath = G.dataPath;
-    final containerId = G.currentContainer;
-    
-    // Write all environment setup commands to the terminal
-    termWrite("""
-# Setup environment variables (Termux-style)
-echo "Setting up environment..."
-
-# Create symlink for tmp
-ln -sf $dataPath/containers/$containerId/tmp $dataPath/usr/tmp
-
-# Core environment variables
-export PREFIX=$dataPath/usr
-export HOME=$dataPath/home
-export TMPDIR=$dataPath/usr/tmp
-
-# Setup PATH
-export PATH=$dataPath/usr/bin:\$PATH:/system/bin
-
-# Setup LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$dataPath/usr/lib:/system/lib64
-
-# Fontconfig
-export FONTCONFIG_PATH=\$PREFIX/etc/fonts
-export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf
-
-# Create directories
-mkdir -p \$TMPDIR
-mkdir -p \$HOME
-
-# Additional LD_LIBRARY_PATH entries
-export LD_LIBRARY_PATH=/lib64:\$LD_LIBRARY_PATH:$dataPath/usr/lib
-
-# Additional PATH entries
-export PATH=\$PATH:$dataPath/usr/bin:/bin
-
-# X11 and graphics
-export DISPLAY=:4
-export XDG_RUNTIME_DIR=$dataPath/usr/tmp/
-export X11_UNIX_PATH=$dataPath/usr/tmp/.X11-unix
-export VK_ICD_FILENAMES=$dataPath/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
-
-# TMPDIR and XDG directories
-export TMPDIR=$dataPath/usr/tmp
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-
-# Change to home directory (like login shell)
-cd \$HOME
-
-# Print PREFIX for verification
-echo "PREFIX: \$PREFIX"
-
-# XDG cache home
-export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
-mkdir -p \$XDG_CACHE_HOME
-
-# Create XDG runtime directory
-mkdir -p \$XDG_RUNTIME_DIR
-
-# Create runtime subdirectory
-mkdir -p \$TMPDIR/runtime
-
-echo "Environment setup complete."
-""");
   }
 
   // All keys
@@ -307,10 +236,6 @@ echo "Environment setup complete."
 
 }
 
-// ============================================================================
-// Virtual Keyboard Class
-// ============================================================================
-
 // From xterms example about handling ctrl, shift, alt keys
 // This class should only have one instance G.keyboard
 class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
@@ -368,10 +293,7 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
   }
 }
 
-// ============================================================================
-// TermPty Class (A class combining terminal and pty)
-// ============================================================================
-
+// A class combining terminal and pty
 class TermPty{
   late final Terminal terminal;
   late final Pty pty;
@@ -423,10 +345,7 @@ class TermPty{
   }
 }
 
-// ============================================================================
-// Global Variables Class
-// ============================================================================
-
+// Global variables
 class G {
 
 static VoidCallback? onExtractionComplete;
@@ -457,10 +376,6 @@ static VoidCallback? onExtractionComplete;
 
   static late SharedPreferences prefs;
 }
-
-// ============================================================================
-// Workflow Class (Updated with environment setup in terminal)
-// ============================================================================
 
 class Workflow {
 
@@ -498,7 +413,28 @@ class Workflow {
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
+export PREFIX=\$DATA_DIR/usr
+export HOME=\$DATA_DIR/home
+export TMPDIR=\$DATA_DIR/usr/tmp
+export PATH=\$DATA_DIR/usr/bin:$PATH:/system/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
+export FONTCONFIG_PATH=$PREFIX/etc/fonts        # directory containing fonts.conf
+export FONTCONFIG_FILE=$PREFIX/etc/fonts/fonts.conf  # the main config file
+mkdir -p $TMPDIR
+mkdir -p $HOME
+export DISPLAY=:4
+export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
+export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
+export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
+export TMPDIR=\$DATA_DIR/usr/tmp
+export XDG_RUNTIME_DIR=$TMPDIR/runtime
+cd 
+export XDG_RUNTIME_DIR=$TMPDIR/runtime
+export XDG_CACHE_HOME=$PREFIX/tmp/.cache
+mkdir -p $XDG_CACHE_HOME
+
 cd \$DATA_DIR
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/busybox
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/sh
@@ -519,7 +455,9 @@ ln -sf ../applib/libproot-loader.so \$DATA_DIR/lib/loader
 
 \$DATA_DIR/bin/busybox unzip -o assets.zip
 chmod -R +x bin/*
+chmod -R +x usr/bin/*
 chmod -R +x libexec/proot/*
+chmod -R +x use/libexec/*
 chmod 1777 tmp
 \$DATA_DIR/bin/tar zxf patch.tar.gz
 \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.gz
@@ -579,7 +517,33 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
+
 \$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
+ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
+export PREFIX=\$DATA_DIR/usr
+export HOME=\$DATA_DIR/home
+export TMPDIR=\$DATA_DIR/usr/tmp
+export PATH=\$DATA_DIR/usr/bin:$PATH:/system/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
+export FONTCONFIG_PATH=$PREFIX/etc/fonts        # directory containing fonts.conf
+export FONTCONFIG_FILE=$PREFIX/etc/fonts/fonts.conf  # the main config file
+mkdir -p \$TMPDIR
+mkdir -p \$HOME
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$DATA_DIR/usr/lib
+export PATH=\$PATH:\$DATA_DIR/usr/bin:/system/bin:
+export DISPLAY=:4
+export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
+export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
+export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
+export TMPDIR=\$DATA_DIR/usr/tmp
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
+cd 
+export XDG_RUNTIME_DIR=$TMPDIR/runtime
+export XDG_CACHE_HOME=$PREFIX/tmp/.cache
+mkdir -p \$XDG_CACHE_HOME
+
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
@@ -591,7 +555,7 @@ done
     final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
     
     await G.prefs.setStringList("containersInfo", ["""{
-"name":"Debian Bookworm",
+"name":"XoDos Debian",
 "boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
 "vnc":"startnovnc &",
 "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
@@ -602,9 +566,11 @@ done
     
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
     
-    if (G.onExtractionComplete != null) {
+       if (G.onExtractionComplete != null) {
       G.onExtractionComplete!();
     }
+    
+     
   }
 
   static Future<void> initData() async {
@@ -682,6 +648,19 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
+ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
+export PREFIX=\$DATA_DIR/usr
+export HOME=\$DATA_DIR/home
+export TMPDIR=\$DATA_DIR/usr/tmp
+export PATH=\$DATA_DIR/usr/bin:$PATH:/system/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
+export FONTCONFIG_PATH=$PREFIX/etc/fonts        # directory containing fonts.conf
+export FONTCONFIG_FILE=$PREFIX/etc/fonts/fonts.conf  # the main config file
+mkdir -p $TMPDIR
+mkdir -p $HOME
+
 \$DATA_DIR/bin/busybox sed "s/4713/${Util.getGlobal("defaultAudioPort") as int}/g" \$DATA_DIR/bin/pulseaudio.conf > \$DATA_DIR/bin/pulseaudio.conf.tmp
 rm -rf \$DATA_DIR/pulseaudio_tmp/*
 TMPDIR=\$DATA_DIR/pulseaudio_tmp HOME=\$DATA_DIR/pulseaudio_tmp XDG_CONFIG_HOME=\$DATA_DIR/pulseaudio_tmp LD_LIBRARY_PATH=\$DATA_DIR/bin:\$LD_LIBRARY_PATH \$DATA_DIR/bin/pulseaudio -F \$DATA_DIR/bin/pulseaudio.conf.tmp
@@ -705,67 +684,76 @@ exit
       extraMount += "--mount=\$DATA_DIR/tiny/wechat/uos-lsb:/etc/lsb-release --mount=\$DATA_DIR/tiny/wechat/uos-release:/usr/lib/os-release ";
       extraMount += "--mount=\$DATA_DIR/tiny/wechat/license/var/uos:/var/uos --mount=\$DATA_DIR/tiny/wechat/license/var/lib/uos-license:/var/lib/uos-license ";
     }
-    
-    // Hardware acceleration section - now includes Venus
-    bool virglEnabled = Util.getGlobal("virgl") as bool;
-    bool venusEnabled = Util.getGlobal("venus") as bool;
-    bool turnipEnabled = Util.getGlobal("turnip") as bool;
-
-    // Update the hardware acceleration section in Workflow.launchCurrentContainer():
-    if (Util.getGlobal("virgl")) {
-      Util.execute("""
+ /*   if (Util.getGlobal("venus")) {
+  String venusCommand = Util.getGlobal("defaultVenusCommand") as String;
+  
+  Util.execute("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+ANDROID_VENUS=1 LD_PRELOAD=/system/lib64/libvulkan.so:/system/lib/libvulkan.so \$DATA_DIR/bin/virgl_test_server $venusCommand &
+""");
+  extraOpt += "${Util.getGlobal("defaultVenusOpt")} ";
+}
+    */
+    // Hardware acceleration section - now includes Venus
+bool virglEnabled = Util.getGlobal("virgl") as bool;
+bool venusEnabled = Util.getGlobal("venus") as bool;
+bool turnipEnabled = Util.getGlobal("turnip") as bool;
+
+// Update the hardware acceleration section in Workflow.launchCurrentContainer():
+if (Util.getGlobal("virgl")) {
+  Util.execute("""
+export DATA_DIR=${G.dataPath}
+export PATH=\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
+export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 ${G.dataPath}/bin/virgl_test_server ${Util.getGlobal("defaultVirglCommand")} &
 """);
-      extraOpt += "${Util.getGlobal("defaultVirglOpt")} ";
-    } else if (Util.getGlobal("venus")) {
-      // Venus hardware acceleration
-      String venusCommand = Util.getGlobal("defaultVenusCommand") as String;
-      String venusOpt = Util.getGlobal("defaultVenusOpt") as String;
-      
-      // Build the LD_PRELOAD path
-      String ldPreload = "/system/lib64/libvulkan.so";
-      
-      // Check if ANDROID_VENUS should be added
-      bool androidVenusEnabled = Util.getGlobal("androidVenus") as bool;
-      String androidVenusEnv = androidVenusEnabled ? "ANDROID_VENUS=1 " : "";
-      
-      // Build the full command
-      String fullCommand = "${androidVenusEnv} LD_PRELOAD=$ldPreload ${G.dataPath}/bin/virgl_test_server $venusCommand &";
-      
-      Util.execute("""
+  extraOpt += "${Util.getGlobal("defaultVirglOpt")} ";
+} else if (Util.getGlobal("venus")) {
+  // Venus hardware acceleration
+  String venusCommand = Util.getGlobal("defaultVenusCommand") as String;
+  String venusOpt = Util.getGlobal("defaultVenusOpt") as String;
+  
+  // Build the LD_PRELOAD path
+  String ldPreload = "/system/lib64/libvulkan.so";
+  
+  // Check if ANDROID_VENUS should be added
+  bool androidVenusEnabled = Util.getGlobal("androidVenus") as bool;
+  String androidVenusEnv = androidVenusEnabled ? "ANDROID_VENUS=1 " : "";
+  
+  // Build the full command
+  String fullCommand = "${androidVenusEnv} LD_PRELOAD=$ldPreload ${G.dataPath}/bin/virgl_test_server $venusCommand &";
+  
+  Util.execute("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 $fullCommand
 """);
-      
-      extraOpt += "$venusOpt ";
-    }
+  
+  extraOpt += "$venusOpt ";
+}
 
-    if (Util.getGlobal("turnip")) {
-      extraOpt += "${Util.getGlobal("defaultTurnipOpt")} ";
-      if (!(Util.getGlobal("dri3"))) {
-        extraOpt += "MESA_VK_WSI_DEBUG=sw ";
-      }
-    }
-    
+if (Util.getGlobal("turnip")) {
+  extraOpt += "${Util.getGlobal("defaultTurnipOpt")} ";
+  if (!(Util.getGlobal("dri3"))) {
+    extraOpt += "MESA_VK_WSI_DEBUG=sw ";
+  }
+}
     if (Util.getGlobal("isJpEnabled")) {
       extraOpt += "LANG=ja_JP.UTF-8 ";
     }
-    
     extraMount += "--mount=\$DATA_DIR/tiny/font:/usr/share/fonts/tiny ";
     extraMount += "--mount=\$DATA_DIR/tiny/extra/cmatrix:/home/tiny/.local/bin/cmatrix ";
   
-    // SETUP ENVIRONMENT FIRST (Termux-style)
-    Util.setupEnvironment();
     
-    // Then launch the container
-    Util.termWrite(
+        Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
@@ -786,21 +774,22 @@ ${G.postCommand} > /dev/null 2>&1
 // Remove the "clear" command at the end
   }
 
-  static Future<void> launchGUIBackend() async {
-    if (Util.getGlobal("autoLaunchVnc") as bool) {
-      if (Util.getGlobal("useX11") as bool) {
-        // X11 already redirects to log file, keep as is
-        Util.termWrite("""mkdir -p "\$HOME/.vnc" && bash /etc/X11/xinit/Xsession &> "\$HOME/.vnc/x.log" &""");
-      } else {
-        // Redirect VNC command output to /dev/null
-        String vncCmd = Util.getCurrentProp("vnc");
-        // Remove any existing & and add redirection
-        vncCmd = vncCmd.replaceAll(RegExp(r'\s*&\s*$'), '');
-        Util.termWrite("$vncCmd > /dev/null 2>&1 &");
-      }
+static Future<void> launchGUIBackend() async {
+  if (Util.getGlobal("autoLaunchVnc") as bool) {
+    if (Util.getGlobal("useX11") as bool) {
+      // X11 already redirects to log file, keep as is
+      Util.termWrite("""mkdir -p "\$HOME/.vnc" && bash /etc/X11/xinit/Xsession &> "\$HOME/.vnc/x.log" &""");
+    } else {
+      // Redirect VNC command output to /dev/null
+      String vncCmd = Util.getCurrentProp("vnc");
+      // Remove any existing & and add redirection
+      vncCmd = vncCmd.replaceAll(RegExp(r'\s*&\s*$'), '');
+      Util.termWrite("$vncCmd > /dev/null 2>&1 &");
     }
-    // Remove the clear command entirely
   }
+  // Remove the clear command entirely
+  // Util.termWrite("clear"); // DELETE THIS LINE
+}
 
   static Future<void> waitForConnection() async {
     await retry(
@@ -840,7 +829,7 @@ ${G.postCommand} > /dev/null 2>&1
   }
 
   static Future<void> launchAvnc() async {
-    await AvncFlutter.launchUsingUri(Util.getCurrentProp("vncUri") as String, resizeRemoteDesktop: Util.getGlobal("avncResizeDesktop") as bool, resizeRemoteDesktopScaleFactor: pow(4, Util.getGlobal("avpcScaleFactor") as double).toDouble());
+    await AvncFlutter.launchUsingUri(Util.getCurrentProp("vncUri") as String, resizeRemoteDesktop: Util.getGlobal("avncResizeDesktop") as bool, resizeRemoteDesktopScaleFactor: pow(4, Util.getGlobal("avncScaleFactor") as double).toDouble());
   }
 
   static Future<void> launchXServer() async {
@@ -857,7 +846,6 @@ ${G.postCommand} > /dev/null 2>&1
     await initTerminalForCurrent();
     setupAudio();
     launchCurrentContainer();
-    
     if (Util.getGlobal("autoLaunchVnc") as bool) {
       if (G.wasX11Enabled) {
         await Util.waitForXServer();
@@ -866,7 +854,7 @@ ${G.postCommand} > /dev/null 2>&1
         return;
       }
       launchGUIBackend();
-      waitForConnection().then((value) => G.wasAvncEnabled ? launchAvnc() : launchBrowser());
+      waitForConnection().then((value) => G.wasAvncEnabled?launchAvnc():launchBrowser());
     }
   }
 }
