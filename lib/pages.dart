@@ -1549,29 +1549,47 @@ class _TerminalPageState extends State<TerminalPage> {
     SystemNavigator.pop();
   }
 
-  Future<void> _copyTerminalText() async {
+Future<void> _copyTerminalText() async {
+  try {
     final termPty = G.termPtys[G.currentContainer]!;
-    // xterm 4.0.0 no longer has terminal.selection
-    // Use controller.buffer for copy logic if available
+
+    // Use the buffer to get all visible text
     final buffer = termPty.terminal.buffer;
     final lineCount = buffer.lines.length;
-final textBuffer = StringBuffer();
+    final textBuffer = StringBuffer();
 
-for (int i = 0; i < lineCount; i++) {
-  textBuffer.writeln(buffer.lines[i].string);
-}
+    for (int i = 0; i < lineCount; i++) {
+      textBuffer.writeln(buffer.lines[i].toString()); // <-- use toString() instead of .string
+    }
 
-final text = textBuffer.toString();
+    final text = textBuffer.toString().trim();
     if (text.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: text));
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Text copied to clipboard'),
           duration: Duration(seconds: 2),
         ),
       );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No text available to copy'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
+  } catch (e) {
+    print('Copy error: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to copy text'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
+}
 
   Future<void> _pasteToTerminal() async {
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);

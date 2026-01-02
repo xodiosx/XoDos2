@@ -357,15 +357,16 @@ static VoidCallback? onExtractionComplete;
 
     final String? char = event.character;
     if (char != null && char.isNotEmpty) {
-      term.keyInput(
-        TerminalKey.ofChar(
-          char,
-          ctrl: G.keyboard.ctrl,
-          alt: G.keyboard.alt,
-          shift: G.keyboard.shift,
-        ),
-      );
-    }
+  final key = TerminalKey.ofChar(char);
+  term.keyInput(
+    key,
+    ctrl: G.keyboard.ctrl,
+    alt: G.keyboard.alt,
+    shift: G.keyboard.shift,
+  );
+}
+    
+    
   }
 }
   
