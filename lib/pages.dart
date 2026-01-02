@@ -1195,6 +1195,7 @@ class _InfoPageState extends State<InfoPage> {
   void dispose() {
     _stopGamesMusic();
     _gamesMusicPlayer.dispose();
+    RawKeyboard.instance.removeListener(G.handleHardwareKeyRepeat);
     super.dispose();
   }
 
@@ -1405,42 +1406,150 @@ class TerminalPage extends StatefulWidget {
 
 class _TerminalPageState extends State<TerminalPage> {
   @override
+  void initState() {
+    super.initState();
+    RawKeyboard.instance.addListener(_hardwareKeyRepeatFix);
+  }
+
+  
+
+  void _hardwareKeyRepeatFix(RawKeyEvent event) {
+    if (event is RawKeyDownEvent && event.repeat) {
+      final ch = event.character;
+      if (ch != null && ch.isNotEmpty) {
+        G.termPtys[G.currentContainer]!
+            .terminal
+            .keyInput(TerminalKey.character(ch));
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final termPty = G.termPtys[G.currentContainer]!;
+
     return Column(
       children: [
         _buildTopActionButtons(),
         Expanded(
           child: forceScaleGestureDetector(
             onScaleUpdate: (details) {
-              G.termFontScale.value = (details.scale * (Util.getGlobal("termFontScale") as double)).clamp(0.2, 5);
-            }, 
-            onScaleEnd: (details) async {
-              await G.prefs.setDouble("termFontScale", G.termFontScale.value);
-            }, 
-           child: ValueListenableBuilder(
-  valueListenable: G.termFontScale, 
-  builder: (context, value, child) {
-    return TerminalView(
-      G.termPtys[G.currentContainer]!.terminal, 
-      controller: G.termPtys[G.currentContainer]!.controller,
-      textScaler: TextScaler.linear(G.termFontScale.value), 
-      keyboardType: TextInputType.multiline,
-    );
-  },
-),
+              G.termFontScale.value = (details.scale *
+                      (Util.getGlobal("termFontScale") as double))
+                  .clamp(0.2, 5);
+            },
+            onScaleEnd: (_) async {
+              await G.prefs
+                  .setDouble("termFontScale", G.termFontScale.value);
+            },
+            child: ValueListenableBuilder(
+              valueListenable: G.termFontScale,
+              builder: (_, __, ___) {
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    return GestureDetector(
+                      onLongPressStart: (details) {
+                        _showTerminalContextMenu(
+                          context,
+                          details.globalPosition,
+                          termPty.terminal,
+                        );
+                      },
+                      onPanUpdate: (details) {
+                        TerminalAutoScroller.handleDrag(
+                          details.localPosition,
+                          Size(constraints.maxWidth,
+                              constraints.maxHeight),
+                          termPty.terminal,
+                        );
+                      },
+                      child: TerminalView(
+                        termPty.terminal,
+                        controller: termPty.controller,
+                        autofocus: true,
+                        enableSelection: true,
+                        keyboardType: TextInputType.multiline,
+                        textScaler:
+                            TextScaler.linear(G.termFontScale.value),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
-        ), 
+        ),
         ValueListenableBuilder(
-          valueListenable: G.terminalPageChange, 
-          builder: (context, value, child) {
-            return (Util.getGlobal("isTerminalCommandsEnabled") as bool) 
-              ? _buildTermuxStyleControlBar()
-              : const SizedBox.shrink();
+          valueListenable: G.terminalPageChange,
+          builder: (_, __, ___) {
+            return (Util.getGlobal("isTerminalCommandsEnabled") as bool)
+                ? _buildTermuxStyleControlBar()
+                : const SizedBox.shrink();
           },
         ),
       ],
     );
   }
+
+  // ─────────────────────────────
+  // CONTEXT MENU
+  // ─────────────────────────────
+
+  Future<void> _showTerminalContextMenu(
+    BuildContext context,
+    Offset position,
+    Terminal terminal,
+  ) async {
+    final selectedText = terminal.selection?.text;
+
+    final action = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      items: [
+        if (selectedText != null && selectedText.isNotEmpty)
+          const PopupMenuItem(
+            value: 'copy',
+            child: Text('Copy'),
+          ),
+        const PopupMenuItem(
+          value: 'paste',
+          child: Text('Paste'),
+        ),
+        const PopupMenuItem(
+          value: 'select_all',
+          child: Text('Select All'),
+        ),
+      ],
+    );
+
+    switch (action) {
+      case 'copy':
+        await Clipboard.setData(
+            ClipboardData(text: selectedText));
+        HapticFeedback.selectionClick();
+        break;
+
+      case 'paste':
+        final data = await Clipboard.getData('text/plain');
+        if (data?.text != null) {
+          terminal.paste(data!.text!);
+        }
+        break;
+
+      case 'select_all':
+        terminal.selectAll();
+        break;
+    }
+  }
+
+  // ─────────────────────────────
+  // TOP BAR
+  // ─────────────────────────────
 
   Widget _buildTopActionButtons() {
     return Container(
@@ -1450,22 +1559,16 @@ class _TerminalPageState extends State<TerminalPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildTopActionButton(
-            Icons.play_arrow,
-            'Start Desktop,',
-            _startGUI,
-          ),
-          
+              Icons.play_arrow, 'Start Desktop', _startGUI),
           _buildTopActionButton(
-            Icons.stop,
-            'Exit Desktop',
-            _exitContainer,
-          ),
+              Icons.stop, 'Exit Desktop', _exitContainer),
         ],
       ),
     );
   }
 
-  Widget _buildTopActionButton(IconData icon, String label, VoidCallback onTap) {
+  Widget _buildTopActionButton(
+      IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1476,18 +1579,12 @@ class _TerminalPageState extends State<TerminalPage> {
           border: Border.all(color: AppColors.primaryPurple),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 18, color: AppColors.primaryPurple),
             const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label,
+                style: const TextStyle(
+                    color: AppColors.textPrimary)),
           ],
         ),
       ),
@@ -1507,21 +1604,20 @@ class _TerminalPageState extends State<TerminalPage> {
   void _exitContainer() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Exit 🛑'),
-        content: const Text('This will stop the current container and exit. Are you sure?'),
+        content: const Text(
+            'This will stop the current container and exit.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel❌'),
-          ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel ❌')),
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _forceExitContainer();
-            },
-            child: const Text('Exit✅'),
-          ),
+              onPressed: () {
+                Navigator.pop(context);
+                _forceExitContainer();
+              },
+              child: const Text('Exit ✅')),
         ],
       ),
     );
@@ -1529,102 +1625,28 @@ class _TerminalPageState extends State<TerminalPage> {
 
   void _forceExitContainer() {
     Util.termWrite('stopvnc');
+    Util.termWrite('pkill -f dbus');
+    Util.termWrite('pkill -f wine');
+    Util.termWrite('pkill -f virgl*');
+    Util.termWrite('pkill -f lxqt');
     Util.termWrite('exit');
     Util.termWrite('exit');
-    
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(' session stopped. closing app...'),
-        duration: Duration(seconds: 3),
-      ),
-    );
     SystemNavigator.pop();
   }
 
-// In the _copyTerminalText method:
-Future<void> _copyTerminalText() async {
-  try {
-    final termPty = G.termPtys[G.currentContainer]!;
-    final selection = termPty.controller.selection;
-    
-    if (selection != null) {
-      final selectedText = termPty.terminal.buffer.getText(selection);
-      
-      if (selectedText.isNotEmpty) {
-        // Use the correct Clipboard API
-        await Clipboard.setData(ClipboardData(text: selectedText));
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Selected text copied to clipboard'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No text selected'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No text selected - please select text by long-pressing and dragging'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  } catch (e) {
-    print('Copy error: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Failed to copy selected text'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-}
+  // ─────────────────────────────
+  // TERMUX BAR
+  // ─────────────────────────────
 
-// In the _pasteToTerminal method:
-Future<void> _pasteToTerminal() async {
-  try {
-    // Use the correct Clipboard API
-    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-    final clipboardText = data?.text;
-    
-    if (clipboardText != null && clipboardText.isNotEmpty) {
-      Util.termWrite(clipboardText);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Clipboard is empty'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Failed to paste from clipboard'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-}
   Widget _buildTermuxStyleControlBar() {
     return Container(
-      color: AppColors.surfaceDark,
       padding: const EdgeInsets.all(8),
+      color: AppColors.surfaceDark,
       child: Column(
         children: [
           Row(
             children: [
-              Expanded(
-                child: _buildModifierKeys(),
-              ),
+              Expanded(child: _buildModifierKeys()),
               const SizedBox(width: 8),
               _buildCopyPasteButtons(),
             ],
@@ -1639,15 +1661,24 @@ Future<void> _pasteToTerminal() async {
   Widget _buildCopyPasteButtons() {
     return Row(
       children: [
-        _buildTermuxKey(
-          'COPY',
-          onTap: _copyTerminalText,
-        ),
+        _buildTermuxKey('COPY', onTap: () async {
+          final text = G.termPtys[G.currentContainer]!
+              .terminal
+              .selection
+              ?.text;
+          if (text != null && text.isNotEmpty) {
+            await Clipboard.setData(ClipboardData(text: text));
+          }
+        }),
         const SizedBox(width: 4),
-        _buildTermuxKey(
-          'PASTE', 
-          onTap: _pasteToTerminal,
-        ),
+        _buildTermuxKey('PASTE', onTap: () async {
+          final data = await Clipboard.getData('text/plain');
+          if (data?.text != null) {
+            G.termPtys[G.currentContainer]!
+                .terminal
+                .paste(data!.text!);
+          }
+        }),
       ],
     );
   }
@@ -1655,24 +1686,18 @@ Future<void> _pasteToTerminal() async {
   Widget _buildModifierKeys() {
     return AnimatedBuilder(
       animation: G.keyboard,
-      builder: (context, child) => Row(
+      builder: (_, __) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildTermuxKey(
-            'CTRL',
-            isActive: G.keyboard.ctrl,
-            onTap: () => G.keyboard.ctrl = !G.keyboard.ctrl,
-          ),
-          _buildTermuxKey(
-            'ALT', 
-            isActive: G.keyboard.alt,
-            onTap: () => G.keyboard.alt = !G.keyboard.alt,
-          ),
-          _buildTermuxKey(
-            'SHIFT',
-            isActive: G.keyboard.shift, 
-            onTap: () => G.keyboard.shift = !G.keyboard.shift,
-          ),
+          _buildTermuxKey('CTRL',
+              isActive: G.keyboard.ctrl,
+              onTap: () => G.keyboard.ctrl = !G.keyboard.ctrl),
+          _buildTermuxKey('ALT',
+              isActive: G.keyboard.alt,
+              onTap: () => G.keyboard.alt = !G.keyboard.alt),
+          _buildTermuxKey('SHIFT',
+              isActive: G.keyboard.shift,
+              onTap: () => G.keyboard.shift = !G.keyboard.shift),
         ],
       ),
     );
@@ -1684,57 +1709,58 @@ Future<void> _pasteToTerminal() async {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: D.termCommands.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 4),
-        itemBuilder: (context, index) {
-          return _buildTermuxKey(
-            D.termCommands[index]["name"]! as String,
-            onTap: () {
-              G.termPtys[G.currentContainer]!.terminal.keyInput(
-                D.termCommands[index]["key"]! as TerminalKey
-              );
+        separatorBuilder: (_, __) => const SizedBox(width: 4),
+        itemBuilder: (_, i) {
+          return TurboKey(
+            onSend: () {
+              G.termPtys[G.currentContainer]!
+                  .terminal
+                  .keyInput(D.termCommands[i]["key"]);
             },
+            child:
+                _buildTermuxKey(D.termCommands[i]["name"]),
           );
         },
       ),
     );
   }
 
-  Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap}) {
+  Widget _buildTermuxKey(
+    String label, {
+    bool isActive = false,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(
-          minWidth: 40,
-          maxWidth: 80,
-          minHeight: 32,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        constraints:
+            const BoxConstraints(minWidth: 40, minHeight: 32),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryPurple : AppColors.cardDark,
+          color:
+              isActive ? AppColors.primaryPurple : AppColors.cardDark,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isActive ? AppColors.primaryPurple : AppColors.divider,
-            width: 1,
-          ),
         ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isActive ? Colors.black : AppColors.textPrimary,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        child: Text(
+          label,
+          style: TextStyle(
+            color:
+                isActive ? Colors.black : AppColors.textPrimary,
+            fontSize: 10,
           ),
         ),
       ),
     );
   }
 }
+
+
+
+
+
+
+
 
 // Fast Commands
 class FastCommands extends StatefulWidget {

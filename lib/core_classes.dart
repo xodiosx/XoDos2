@@ -136,7 +136,7 @@ class Util {
       return m[key];
     }
     switch (key) {
-      case "name" : return (value){addCurrentProp(key, value); return value;}("XoDos Debian");
+      case "name" : return (value){addCurrentProp(key, value); return value;}("XoDos Terminal");
       case "boot" : return (value){addCurrentProp(key, value); return value;}(D.boot);
       case "vnc" : return (value){addCurrentProp(key, value); return value;}("startnovnc &");
       case "vncUrl" : return (value){addCurrentProp(key, value); return value;}("http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678");
@@ -284,11 +284,11 @@ class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
       alt: event.alt || _alt,
     ));
     G.maybeCtrlJ = event.key.name == "keyJ"; // This is to distinguish whether the key pressed is Enter or Ctrl+J later
-    if (!(Util.getGlobal("isStickyKey") as bool)) {
-      G.keyboard.ctrl = false;
-      G.keyboard.shift = false;
-      G.keyboard.alt = false;
-    }
+if (!(Util.getGlobal("isStickyKey") as bool) && !event.repeat) {
+  G.keyboard.ctrl = false;
+  G.keyboard.shift = false;
+  G.keyboard.alt = false;
+}
     return ret;
   }
 }
@@ -349,6 +349,29 @@ class TermPty{
 class G {
 
 static VoidCallback? onExtractionComplete;
+  
+  static void handleHardwareKeyRepeat(RawKeyEvent event) {
+  if (event is RawKeyDownEvent && event.repeat) {
+    final term = G.termPtys[G.currentContainer]?.terminal;
+    if (term == null) return;
+
+    final String? char = event.character;
+    if (char != null && char.isNotEmpty) {
+      term.keyInput(
+        TerminalKey.character(
+          char,
+          ctrl: G.keyboard.ctrl,
+          alt: G.keyboard.alt,
+          shift: G.keyboard.shift,
+        ),
+      );
+    }
+  }
+}
+  
+  
+  
+  
   
   static late final String dataPath;
   static Pty? audioPty;
@@ -671,6 +694,8 @@ mkdir -p \$XDG_CACHE_HOME
     G.termPtys = {};
 
     G.keyboard = VirtualKeyboard(defaultInputHandler);
+    
+    RawKeyboard.instance.addListener(G.handleHardwareKeyRepeat);
     
     G.prefs = await SharedPreferences.getInstance();
 
