@@ -378,8 +378,9 @@ static VoidCallback? onExtractionComplete;
 }
 
 class Workflow {
+
 static Future<bool> showBootSelectionDialog(BuildContext context) async {
-  final result = await showDialog<int>(
+  int? dialogResult = await showDialog<int>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
@@ -445,6 +446,9 @@ static Future<bool> showBootSelectionDialog(BuildContext context) async {
     },
   );
   
+  // Handle null result (dialog dismissed)
+  int result = dialogResult ?? 2; // Default to Proot desktop if dialog dismissed
+  
   // Execute the selected command
   switch (result) {
     case 1: // Native desktop
@@ -461,10 +465,6 @@ static Future<bool> showBootSelectionDialog(BuildContext context) async {
       break;
     case 5: // Wine glibc desktop
       Util.termWrite("\$DATA_DIR/usr/bin/xodxx");
-      break;
-    default:
-      // If dialog is dismissed, default to Proot desktop
-      result = 2;
       break;
   }
   
