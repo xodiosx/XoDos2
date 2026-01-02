@@ -731,25 +731,25 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     // Write environment variables at the very beginning
     String envCommands = """
 export DATA_DIR=${G.dataPath}
-export LD_LIBRARY_PATH=\\$DATA_DIR/lib:\\$DATA_DIR/usr/lib:\\$DATA_DIR/usr/libexec/:\\$LD_LIBRARY_PATH
-export PATH=\\$DATA_DIR/bin:\\$PATH:\\$DATA_DIR/usr/libexec:\\$DATA_DIR/usr/bin
-export PREFIX=\\$DATA_DIR/usr
-export HOME=\\$DATA_DIR/home
-export TMPDIR=\\$DATA_DIR/usr/tmp
-export FONTCONFIG_PATH=\\$PREFIX/etc/fonts       
-export FONTCONFIG_FILE=\\$PREFIX/etc/fonts/fonts.conf 
-mkdir -p \\$TMPDIR
-mkdir -p \\$HOME
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin
+export PREFIX=\$DATA_DIR/usr
+export HOME=\$DATA_DIR/home
+export TMPDIR=\$DATA_DIR/usr/tmp
+export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
+export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
+mkdir -p \$TMPDIR
+mkdir -p \$HOME
 export DISPLAY=:4
-export XDG_RUNTIME_DIR=\\$DATA_DIR/usr/tmp/
-export X11_UNIX_PATH=\\$DATA_DIR/usr/tmp/.X11-unix
+export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
+export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
 
-export TMPDIR=\\$DATA_DIR/usr/tmp
-export XDG_RUNTIME_DIR=\\$TMPDIR/runtime
+export TMPDIR=\$DATA_DIR/usr/tmp
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 cd 
-export XDG_RUNTIME_DIR=\\$TMPDIR/runtime
-export XDG_CACHE_HOME=\\$PREFIX/tmp/.cache
-mkdir -p \\$XDG_CACHE_HOME
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
+export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
+mkdir -p \$XDG_CACHE_HOME
 """;
     
     // Write the commands to the terminal
