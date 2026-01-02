@@ -1554,7 +1554,14 @@ class _TerminalPageState extends State<TerminalPage> {
     // xterm 4.0.0 no longer has terminal.selection
     // Use controller.buffer for copy logic if available
     final buffer = termPty.terminal.buffer;
-    final text = buffer.lines.map((l) => l.string).join('\n');
+    final lineCount = buffer.lines.length;
+final textBuffer = StringBuffer();
+
+for (int i = 0; i < lineCount; i++) {
+  textBuffer.writeln(buffer.lines[i].string);
+}
+
+final text = textBuffer.toString();
     if (text.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: text));
       ScaffoldMessenger.of(context).showSnackBar(

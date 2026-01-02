@@ -358,7 +358,7 @@ static VoidCallback? onExtractionComplete;
     final String? char = event.character;
     if (char != null && char.isNotEmpty) {
       term.keyInput(
-        TerminalKey.character(
+        TerminalKey.ofChar(
           char,
           ctrl: G.keyboard.ctrl,
           alt: G.keyboard.alt,
