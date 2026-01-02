@@ -357,16 +357,15 @@ static VoidCallback? onExtractionComplete;
 
     final String? char = event.character;
     if (char != null && char.isNotEmpty) {
-  final key = TerminalKey.ofChar(char);
-  term.keyInput(
-    key,
-    ctrl: G.keyboard.ctrl,
-    alt: G.keyboard.alt,
-    shift: G.keyboard.shift,
-  );
-}
-    
-    
+      term.keyInput(
+        TerminalKey.character(
+          char,
+          ctrl: G.keyboard.ctrl,
+          alt: G.keyboard.alt,
+          shift: G.keyboard.shift,
+        ),
+      );
+    }
   }
 }
   
@@ -695,8 +694,6 @@ mkdir -p \$XDG_CACHE_HOME
     G.termPtys = {};
 
     G.keyboard = VirtualKeyboard(defaultInputHandler);
-    
-    RawKeyboard.instance.addListener(G.handleHardwareKeyRepeat);
     
     G.prefs = await SharedPreferences.getInstance();
 
