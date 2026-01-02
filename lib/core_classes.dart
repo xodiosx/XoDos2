@@ -378,6 +378,101 @@ static VoidCallback? onExtractionComplete;
 }
 
 class Workflow {
+// Add this method to the Workflow class
+static Future<void> showBootSelectionDialog(BuildContext context) async {
+  final result = await showDialog<int>(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Select Desktop Environment'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(1); // Native desktop
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                ),
+                child: Text('Native Desktop'),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(2); // Proot desktop
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                ),
+                child: Text('Proot Desktop'),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(3); // Kali Linux desktop
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                ),
+                child: Text('Kali Linux Desktop'),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(4); // Wine bionic desktop
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                ),
+                child: Text('Wine Bionic Desktop'),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(5); // Wine glibc desktop
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                ),
+                child: Text('Wine Glibc Desktop'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+  
+  // Execute the selected command
+  switch (result) {
+    case 1: // Native desktop
+      Util.termWrite("\$DATA_DIR/usr/bin/xodos");
+      break;
+    case 2: // Proot desktop - continue with normal workflow
+      // Don't write anything - will continue with normal boot
+      break;
+    case 3: // Kali Linux desktop
+      Util.termWrite("\$DATA_DIR/usr/bin/Kalix");
+      break;
+    case 4: // Wine bionic desktop
+      Util.termWrite("\$DATA_DIR/usr/bin/xodxx2");
+      break;
+    case 5: // Wine glibc desktop
+      Util.termWrite("\$DATA_DIR/usr/bin/xodxx");
+      break;
+    default:
+      // If dialog is dismissed, default to Proot desktop
+      break;
+  }
+  
+  // Return true if Proot desktop was selected (to continue normal workflow)
+  // Return false for other options (which run their own commands)
+  return result == 2;
+}
+
 
   static Future<void> grantPermissions() async {
     Permission.storage.request();
@@ -418,22 +513,22 @@ export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/sys
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
-export PATH=\$DATA_DIR/usr/bin:$PATH:/system/bin
+export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=$PREFIX/etc/fonts        # directory containing fonts.conf
-export FONTCONFIG_FILE=$PREFIX/etc/fonts/fonts.conf  # the main config file
-mkdir -p $TMPDIR
-mkdir -p $HOME
+export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
+export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
+mkdir -p \$TMPDIR
+mkdir -p \$HOME
 export DISPLAY=:4
 export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
 export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
 export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
 export TMPDIR=\$DATA_DIR/usr/tmp
-export XDG_RUNTIME_DIR=$TMPDIR/runtime
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 cd 
-export XDG_RUNTIME_DIR=$TMPDIR/runtime
-export XDG_CACHE_HOME=$PREFIX/tmp/.cache
-mkdir -p $XDG_CACHE_HOME
+export XDG_RUNTIME_DIR=\$TMPDIR/runtime
+export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
+mkdir -p \$XDG_CACHE_HOME
 
 cd \$DATA_DIR
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/busybox
@@ -457,7 +552,7 @@ ln -sf ../applib/libproot-loader.so \$DATA_DIR/lib/loader
 chmod -R +x bin/*
 chmod -R +x usr/bin/*
 chmod -R +x libexec/proot/*
-chmod -R +x use/libexec/*
+chmod -R +x usr/libexec/*
 chmod 1777 tmp
 \$DATA_DIR/bin/tar zxf patch.tar.gz
 \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.gz
@@ -527,8 +622,8 @@ export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
 export PATH=\$DATA_DIR/usr/bin:$PATH:/system/bin
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=$PREFIX/etc/fonts        # directory containing fonts.conf
-export FONTCONFIG_FILE=$PREFIX/etc/fonts/fonts.conf  # the main config file
+export FONTCONFIG_PATH=$PREFIX/etc/fonts        
+export FONTCONFIG_FILE=$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
 export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$DATA_DIR/usr/lib
@@ -654,12 +749,12 @@ ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
-export PATH=\$DATA_DIR/usr/bin:$PATH:/system/bin
+export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=$PREFIX/etc/fonts        # directory containing fonts.conf
-export FONTCONFIG_FILE=$PREFIX/etc/fonts/fonts.conf  # the main config file
-mkdir -p $TMPDIR
-mkdir -p $HOME
+export FONTCONFIG_PATH=\$PREFIX/etc/fonts        
+export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf  
+mkdir -p \$TMPDIR
+mkdir -p \$HOME
 
 \$DATA_DIR/bin/busybox sed "s/4713/${Util.getGlobal("defaultAudioPort") as int}/g" \$DATA_DIR/bin/pulseaudio.conf > \$DATA_DIR/bin/pulseaudio.conf.tmp
 rm -rf \$DATA_DIR/pulseaudio_tmp/*
@@ -840,10 +935,17 @@ static Future<void> launchGUIBackend() async {
     await X11Flutter.launchX11Page();
   }
 
-  static Future<void> workflow() async {
-    grantPermissions();
-    await initData();
-    await initTerminalForCurrent();
+  // Modify the workflow() method to show the dialog before starting
+static Future<void> workflow() async {
+  grantPermissions();
+  await initData();
+  await initTerminalForCurrent();
+  
+  // Show boot selection dialog
+  final shouldContinueWithProot = await showBootSelectionDialog(G.homePageStateContext);
+  
+  // If user selected Proot desktop (option 2), continue with normal workflow
+  if (shouldContinueWithProot) {
     setupAudio();
     launchCurrentContainer();
     if (Util.getGlobal("autoLaunchVnc") as bool) {
@@ -854,7 +956,15 @@ static Future<void> launchGUIBackend() async {
         return;
       }
       launchGUIBackend();
-      waitForConnection().then((value) => G.wasAvncEnabled?launchAvnc():launchBrowser());
+      waitForConnection().then((value) => G.wasAvncEnabled ? launchAvnc() : launchBrowser());
     }
+  } else {
+    // For other options, they've already run their commands via termWrite
+    // We don't need to continue with the normal container setup
+    // You might want to add additional setup here if needed
   }
+}
+
+  
+  
 }
