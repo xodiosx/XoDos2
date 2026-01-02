@@ -42,39 +42,52 @@ class Util {
 
 
 static Map<String, String> getEnvironmentVariables() {
-String dataDir = G.dataPath ?? (await getApplicationSupportDirectory()).path;
- // String dataDir = G.dataPath;
-  String prefix = "\$dataDir/usr";
-  String home = "\$dataDir/home";
-  String tmpdir = "\$dataDir/usr/tmp";
-  String xdgRuntimeDir = "\$tmpdir/runtime";
-  String xdgCacheHome = "\$prefix/tmp/.cache";
+  // We assume G.dataPath is already set by initData()
+  if (G.dataPath.isEmpty) {
+    // Return default environment if dataPath is not set
+    return Platform.environment;
+  }
+
+  String dataDir = G.dataPath;
+  String prefix = "$dataDir/usr";
+  String home = "$dataDir/home";
+  String tmpdir = "$dataDir/usr/tmp";
+  String xdgRuntimeDir = "$tmpdir/runtime";
+  String xdgCacheHome = "$prefix/tmp/.cache";
   
   // Create the directories
-  Directory(tmpdir).createSync(recursive: true);
-  Directory(home).createSync(recursive: true);
-  Directory(xdgRuntimeDir).createSync(recursive: true);
-  Directory(xdgCacheHome).createSync(recursive: true);
+  try {
+    Directory(tmpdir).createSync(recursive: true);
+    Directory(home).createSync(recursive: true);
+    Directory(xdgRuntimeDir).createSync(recursive: true);
+    Directory(xdgCacheHome).createSync(recursive: true);
+  } catch (e) {
+    print("Error creating directories: $e");
+  }
   
   // Get current environment
   Map<String, String> env = Platform.environment;
   
+  // Get existing values or empty strings
+  String existingLdLibraryPath = env["LD_LIBRARY_PATH"] ?? "";
+  String existingPath = env["PATH"] ?? "";
+  
   // Set our custom environment variables
+  // Note: No $ signs needed here - we're building the strings directly
   env["DATA_DIR"] = dataDir;
-  env["LD_LIBRARY_PATH"] = "\$dataDir/lib:\$prefix/lib:\$prefix/libexec/:\${env["LD_LIBRARY_PATH"] ?? ""}:/system/lib64";
-  env["PATH"] = "\$dataDir/bin:\${env["PATH"] ?? ""}:\$prefix/libexec:\$prefix/bin:/system/bin:\$prefix/libexec/binutils";
+  env["LD_LIBRARY_PATH"] = "$dataDir/lib:$prefix/lib:$prefix/libexec/:$existingLdLibraryPath:/system/lib64";
+  env["PATH"] = "$dataDir/bin:$existingPath:$prefix/libexec:$prefix/bin:/system/bin:$prefix/libexec/binutils";
   env["PREFIX"] = prefix;
   env["HOME"] = home;
   env["TMPDIR"] = tmpdir;
   env["DISPLAY"] = ":4";
-  env["XDG_RUNTIME_DIR"] = "\$dataDir/usr/tmp/";
-  env["X11_UNIX_PATH"] = "\$dataDir/usr/tmp/.X11-unix";
-  env["VK_ICD_FILENAMES"] = "\$dataDir/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json";
-  env["TMPDIR"] = tmpdir;
+  env["XDG_RUNTIME_DIR"] = "$prefix/tmp/";
+  env["X11_UNIX_PATH"] = "$prefix/tmp/.X11-unix";
+  env["VK_ICD_FILENAMES"] = "$prefix/share/vulkan/icd.d/wrapper_icd.aarch64.json";
   env["XDG_RUNTIME_DIR"] = xdgRuntimeDir;
   env["XDG_CACHE_HOME"] = xdgCacheHome;
-  env["FONTCONFIG_PATH"] = "\$prefix/etc/fonts";
-  env["FONTCONFIG_FILE"] = "\$prefix/etc/fonts/fonts.conf";
+  env["FONTCONFIG_PATH"] = "$prefix/etc/fonts";
+  env["FONTCONFIG_FILE"] = "$prefix/etc/fonts/fonts.conf";
   
   return env;
 }
