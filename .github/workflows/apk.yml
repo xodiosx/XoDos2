@@ -193,7 +193,10 @@ jobs:
           tag_name: ${{ github.event.inputs.version_tag }}
           name: XoDos ${{ github.event.inputs.version_tag }}
           files: |
-            build/app/outputs/flutter-apk/XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk
+            build/app/outputs/flutter-apk/XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk      
+          draft: false
+          prerelease: true
+          fail_on_unmatched_files: false
           body: |
             📱 **XoDos APK**
 
