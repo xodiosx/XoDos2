@@ -755,7 +755,7 @@ mkdir -p \$XDG_CACHE_HOME
   # Set environment variables
 prefixsh="/data/data/com.xodos/files/usr/bin"
     
-    if [ -d "$prefixsh" ]; then
+    if [ -d "\$prefixsh" ]; then
     export SHELL=/data/data/com.xodos/files/usr/bin/bash
     export COLORTERM=truecolor
     export TERMUX_APP__USER_ID=0
@@ -806,7 +806,8 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export PATH=/data/data/com.xodos/files/usr/bin
     export ANDROID_ASSETS=/system/app
     export _=/data/data/com.xodos/files/usr/bin/env
-    bash -r
+   fi
+     bash -r
     
 """;
     
