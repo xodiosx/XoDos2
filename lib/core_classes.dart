@@ -751,6 +751,63 @@ cd
 export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
 mkdir -p \$XDG_CACHE_HOME
+
+  # Set environment variables
+prefixsh="/data/data/com.xodos/files/usr/bin"
+    
+    if [ -d "$prefixsh" ]; then
+    export SHELL=/data/data/com.xodos/files/usr/bin/bash
+    export COLORTERM=truecolor
+    export TERMUX_APP__USER_ID=0
+    export PREFIX=/data/data/com.xodos/files/usr   
+    export SHELL_CMD__RUNNER_NAME=terminal-session
+    export TERMUX_APP__PACKAGE_NAME=com.xodos
+    export XCURSOR_PATH=/data/data/com.xodos/files/usr/share/icons
+    export TERMUX_APP__VERSION_NAME=1.0
+    
+    export XCURSOR_SIZE=45
+    
+    export PWD=/data/data/com.xodos/files/home
+    export DXVK_STATE_CACHE=1
+    export TERMUX_APP__FILES_DIR=/data/user/0/com.xodos/files
+    export BOX64_LOG=0
+    export TERMUX_VERSION=1.0.4
+    export EXTERNAL_STORAGE=/sdcard
+    export LD_PRELOAD=/data/data/com.xodos/files/usr/lib/libtermux-exec-ld-preload.so
+    export HOME=/data/data/com.xodos/files/home
+    export LANG=en_US.UTF-8
+    export SHELL_CMD__TERMINAL_SESSION_NUMBER_SINCE_BOOT=0
+    
+    export ANDROID_RUNTIME_ROOT=/apex/com.android.runtime
+    export TERMUX_APP__PACKAGE_MANAGER=apt
+    export DEX2OATBOOTCLASSPATH=/apex/com.android.runtime/javalib/core-oj.jar:/apex/com.android.runtime/javalib/core-libart.jar:/apex/com.android.runtime/javalib/okhttp.jar:/apex/com.android.runtime/javalib/bouncycastle.jar:/apex/com.android.runtime/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/system/framework/knoxsdk.jar:/system/framework/knoxanalyticssdk.jar:/system/framework/smartbondingservice.jar:/system/framework/securetimersdk.jar:/system/framework/fipstimakeystore.jar:/system/framework/timakeystore.jar:/system/framework/sec_sdp_sdk.jar:/system/framework/sec_sdp_hidden_sdk.jar:/system/framework/drutils.jar:/system/framework/android.test.base.jar:/system/framework/ucmopensslenginehelper.jar:/system/framework/esecomm.jar:/system/framework/tcmiface.jar:/system/framework/QPerformance.jar:/system/framework/UxPerformance.jar
+    export TMPDIR=/data/data/com.xodos/files/usr/tmp
+    export ANDROID_DATA=/data
+    export TERMUX_APP__AM_SOCKET_SERVER_ENABLED=true
+    export SHELL_CMD__SHELL_ID=0
+    
+    export ANDROID_STORAGE=/storage
+    export TERM=xterm-256color
+    export TERMUX_APP__IS_DEBUGGABLE_BUILD=true
+    export ASEC_MOUNTPOINT=/mnt/asec
+    export DISPLAY=:4
+    export SHLVL=1
+    export ANDROID_ROOT=/system
+    export SHELL_CMD__TERMINAL_SESSION_NUMBER_SINCE_APP_START=0
+    export BOOTCLASSPATH=/apex/com.android.runtime/javalib/core-oj.jar:/apex/com.android.runtime/javalib/core-libart.jar:/apex/com.android.runtime/javalib/okhttp.jar:/apex/com.android.runtime/javalib/bouncycastle.jar:/apex/com.android.runtime/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/system/framework/knoxsdk.jar:/system/framework/knoxanalyticssdk.jar:/system/framework/smartbondingservice.jar:/system/framework/securetimersdk.jar:/system/framework/fipstimakeystore.jar:/system/framework/timakeystore.jar:/system/framework/sec_sdp_sdk.jar:/system/framework/sec_sdp_hidden_sdk.jar:/system/framework/drutils.jar:/system/framework/android.test.base.jar:/system/framework/ucmopensslenginehelper.jar:/system/framework/esecomm.jar:/system/framework/tcmiface.jar:/system/framework/QPerformance.jar:/system/framework/UxPerformance.jar:/apex/com.android.conscrypt/javalib/conscrypt.jar:/apex/com.android.media/javalib/updatable-media.jar
+    export TERMUX_APP__APK_RELEASE=GITHUB
+    export XDG_RUNTIME_DIR=/data/data/com.xodos/files/usr/tmp
+    export DXVK_LOG_PATH=/data/data/com.xodos/files/home/.cache
+    export TERMUX_APP__VERSION_CODE=1
+    export DXVK_STATE_CACHE_PATH=/data/data/com.xodos/files/home/.cache
+    export ANDROID_TZDATA_ROOT=/apex/com.android.tzdata
+    export SHELL_CMD__PACKAGE_NAME=com.xodos
+    export XCURSOR_THEME=gaming
+    export PATH=/data/data/com.xodos/files/usr/bin
+    export ANDROID_ASSETS=/system/app
+    export _=/data/data/com.xodos/files/usr/bin/env
+    bash -r
+    
 """;
     
     // Write the commands to the terminal
