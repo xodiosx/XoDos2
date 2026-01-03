@@ -763,10 +763,8 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export SHELL_CMD__RUNNER_NAME=terminal-session
     export TERMUX_APP__PACKAGE_NAME=com.xodos
     export XCURSOR_PATH=/data/data/com.xodos/files/usr/share/icons
-    export TERMUX_APP__VERSION_NAME=1.0
-    
-    export XCURSOR_SIZE=45
-    
+    export TERMUX_APP__VERSION_NAME=1.0    
+    export XCURSOR_SIZE=45  
     export PWD=/data/data/com.xodos/files/home
     export DXVK_STATE_CACHE=1
     export TERMUX_APP__FILES_DIR=/data/user/0/com.xodos/files
@@ -807,7 +805,14 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export ANDROID_ASSETS=/system/app
     export _=/data/data/com.xodos/files/usr/bin/env
    fi
-     bash -r
+clear
+if [ -f "\$PREFIX/etc/bash.bashrc" ]; then 
+     source "\$PREFIX/etc/bash.bashrc"
+    fi
+if [ -f "\$HOME/.bashrc" ]; then
+    . "\$HOME/.bashrc"
+fi
+    
     
 """;
     
