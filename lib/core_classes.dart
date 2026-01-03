@@ -814,7 +814,7 @@ if [ -f "\$PREFIX/etc/bash.bashrc" ]; then
 if [ -f "\$HOME/.bashrc" ]; then
     . "\$HOME/.bashrc"
 fi
-    
+  bash  
     
 """;
     
