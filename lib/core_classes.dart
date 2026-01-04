@@ -792,22 +792,7 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export _=/data/data/com.xodos/files/usr/bin/env
    fi
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
-  if [ -n "\$BASH" ]; then
-    # we're already in bash
-    :
-
-else
-    bash
-fi
-clear
-if [ -f "\$PREFIX/etc/bash.bashrc" ]; then 
-     source "\$PREFIX/etc/bash.bashrc"
-    fi
-if [ -f "\$HOME/.bashrc" ]; then
-    . "\$HOME/.bashrc"
-fi
-    
-
+exec /data/data/com.xodos/files/usr/bin/bash --login   
     
 """;
     
