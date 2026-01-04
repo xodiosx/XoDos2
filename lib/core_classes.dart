@@ -619,23 +619,7 @@ done
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
 export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin
-export PREFIX=\$DATA_DIR/usr
-export HOME=\$DATA_DIR/home
-export TMPDIR=\$DATA_DIR/usr/tmp
-export FONTCONFIG_PATH=\$PREFIX/etc/fonts        
-export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
-mkdir -p \$TMPDIR
-mkdir -p \$HOME
-export DISPLAY=:4
-export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
-export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
-export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
-export TMPDIR=\$DATA_DIR/usr/tmp
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-cd 
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
-mkdir -p \$XDG_CACHE_HOME
+
 
 """);
     // Some data initialization
@@ -807,6 +791,14 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export ANDROID_ASSETS=/system/app
     export _=/data/data/com.xodos/files/usr/bin/env
    fi
+ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
+  if [ -n "$BASH" ]; then
+    # we're already in bash
+    :
+
+else
+    bash
+fi
 clear
 if [ -f "\$PREFIX/etc/bash.bashrc" ]; then 
      source "\$PREFIX/etc/bash.bashrc"
@@ -814,7 +806,8 @@ if [ -f "\$PREFIX/etc/bash.bashrc" ]; then
 if [ -f "\$HOME/.bashrc" ]; then
     . "\$HOME/.bashrc"
 fi
-  bash  
+    
+
     
 """;
     
@@ -833,8 +826,6 @@ fi
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/lib
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
@@ -1023,25 +1014,7 @@ static Future<void> workflow() async {
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
 export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:\$DATA_DIR/usr/libexec/binutils
-export PREFIX=\$DATA_DIR/usr
-export HOME=\$DATA_DIR/home
-export TMPDIR=\$DATA_DIR/usr/tmp
-export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
-export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
-mkdir -p \$TMPDIR
-mkdir -p \$HOME
-export DISPLAY=:4
-export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
-export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
-export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
-export TMPDIR=\$DATA_DIR/usr/tmp
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-cd 
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
-mkdir -p \$XDG_CACHE_HOME
+
 """;
   
   // Write environment commands to terminal
@@ -1062,6 +1035,8 @@ mkdir -p \$XDG_CACHE_HOME
       waitForConnection().then((value) => G.wasAvncEnabled ? launchAvnc() : launchBrowser());
     }
   } else {
+    setupAudio();
+    
     // For other options, they've already run their commands via termWrite
     // We don't need to continue with the normal container setup
     // You might want to add additional setup here if needed
