@@ -6,7 +6,7 @@ on:
       version_tag:
         description: 'Version tag (1.0.3)'
         required: true
-        default: '1.0.3'
+        default: '1.0.4'
 
 
 permissions:
@@ -179,8 +179,8 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag "v${{ github.event.inputs.version_tag }}"
-          git push origin "v${{ github.event.inputs.version_tag }}"
+         # git tag "v${{ github.event.inputs.version_tag }}"
+        #  git push origin "v${{ github.event.inputs.version_tag }}"
 
       # -------------------------
       # Create GitHub Release
