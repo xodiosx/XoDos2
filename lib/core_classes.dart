@@ -792,7 +792,7 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export _=/data/data/com.xodos/files/usr/bin/env
    fi
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
-  if [ -n "$BASH" ]; then
+  if [ -n "\$BASH" ]; then
     # we're already in bash
     :
 
