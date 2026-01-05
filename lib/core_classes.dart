@@ -986,7 +986,7 @@ static Future<void> launchGUIBackend() async {
     await X11Flutter.launchX11Page();
   }
 
-  // Modify the workflow() method to show the dialog before starting
+/*  // Modify the workflow() method to show the dialog before starting
 static Future<void> workflow() async {
   grantPermissions();
   await initData();
@@ -1027,7 +1027,25 @@ export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:\$DA
     // You might want to add additional setup here if needed
   }
 }
+*/
 
+static Future<void> workflow() async {
+    grantPermissions();
+    await initData();
+    await initTerminalForCurrent();
+    setupAudio();
+    launchCurrentContainer();
+    if (Util.getGlobal("autoLaunchVnc") as bool) {
+      if (G.wasX11Enabled) {
+        await Util.waitForXServer();
+        launchGUIBackend();
+        launchX11();
+        return;
+      }
+      launchGUIBackend();
+      waitForConnection().then((value) => G.wasAvncEnabled?launchAvnc():launchBrowser());
+    }
+  }
   
   
 }
