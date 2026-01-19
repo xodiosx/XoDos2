@@ -5,7 +5,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:retry/retry.dart';
 
@@ -37,7 +37,6 @@ import 'spirited_mini_games.dart';
 import 'constants.dart';
 import 'default_values.dart';
 // DXVK Installer Class
-import 'package:package_info_plus/package_info_plus.dart';
 
 class Util {
 
@@ -110,8 +109,8 @@ class Util {
       case "uos" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "virgl" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "venus" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
-      case "defaultVenusCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--no-virgl --venus --socket-path=\$CONTAINER_DIR/tmp/.virgl_test");
-      case "defaultVenusOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("GALLIUM_DRIVER=venus ANDROID_VENUS=1");
+      case "defaultVenusCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--no-virgl --venus --socket-path=/data/data/com.xodos/files/containers/0/tmp/.virgl_test");
+      case "defaultVenusOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}(" VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/virtio_icd.aarch64.json VN_DEBUG=vtest ");
       case "androidVenus" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
       case "turnip" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "dri3" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
@@ -123,7 +122,7 @@ class Util {
       case "avncScaleFactor" : return b ? G.prefs.getDouble(key)!.clamp(-1.0, 1.0) : (value){G.prefs.setDouble(key, value); return value;}(-0.5);
       case "useX11" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "defaultFFmpegCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("-hide_banner -an -max_delay 1000000 -r 30 -f android_camera -camera_index 0 -i 0:0 -vf scale=iw/2:-1 -rtsp_transport udp -f rtsp rtsp://127.0.0.1:8554/stream");
-      case "defaultVirglCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test");
+      case "defaultVirglCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--use-egl-surfaceless --use-gles --socket-path=/data/data/com.xodos/files/usr/tmp/.virgl_test");
       case "defaultVirglOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("GALLIUM_DRIVER=virpipe");
       case "defaultTurnipOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("MESA_LOADER_DRIVER_OVERRIDE=zink VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json TU_DEBUG=noconform");
       case "defaultHidpiOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("GDK_SCALE=2 QT_FONT_DPI=192");
@@ -137,7 +136,7 @@ class Util {
       return m[key];
     }
     switch (key) {
-      case "name" : return (value){addCurrentProp(key, value); return value;}("XoDos Terminal");
+      case "name" : return (value){addCurrentProp(key, value); return value;}("XoDos Debian");
       case "boot" : return (value){addCurrentProp(key, value); return value;}(D.boot);
       case "vnc" : return (value){addCurrentProp(key, value); return value;}("startnovnc &");
       case "vncUrl" : return (value){addCurrentProp(key, value); return value;}("http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678");
@@ -380,101 +379,6 @@ static VoidCallback? onExtractionComplete;
 
 class Workflow {
 
-static Future<bool> showBootSelectionDialog(BuildContext context) async {
-  int? dialogResult = await showDialog<int>(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Select Desktop Environment'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(1); // Native desktop
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                ),
-                child: Text('Native Desktop'),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(2); // Proot desktop
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                ),
-                child: Text('Proot Desktop'),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(3); // Kali Linux desktop
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                ),
-                child: Text('Kali Linux Desktop'),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(4); // Wine bionic desktop
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                ),
-                child: Text('Wine Bionic Desktop'),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(5); // Wine glibc desktop
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                ),
-                child: Text('Wine Glibc Desktop'),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-  
-  // Handle null result (dialog dismissed)
-  int result = dialogResult ?? 2; // Default to Proot desktop if dialog dismissed
-  
-  // Execute the selected command
-  switch (result) {
-    case 1: // Native desktop
-      Util.termWrite("\$DATA_DIR/usr/bin/xodos");
-      break;
-    case 2: // Proot desktop - continue with normal workflow
-      // Don't write anything - will continue with normal boot
-      break;
-    case 3: // Kali Linux desktop
-      Util.termWrite("\$DATA_DIR/usr/bin/Kalix");
-      break;
-    case 4: // Wine bionic desktop
-      Util.termWrite("\$DATA_DIR/usr/bin/xodxx2");
-      break;
-    case 5: // Wine glibc desktop
-      Util.termWrite("\$DATA_DIR/usr/bin/xodxx");
-      break;
-  }
-  
-  // Return true if Proot desktop was selected (to continue normal workflow)
-  // Return false for other options (which run their own commands)
-  return result == 2;
-}
-
-
   static Future<void> grantPermissions() async {
     Permission.storage.request();
     //Permission.manageExternalStorage.request();
@@ -492,8 +396,7 @@ static Future<bool> showBootSelectionDialog(BuildContext context) async {
     // tmp folder for proot, though I don't know why proot needs this
     Util.createDirFromString("${G.dataPath}/proot_tmp");
     // tmp folder for pulseaudio
-    Util.createDirFromString("${G.dataPath}/usr/");
-    Util.createDirFromString("${G.dataPath}/home/");
+    Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
     // After extraction, get bin folder and libexec folder
     // bin contains proot, pulseaudio, tar, etc.
     // libexec contains proot loader
@@ -501,37 +404,20 @@ static Future<bool> showBootSelectionDialog(BuildContext context) async {
     "assets/assets.zip",
     "${G.dataPath}/assets.zip",
     );
-    // patch.tar.gz contains the xodos folder
-    // These are some patches that will be mounted to ~/.local/share/tiny
+    // patch.tar.xz contains the xodos folder with bionic rootfs
+    // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
     await Util.copyAsset(
-    "assets/patch.tar.gz",
-    "${G.dataPath}/patch.tar.gz",
+    "assets/patch.tar.xz",
+    "${G.dataPath}/patch.tar.xz",
     );
+  /*  await Util.copyAsset(
+    "assets/native.tar.xz",
+    "${G.dataPath}/native.tar.xz",
+    );*/
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
-export PREFIX=\$DATA_DIR/usr
-export HOME=\$DATA_DIR/home
-export TMPDIR=\$DATA_DIR/usr/tmp
-export PATH=\$DATA_DIR/usr/bin:\$PATH:/system/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:/system/lib64
-export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
-export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
-mkdir -p \$TMPDIR
-mkdir -p \$HOME
-export DISPLAY=:4
-export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
-export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
-export VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
-export TMPDIR=\$DATA_DIR/usr/tmp
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-cd 
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
-mkdir -p \$XDG_CACHE_HOME
-
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
 cd \$DATA_DIR
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/busybox
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/sh
@@ -540,24 +426,22 @@ ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/xz
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/gzip
 ln -sf ../applib/libexec_proot.so \$DATA_DIR/bin/proot
 ln -sf ../applib/libexec_tar.so \$DATA_DIR/bin/tar
-ln -sf ../applib/libexec_virgl_test_server.so \$DATA_DIR/bin/virgl_test_server
+ln -sf ../applib/libexec_virgl_test_server.so \$DATA_DIR/bin/virgl_test_servero
 ln -sf ../applib/libexec_getifaddrs_bridge_server.so \$DATA_DIR/bin/getifaddrs_bridge_server
 ln -sf ../applib/libexec_pulseaudio.so \$DATA_DIR/bin/pulseaudio
 ln -sf ../applib/libbusybox.so \$DATA_DIR/lib/libbusybox.so.1.37.0
 ln -sf ../applib/libtalloc.so \$DATA_DIR/lib/libtalloc.so.2
-ln -sf ../applib/libvirglrenderer.so \$DATA_DIR/lib/libvirglrenderer.so
-ln -sf ../applib/libepoxy.so \$DATA_DIR/lib/libepoxy.so
+#ln -sf ../applib/libvirglrenderer.so \$DATA_DIR/lib/libvirglrenderer.so
+#ln -sf ../applib/libepoxy.so \$DATA_DIR/lib/libepoxy.so
 ln -sf ../applib/libproot-loader32.so \$DATA_DIR/lib/loader32
 ln -sf ../applib/libproot-loader.so \$DATA_DIR/lib/loader
 
 \$DATA_DIR/bin/busybox unzip -o assets.zip
-chmod -R +x bin/*
-chmod -R +x usr/bin/*
+#\$DATA_DIR/bin/busybox tar -xf native.tar.xz -C /data/data/com.xodos/files/ --preserve-permissions
 chmod -R +x libexec/proot/*
-chmod -R +x usr/libexec/*
 chmod 1777 tmp
-\$DATA_DIR/bin/tar zxf patch.tar.gz
-\$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.gz
+\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz
+\$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
 """);
   }
 
@@ -572,7 +456,7 @@ chmod 1777 tmp
     Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
     // This is the container rootfs, split into xa* by split command, placed in assets
     // On first startup, use this, don't let the user choose another one
-
+/*
     // Load custom manifest for container files
     final manifestString = await rootBundle.loadString('assets/container_manifest.json');
     final Map<String, dynamic> manifest = json.decode(manifestString);
@@ -584,6 +468,14 @@ chmod 1777 tmp
       final fileName = assetPath.split('/').last;
       await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
     }
+*/
+
+// Copy single container tarball instead of split xa files
+await Util.copyAsset(
+  "assets/container.tar.xz",
+  "${G.dataPath}/xodos.tar.xz",
+);
+
 
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
@@ -599,7 +491,9 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
-\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C containers/0"
+#\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C containers/0"
+\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f xodos.tar.xz -C containers/0"
+
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
@@ -614,12 +508,8 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
-
-\$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
-ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin
-
+#\$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
+\$DATA_DIR/bin/busybox rm -rf xodos.tar.xz tmp1 tmp2 tmp3
 
 """);
     // Some data initialization
@@ -632,7 +522,7 @@ export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin
     final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
     
     await G.prefs.setStringList("containersInfo", ["""{
-"name":"XoDos Terminal",
+"name":"XoDos Rebirth",
 "boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
 "vnc":"startnovnc &",
 "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
@@ -710,7 +600,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     WakelockPlus.toggle(enable: Util.getGlobal("wakelock"));
   }
 
-  static Future<void> initTerminalForCurrent() async {
+    static Future<void> initTerminalForCurrent() async {
   if (!G.termPtys.containsKey(G.currentContainer)) {
     G.termPtys[G.currentContainer] = TermPty();
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -721,7 +611,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     String envCommands = """
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/bin
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
@@ -786,14 +676,25 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export DXVK_STATE_CACHE_PATH=/data/data/com.xodos/files/home/.cache
     export ANDROID_TZDATA_ROOT=/apex/com.android.tzdata
     export SHELL_CMD__PACKAGE_NAME=com.xodos
-    export XCURSOR_THEME=gaming
-    export PATH=/data/data/com.xodos/files/usr/bin
+    #export XCURSOR_THEME=gaming
+    export PATH=/data/data/com.xodos/files/usr/bin:\$PATH
     export ANDROID_ASSETS=/system/app
     export _=/data/data/com.xodos/files/usr/bin/env
-   fi
-ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/tmp
-exec /data/data/com.xodos/files/usr/bin/bash --login   
-    
+#export XDG_DATA_DIRS=\$PREFIX/usr/share
+#export XDG_CONFIG_DIRS=\$PREFIX/etc/xdg
+#export XDG_CONFIG_HOME=\$HOME/.config
+#export XDG_DATA_HOME=\$HOME/.local/share
+#export XDG_CACHE_HOME=\$HOME/.cache
+unset VK_ICD_FILENAMES
+ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
+exec \$DATA_DIR/usr/bin/bash --login   
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/bin
+
+      cd 
+     fi
+
+
 """;
     
     // Write the commands to the terminal
@@ -820,12 +721,11 @@ export PATH=\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/lib
 \$DATA_DIR/bin/busybox sed "s/4713/${Util.getGlobal("defaultAudioPort") as int}/g" \$DATA_DIR/bin/pulseaudio.conf > \$DATA_DIR/bin/pulseaudio.conf.tmp
 rm -rf \$TMPDIR/*
-TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$DATA_DIR/bin:\$LD_LIBRARY_PATH \$DATA_DIR/bin/pulseaudio -F \$DATA_DIR/bin/pulseaudio.conf.tmp
-exit
-"""));
-  await G.audioPty?.exitCode;
-  }
+TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$DATA_DIR/bin:\$LD_LIBRARY_PATH \$DATA_DIR/bin/pulseaudio --daemonize=no --exit-idle-time=-1 -F \$DATA_DIR/bin/pulseaudio.conf.tmp
 
+"""));
+  //await G.audioPty?.exitCode;
+  }
   static Future<void> launchCurrentContainer() async {
     String extraMount = ""; //mount options and other proot options
     String extraOpt = "";
@@ -841,8 +741,7 @@ exit
       extraMount += "--mount=\$DATA_DIR/tiny/wechat/uos-lsb:/etc/lsb-release --mount=\$DATA_DIR/tiny/wechat/uos-release:/usr/lib/os-release ";
       extraMount += "--mount=\$DATA_DIR/tiny/wechat/license/var/uos:/var/uos --mount=\$DATA_DIR/tiny/wechat/license/var/lib/uos-license:/var/lib/uos-license ";
     }
-    
- /*   GPU   */
+ 
     // Hardware acceleration section - now includes Venus
 bool virglEnabled = Util.getGlobal("virgl") as bool;
 bool venusEnabled = Util.getGlobal("venus") as bool;
@@ -852,15 +751,14 @@ bool turnipEnabled = Util.getGlobal("turnip") as bool;
 if (Util.getGlobal("virgl")) {
   Util.execute("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH:/system/lib64
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:/system/bin:\$DATA_DIR/usr/libexec/binutils
+export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
-${G.dataPath}/bin/virgl_test_server ${Util.getGlobal("defaultVirglCommand")} &
+#${G.dataPath}/usr/bin/virgl_test_server ${Util.getGlobal("defaultVirglCommand")} &
 """);
   extraOpt += "${Util.getGlobal("defaultVirglOpt")} ";
-} else if (Util.getGlobal("venus")) {
+} 
+ if (Util.getGlobal("venus")) {
   // Venus hardware acceleration
   String venusCommand = Util.getGlobal("defaultVenusCommand") as String;
   String venusOpt = Util.getGlobal("defaultVenusOpt") as String;
@@ -873,20 +771,29 @@ ${G.dataPath}/bin/virgl_test_server ${Util.getGlobal("defaultVirglCommand")} &
   String androidVenusEnv = androidVenusEnabled ? "ANDROID_VENUS=1 " : "";
   
   // Build the full command
-  String fullCommand = "${androidVenusEnv} LD_PRELOAD=$ldPreload ${G.dataPath}/bin/virgl_test_server $venusCommand &";
+  String fullCommand = "${androidVenusEnv} ${G.dataPath}/bin/virgl_test_server $venusCommand &";
   
   Util.execute("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:/system/lib64
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
-$fullCommand
+
+#$fullCommand
+
 """);
   
   extraOpt += "$venusOpt ";
+    if (!(Util.getGlobal("dri3"))) {
+    extraOpt += "MESA_VK_WSI_DEBUG=sw ";
+  }
 }
 
 if (Util.getGlobal("turnip")) {
+ Util.termWrite("""
+. /data/data/com.xodos/files/usr/opt/drv
+export MESA_VK_WSI_PRESENT_MODE=mailbox
+""");
   extraOpt += "${Util.getGlobal("defaultTurnipOpt")} ";
   if (!(Util.getGlobal("dri3"))) {
     extraOpt += "MESA_VK_WSI_DEBUG=sw ";
@@ -902,8 +809,8 @@ if (Util.getGlobal("turnip")) {
         Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
@@ -917,6 +824,8 @@ ${Util.getCurrentProp("boot")}
 ${G.postCommand} > /dev/null 2>&1
 
 """);
+
+
 // Remove the "clear" command at the end
   }
 
@@ -933,8 +842,8 @@ static Future<void> launchGUIBackend() async {
       Util.termWrite("$vncCmd > /dev/null 2>&1 &");
     }
   }
-  // Remove the clear command entirely
-  // Util.termWrite("clear"); // DELETE THIS LINE
+  // Remove the clear command
+  // Util.termWrite("clear"); // 
 }
 
   static Future<void> waitForConnection() async {
@@ -985,67 +894,81 @@ static Future<void> launchGUIBackend() async {
   static Future<void> launchX11() async {
     await X11Flutter.launchX11Page();
   }
-
-/*  // Modify the workflow() method to show the dialog before starting
+  
 static Future<void> workflow() async {
   grantPermissions();
   await initData();
   await initTerminalForCurrent();
   
-  // Show boot selection dialog
-  final bool shouldContinueWithProot = await showBootSelectionDialog(G.homePageStateContext);
-  // Write environment variables to terminal
-  String envCommands = """
-export DATA_DIR=${G.dataPath}
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/libexec:\$DATA_DIR/usr/bin:\$DATA_DIR/usr/libexec/binutils
-
-""";
+  // Setup audio first
+  setupAudio();
   
-  // Write environment commands to terminal
-  G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert(envCommands));
-
-  // If user selected Proot desktop (option 2), continue with normal workflow
-  if (shouldContinueWithProot) {
-    setupAudio();
-    launchCurrentContainer();
-    if (Util.getGlobal("autoLaunchVnc") as bool) {
-      if (G.wasX11Enabled) {
-        await Util.waitForXServer();
-        launchGUIBackend();
-        launchX11();
-        return;
-      }
+  // Send virgl/venus server command to terminal BEFORE container starts
+  await startGraphicsServerInTerminal();
+  
+  // Then launch container
+  launchCurrentContainer();
+  
+  if (Util.getGlobal("autoLaunchVnc") as bool) {
+    if (G.wasX11Enabled) {
+      await Util.waitForXServer();
       launchGUIBackend();
-      waitForConnection().then((value) => G.wasAvncEnabled ? launchAvnc() : launchBrowser());
+      launchX11();
+      return;
     }
-  } else {
-    setupAudio();
-    
-    // For other options, they've already run their commands via termWrite
-    // We don't need to continue with the normal container setup
-    // You might want to add additional setup here if needed
+    launchGUIBackend();
+    waitForConnection().then((value) => G.wasAvncEnabled?launchAvnc():launchBrowser());
   }
 }
-*/
 
-static Future<void> workflow() async {
-    grantPermissions();
-    await initData();
-    await initTerminalForCurrent();
-    setupAudio();
-    launchCurrentContainer();
-    if (Util.getGlobal("autoLaunchVnc") as bool) {
-      if (G.wasX11Enabled) {
-        await Util.waitForXServer();
-        launchGUIBackend();
-        launchX11();
-        return;
-      }
-      launchGUIBackend();
-      waitForConnection().then((value) => G.wasAvncEnabled?launchAvnc():launchBrowser());
-    }
+// NEW METHOD: Send graphics server command to terminal
+static Future<void> startGraphicsServerInTerminal() async {
+  bool virglEnabled = Util.getGlobal("virgl") as bool;
+  bool venusEnabled = Util.getGlobal("venus") as bool;
+  
+  if (venusEnabled) {
+    print("Sending Venus server command to terminal");
+    
+    // Build the command
+    String venusCommand = Util.getGlobal("defaultVenusCommand") as String;
+    bool androidVenusEnabled = Util.getGlobal("androidVenus") as bool;
+    String androidVenusEnv = androidVenusEnabled ? "ANDROID_VENUS=1 " : "";
+    
+    // Send to terminal
+    Util.termWrite("""
+export DATA_DIR=${G.dataPath}
+export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+
+pkill -f 'virgl_*'  2>/dev/null || true
+rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
+. /data/data/com.xodos/files/usr/opt/drv
+VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json $androidVenusEnv virgl_test_server $venusCommand > \${CONTAINER_DIR}/venus.log 2>&1 &
+export MESA_VK_WSI_PRESENT_MODE=mailbox
+export VN_DEBUG=vtest
+echo "Venus server started in background"
+""");
+    
+  } else if (virglEnabled) {
+    print("Sending Virgl server command to terminal");
+    
+    Util.termWrite("""
+export DATA_DIR=${G.dataPath}
+export PATH=\$DATA_DIR/bin:\$PATH:/data/data/com.xodos/files/usr/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:/data/data/com.xodos/files/usr/lib
+export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+
+pkill -f 'virgl_*' 2>/dev/null || true
+rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
+
+virgl_test_server ${Util.getGlobal("defaultVirglCommand")} > \${CONTAINER_DIR}/virgl.log 2>&1 &
+
+echo "Virgl server started in background"
+""");
   }
+}
+  
   
   
 }

@@ -31,30 +31,31 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
           ),
           TextButton(
             onPressed: () async {
+              // Close confirmation dialog
               Navigator.of(context).pop();
+              
+              // Show loading overlay
               setState(() {
                 _isProcessing = true;
                 _statusMessage = AppLocalizations.of(context)!.backupInProgress;
               });
 
               try {
+                // Close the main dialog immediately
+                Navigator.of(context).pop();
+                
+                // Switch to terminal page
+                G.pageIndex.value = 0;
+                
+                // Wait a moment for terminal to become active
+                await Future.delayed(const Duration(milliseconds: 100));
+                
                 // Execute backup command using termWrite
                 Util.termWrite(
                   'cd / && ./busybox tar -Jcpvf /sd/xodos2backup.tar.xz '
                   '--exclude=".l2s.*" bin boot etc home/xodos/.config/ lib mnt opt '
-                  'root run sbin srv tmp usr var drivers scripts wincomponents busybox'
+                  'root run sbin srv tmp usr var drivers scripts wincomponents busybox && exit'
                 );
-                
-                // Show completion message
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(AppLocalizations.of(context)!.backupComplete),
-                      backgroundColor: Colors.green,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -83,53 +84,35 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
   Future<void> _restoreSystem() async {
     try {
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
-  type: FileType.any, // <-- IMPORTANT
-  allowMultiple: false,
-);
+        type: FileType.any,
+        allowMultiple: false,
+      );
 
       if (result != null && result.files.single.path != null) {
         final filePath = result.files.single.path!;
         final fileName = result.files.single.name.toLowerCase();
 
-final file = result.files.single;
-//final fileName = file.name.toLowerCase();
-
-if (!fileName.endsWith('.tar') &&
-    !fileName.endsWith('.tar.gz') &&
-    !fileName.endsWith('.tar.xz')) {
-
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.unsupportedFormat),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-  return; // STOP here
-}
-
-        // Convert the file path to a path accessible in the container
-final result2 = filePath;
-if (filePath == null) return;
-
-final prootPath = fixProotPath(filePath);
-//THIS is the path you must use from now on
-        String containerPath = prootPath;
+        final file = result.files.single;
         
-      //  final filePath = file.path;
-if (filePath == null) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(AppLocalizations.of(context)!.invalidPath),
-      backgroundColor: Colors.red,
-    ),
-  );
-  return;
-}
+        if (!fileName.endsWith('.tar') &&
+            !fileName.endsWith('.tar.gz') &&
+            !fileName.endsWith('.tar.xz')) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.unsupportedFormat),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+          return;
+        }
 
-
+        final prootPath = fixProotPath(filePath);
+        if (prootPath.isEmpty) return;
+        
+        String containerPath = prootPath;
 
         if (fileName.contains('wine')) {
           // Wine installation
@@ -191,21 +174,27 @@ if (filePath == null) {
   }
 
   Future<void> _installWine(String filePath, String fileName) async {
+    // Show loading overlay
     setState(() {
       _isProcessing = true;
       _statusMessage = AppLocalizations.of(context)!.installingWine;
     });
 
     try {
-    final result2 = filePath;
-if (filePath == null) return;
-
-final prootPath = fixProotPath(filePath);
-//THIS is the path you must use from now on
-        String containerPath = prootPath;
-        
-      // Escape the file path for shell (handle spaces and special characters)
+      final prootPath = fixProotPath(filePath);
+      if (prootPath.isEmpty) return;
+      
+      String containerPath = prootPath;
       final escapedPath = containerPath;
+      
+      // Close the dialog immediately
+      Navigator.of(context).pop();
+      
+      // Switch to terminal page
+      G.pageIndex.value = 0;
+      
+      // Wait a moment for terminal to become active
+      await Future.delayed(const Duration(milliseconds: 100));
       
       // Run wine installation commands using termWrite
       Util.termWrite('echo "=== STARTING WINE INSTALLATION FROM: $fileName ==="');
@@ -223,45 +212,10 @@ final prootPath = fixProotPath(filePath);
       Util.termWrite('echo "Setting executable permissions..."');
       Util.termWrite('chmod +x /opt/wine/bin/* 2>/dev/null || true');
       
-    //  Util.termWrite('echo "Cleaning up..."');
-     // Util.termWrite('find /opt/wine -name "*.so" -exec chmod +x {} \\; 2>/dev/null || true');
-      
       Util.termWrite('echo "=== WINE INSTALLATION COMPLETE ==="');
       Util.termWrite('echo "Wine installed to /opt/wine"');
+      Util.termWrite('exit');
       
-      // Show success message
-      if (mounted) {
-        await Future.delayed(const Duration(seconds: 1));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.wineInstallationComplete),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-      
-      // Ask to restart
-      if (mounted) {
-        await Future.delayed(const Duration(seconds: 1));
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(AppLocalizations.of(context)!.restartRequired),
-            content: Text(AppLocalizations.of(context)!.restartAppToApply),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Close the app
-                  SystemNavigator.pop();
-                },
-                child: Text(AppLocalizations.of(context)!.ok),
-              ),
-            ],
-          ),
-        );
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -282,130 +236,95 @@ final prootPath = fixProotPath(filePath);
   }
 
   Future<void> _restoreBackup(String filePath, String fileName) async {
-  setState(() {
-    _isProcessing = true;
-    _statusMessage = AppLocalizations.of(context)!.restoreInProgress;
-  });
+    // Show loading overlay
+    setState(() {
+      _isProcessing = true;
+      _statusMessage = AppLocalizations.of(context)!.restoreInProgress;
+    });
 
-  try {
-  final result2 = filePath;
-if (filePath == null) return;
-
-final prootPath = fixProotPath(filePath);
-//THIS is the path you must use from now on
-        String containerPath = prootPath;
-        
-    // Escape the file path for shell
-
-    final escapedPath = containerPath;
-    
-    // Switch to terminal page (index 0)
- G.pageIndex.value = 0;
-    // Show source and destination information
-    Util.termWrite('echo "=== STARTING SYSTEM RESTORE ==="');
-    Util.termWrite('echo "Source file: $escapedPath"');
-    Util.termWrite('echo "Destination: /data/data/com.xodos/files/containers/0/"');
-    Util.termWrite('echo ""');
-    
-    String extractCommand;
-    
-    // Determine extraction command based on file extension
-    if (fileName.endsWith('.tar.xz')) {
-      // Check if tar command is available, fallback to busybox if not
-      Util.termWrite('echo "Checking for tar command..."');
-      Util.termWrite('if command -v tar >/dev/null 2>&1; then');
-      Util.termWrite('  echo "Using system tar command"');
-      Util.termWrite('  tar -xJv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/');
-      Util.termWrite('else');
-      Util.termWrite('  echo "Using busybox tar command"');
-      Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xJv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/');
-      Util.termWrite('fi');
-    } else if (fileName.endsWith('.tar.gz')) {
-      Util.termWrite('echo "Checking for tar command..."');
-      Util.termWrite('if command -v tar >/dev/null 2>&1; then');
-      Util.termWrite('  echo "Using system tar command"');
-      Util.termWrite('  tar -xzv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/');
-      Util.termWrite('else');
-      Util.termWrite('  echo "Using busybox tar command"');
-      Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xzv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/');
-      Util.termWrite('fi');
-    } else if (fileName.endsWith('.tar')) {
-      Util.termWrite('echo "Checking for tar command..."');
-      Util.termWrite('if command -v tar >/dev/null 2>&1; then');
-      Util.termWrite('  echo "Using system tar command"');
-      Util.termWrite('  tar -xv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/');
-      Util.termWrite('else');
-      Util.termWrite('  echo "Using busybox tar command"');
-      Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/');
-      Util.termWrite('fi');
-    } else {
-      throw Exception('${AppLocalizations.of(context)!.unsupportedFormat}: $fileName');
-    }
-    
-    Util.termWrite('echo ""');
-    Util.termWrite('echo "=== SYSTEM RESTORE COMPLETE ==="');
-    Util.termWrite('echo "Please restart the app for changes to take effect."');
-    
-    // Show success message
-    if (mounted) {
-      await Future.delayed(const Duration(seconds: 1));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.restoreComplete),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-    
-    // Ask to restart
-    if (mounted) {
-      await Future.delayed(const Duration(seconds: 1));
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(AppLocalizations.of(context)!.restartRequired),
-          content: Text(AppLocalizations.of(context)!.restartAppToApply),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Close the app
-                SystemNavigator.pop();
-              },
-              child: Text(AppLocalizations.of(context)!.ok),
-            ),
-          ],
-        ),
-      );
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${AppLocalizations.of(context)!.restoreFailed}: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  } finally {
-    if (mounted) {
-      setState(() {
-        _isProcessing = false;
-      });
+    try {
+      final prootPath = fixProotPath(filePath);
+      if (prootPath.isEmpty) return;
+      
+      String containerPath = prootPath;
+      final escapedPath = containerPath;
+      
+      // Close the dialog immediately
+      Navigator.of(context).pop();
+      
+      // Switch to terminal page
+      G.pageIndex.value = 0;
+      
+      // Wait a moment for terminal to become active
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // Show source and destination information
+      Util.termWrite('echo "=== STARTING SYSTEM RESTORE ==="');
+      Util.termWrite('echo "Source file: $escapedPath"');
+      Util.termWrite('echo "Destination: /data/data/com.xodos/files/containers/0/"');
+      Util.termWrite('echo ""');
+      
+      // Determine extraction command based on file extension
+      if (fileName.endsWith('.tar.xz')) {
+        Util.termWrite('echo "Checking for tar command..."');
+        Util.termWrite('if command -v tar >/dev/null 2>&1; then');
+        Util.termWrite('  echo "Using system tar command"');
+        Util.termWrite('  tar -xJv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "Restarting terminal..." && exit');
+        Util.termWrite('else');
+        Util.termWrite('  echo "Using busybox tar command"');
+        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xJv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "Restarting terminal..." && exit');
+        Util.termWrite('fi');
+      } else if (fileName.endsWith('.tar.gz')) {
+        Util.termWrite('echo "Checking for tar command..."');
+        Util.termWrite('if command -v tar >/dev/null 2>&1; then');
+        Util.termWrite('  echo "Using system tar command"');
+        Util.termWrite('  tar -xzv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "Restarting terminal..." && exit');
+        Util.termWrite('else');
+        Util.termWrite('  echo "Using busybox tar command"');
+        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xzv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "Restarting terminal..." && exit');
+        Util.termWrite('fi');
+      } else if (fileName.endsWith('.tar')) {
+        Util.termWrite('echo "Checking for tar command..."');
+        Util.termWrite('if command -v tar >/dev/null 2>&1; then');
+        Util.termWrite('  echo "Using system tar command"');
+        Util.termWrite('  tar -xv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "Restarting terminal..." && exit');
+        Util.termWrite('else');
+        Util.termWrite('  echo "Using busybox tar command"');
+        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "Restarting terminal..." && exit');
+        Util.termWrite('fi');
+      } else {
+        Util.termWrite('echo "${AppLocalizations.of(context)!.unsupportedFormat}: $fileName"');
+        Util.termWrite('exit');
+      }
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppLocalizations.of(context)!.restoreFailed}: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
     }
   }
-}
-String fixProotPath(String androidPath) {
-  if (androidPath.startsWith('/data/user/0/')) {
-    return androidPath.replaceFirst('/data/user/0/', '/data/data/');
+
+  String fixProotPath(String androidPath) {
+    if (androidPath.startsWith('/data/user/0/')) {
+      return androidPath.replaceFirst('/data/user/0/', '/data/data/');
+    }
+    return androidPath;
   }
-  return androidPath;
-}
+
   // Helper function to escape shell arguments
   String _escapeShellArgument(String argument) {
-    // Replace single quotes with '"'"' to escape them in shell
     return "'${argument.replaceAll("'", "'\"'\"'")}'";
   }
 
@@ -436,39 +355,60 @@ String fixProotPath(String androidPath) {
               const SizedBox(height: 16),
               
               if (_isProcessing) ...[
-                // Processing state
-                const SizedBox(height: 20),
-                const CircularProgressIndicator(),
-                const SizedBox(height: 20),
-                Text(
-                  _statusMessage,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  AppLocalizations.of(context)!.checkTerminalForProgress,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[300],
-                      foregroundColor: Colors.grey,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: Text(AppLocalizations.of(context)!.close),
+                // Processing state - blocks screen with overlay
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 3,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Copying files...',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        _statusMessage,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        AppLocalizations.of(context)!.checkTerminalForProgress,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ] else ...[
@@ -519,7 +459,7 @@ String fixProotPath(String androidPath) {
                                 AppLocalizations.of(context)!.backupRestoreHint,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.blue[800], // Fixed: removed const
+                                  color: Colors.blue[800],
                                 ),
                               ),
                             ],

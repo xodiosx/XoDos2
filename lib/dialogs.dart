@@ -77,37 +77,37 @@ class _DxvkDialogState extends State<DxvkDialog> {
     G.pageIndex.value = 0;
     await Future.delayed(const Duration(milliseconds: 300));
     
-    Util.termWrite("echo '' > /opt/hud");
+    Util.termWrite("echo '' > ${G.dataPath}/usr/opt/hud");
     await Future.delayed(const Duration(milliseconds: 50));
     
     Util.termWrite("echo '#================================'");
     await Future.delayed(const Duration(milliseconds: 50));
     
     if (_currentMangohudEnabled) {
-      Util.termWrite("echo 'export MANGOHUD=1' >> /opt/hud");
+      Util.termWrite("echo 'export MANGOHUD=1' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo 'export MANGOHUD_DLSYM=1' >> /opt/hud");
+      Util.termWrite("echo 'export MANGOHUD_DLSYM=1' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo '# MANGOHUD enabled' >> /opt/hud");
+      Util.termWrite("echo '# MANGOHUD enabled' >> ${G.dataPath}/usr/opt/hud");
     } else {
-      Util.termWrite("echo 'export MANGOHUD=0' >> /opt/hud");
+      Util.termWrite("echo 'export MANGOHUD=0' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo 'export MANGOHUD_DLSYM=0' >> /opt/hud");
+      Util.termWrite("echo 'export MANGOHUD_DLSYM=0' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo '# MANGOHUD disabled' >> /opt/hud");
+      Util.termWrite("echo '# MANGOHUD disabled' >> ${G.dataPath}/usr/opt/hud");
     }
     
     if (_currentDxvkHudEnabled) {
-      Util.termWrite("echo 'export DXVK_HUD=fps,version,devinfo' >> /opt/hud");
+      Util.termWrite("echo 'export DXVK_HUD=fps,version,devinfo' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo '# DXVK HUD enabled' >> /opt/hud");
+      Util.termWrite("echo '# DXVK HUD enabled' >> ${G.dataPath}/usr/opt/hud");
     } else {
-      Util.termWrite("echo 'export DXVK_HUD=0' >> /opt/hud");
+      Util.termWrite("echo 'export DXVK_HUD=0' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
-      Util.termWrite("echo '# DXVK HUD disabled' >> /opt/hud");
+      Util.termWrite("echo '# DXVK HUD disabled' >> ${G.dataPath}/usr/opt/hud");
     }
     
-    Util.termWrite("echo 'HUD settings saved to /opt/hud'");
+    Util.termWrite("echo 'HUD settings saved to ${G.dataPath}/usr/opt/hud'");
     await Future.delayed(const Duration(milliseconds: 50));
     Util.termWrite("echo '#================================'");
   }
@@ -196,17 +196,17 @@ class _DxvkDialogState extends State<DxvkDialog> {
     Util.termWrite("echo 'Extracting $fileType: $fileName'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("mkdir -p /home/xodos/.wine/drive_c/windows");
+    Util.termWrite("mkdir -p ${G.dataPath}/home/.wine/drive_c/windows");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    String containerPath = "/wincomponents/d3d/$fileName";
+    String containerPath = "${G.dataPath}/usr/wincomponents/d3d/$fileName";
     
     if (fileName.endsWith('.zip')) {
-      Util.termWrite("unzip -o '$containerPath' -d '/home/xodos/.wine/drive_c/windows'");
+      Util.termWrite("unzip -o '$containerPath' -d '${G.dataPath}/home/.wine/drive_c/windows'");
     } else if (fileName.endsWith('.7z')) {
-      Util.termWrite("7z x '$containerPath' -o'/home/xodos/.wine/drive_c/windows' -y");
+      Util.termWrite("7z x '$containerPath' -o'${G.dataPath}/home/.wine/drive_c/windows' -y");
     } else {
-      Util.termWrite("tar -xaf '$containerPath' -C '/home/xodos/.wine/drive_c/windows'");
+      Util.termWrite("tar -xaf '$containerPath' -C '${G.dataPath}/home/.wine/drive_c/windows'");
     }
     
     await Future.delayed(const Duration(milliseconds: 50));
@@ -243,7 +243,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('HUD settings saved to /opt/hud'),
+            content: Text('HUD settings saved to ${G.dataPath}/usr/opt/hud'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -256,7 +256,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
   Future<void> _loadDxvkFiles() async {
     try {
       String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
-      String hostDir = "$containerDir/wincomponents/d3d";
+      String hostDir = "${G.dataPath}/usr/wincomponents/d3d";
       
       final dir = Directory(hostDir);
       if (!await dir.exists()) {
@@ -378,7 +378,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'HUD Settings (Saved to /opt/hud)',
+                            'HUD Settings (Saved to Prefix/usr/opt/hud)',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -479,7 +479,7 @@ class _DxvkDialogState extends State<DxvkDialog> {
                                 _hasHudChanged && _hasDxvkChanged
                                     ? 'HUD settings and DXVK will be updated'
                                     : _hasHudChanged
-                                        ? 'HUD settings will be saved to /opt/hud'
+                                        ? 'HUD settings will be saved to ${G.dataPath}/usr/opt/hud'
                                         : 'DXVK will be extracted',
                                 style: TextStyle(
                                   fontSize: isLandscape ? 12 : 14,
@@ -590,7 +590,15 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
   String _selectedKnownVariable = '';
   final List<String> _knownWineVariables = [
     'WINEARCH',
+     'DXVK_ASYNC',
+     'adrenotool',
+     'GALLIUM_DRIVER',
+   'MESA_LOADER_DRIVER_OVERRIDE',
+    'VK_LOADER_DEBUG',
+   'LD_DEBUG',
+    'ZINK_DEBUG',
     'WINEDEBUG',
+     'MESA_VK_WSI_PRESENT_MODE',
     'WINEPREFIX',
     'WINEESYNC',
     'WINEFSYNC',
@@ -607,7 +615,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
   bool _debugEnabled = false;
   String _winedebugValue = '-all';
   final List<String> _winedebugOptions = [
-    '-all', 'err', 'warn', 'fixme', 'all', 'trace', 'message', 'heap', 'fps'
+    '-all', 'err', 'warn', 'fixme', 'all', 'trace', 'message', 'heap', 'fps', 'dx9', 'dx8'
   ];
   
   String _newVarName = '';
@@ -743,12 +751,12 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     G.pageIndex.value = 0;
     await Future.delayed(const Duration(milliseconds: 300));
     
-    Util.termWrite("echo '' > /opt/dyna");
-    Util.termWrite("echo '' > /opt/sync");
-    Util.termWrite("echo '' > /opt/cores");
-    Util.termWrite("echo '' > /opt/env");
-    Util.termWrite("echo '' > /opt/dbg");
-    Util.termWrite("echo '' > /opt/hud");
+    Util.termWrite("echo '' > ${G.dataPath}/usr/opt/dyna");
+    Util.termWrite("echo '' > ${G.dataPath}/usr/opt/sync");
+    Util.termWrite("echo '' > ${G.dataPath}/usr/opt/cores");
+    Util.termWrite("echo '' > ${G.dataPath}/usr/opt/env");
+    Util.termWrite("echo '' > ${G.dataPath}/usr/opt/dbg");
+    Util.termWrite("echo '' > ${G.dataPath}/usr/opt/hud");
     
     await Future.delayed(const Duration(milliseconds: 100));
     
@@ -757,41 +765,41 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
       final defaultValue = variable['defaultValue'] as String;
       final savedValue = G.prefs.getString('dynarec_$name') ?? defaultValue;
       
-      Util.termWrite("echo 'export $name=$savedValue' >> /opt/dyna");
+      Util.termWrite("echo 'export $name=$savedValue' >> ${G.dataPath}/usr/opt/dyna");
       await Future.delayed(const Duration(milliseconds: 10));
     }
     
     if (_wineEsyncEnabled) {
-      Util.termWrite("echo 'export WINEESYNC=1' >> /opt/sync");
-      Util.termWrite("echo 'export WINEESYNC_TERMUX=1' >> /opt/sync");
+      Util.termWrite("echo 'export WINEESYNC=1' >> ${G.dataPath}/usr/opt/sync");
+      Util.termWrite("echo 'export WINEESYNC_TERMUX=1' >> ${G.dataPath}/usr/opt/sync");
     } else {
-      Util.termWrite("echo 'export WINEESYNC=0' >> /opt/sync");
-      Util.termWrite("echo 'export WINEESYNC_TERMUX=0' >> /opt/sync");
+      Util.termWrite("echo 'export WINEESYNC=0' >> ${G.dataPath}/usr/opt/sync");
+      Util.termWrite("echo 'export WINEESYNC_TERMUX=0' >> ${G.dataPath}/usr/opt/sync");
     }
     
-    Util.termWrite("echo 'export PRIMARY_CORES=${_getCoreString()}' >> /opt/cores");
+    Util.termWrite("echo 'export PRIMARY_CORES=${_getCoreString()}' >> ${G.dataPath}/usr/opt/cores");
     
     for (final variable in _customVariables) {
-      Util.termWrite("echo 'export ${variable['name']}=${variable['value']}' >> /opt/env");
+      Util.termWrite("echo 'export ${variable['name']}=${variable['value']}' >> ${G.dataPath}/usr/opt/env");
       await Future.delayed(const Duration(milliseconds: 10));
     }
     
     if (_debugEnabled) {
-      Util.termWrite("echo 'export MESA_NO_ERROR=0' >> /opt/dbg");
-      Util.termWrite("echo 'export WINEDEBUG=$_winedebugValue' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_LOG=1' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_NOBANNER=0' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_SHOWSEGV=1' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_DLSYM_ERROR=1' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_DYNAREC_MISSING=1' >> /opt/dbg");
+      Util.termWrite("echo 'export MESA_NO_ERROR=0' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export WINEDEBUG=$_winedebugValue' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_LOG=1' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_NOBANNER=0' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_SHOWSEGV=1' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_DLSYM_ERROR=1' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_DYNAREC_MISSING=1' >> ${G.dataPath}/usr/opt/dbg");
     } else {
-      Util.termWrite("echo 'export MESA_NO_ERROR=1' >> /opt/dbg");
-      Util.termWrite("echo 'export WINEDEBUG=$_winedebugValue' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_LOG=0' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_NOBANNER=1' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_SHOWSEGV=0' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_DLSYM_ERROR=0' >> /opt/dbg");
-      Util.termWrite("echo 'export BOX64_DYNAREC_MISSING=0' >> /opt/dbg");
+      Util.termWrite("echo 'export MESA_NO_ERROR=1' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export WINEDEBUG=$_winedebugValue' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_LOG=0' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_NOBANNER=1' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_SHOWSEGV=0' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_DLSYM_ERROR=0' >> ${G.dataPath}/usr/opt/dbg");
+      Util.termWrite("echo 'export BOX64_DYNAREC_MISSING=0' >> ${G.dataPath}/usr/opt/dbg");
     }
     
     Util.termWrite("echo '#================================'");
@@ -1303,55 +1311,116 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
   }
 }
 
+
+
 // GPU Drivers Dialog
+
+
 class GpuDriversDialog extends StatefulWidget {
   @override
   _GpuDriversDialogState createState() => _GpuDriversDialogState();
 }
 
 class _GpuDriversDialogState extends State<GpuDriversDialog> {
-  String _selectedDriverType = 'virgl';
+  String _selectedDriverType = 'wrapper';
   String? _selectedDriverFile;
   List<String> _driverFiles = [];
   String? _driversDirectory;
   bool _isLoading = true;
   
-  bool _useBuiltInTurnip = true;
-  bool _driEnabled = false;
-  
+  // DRI3 switches
+  bool _turnipDri3Enabled = false;
+  bool _wrapperDri3Enabled = false;
+  bool _venusDri3Enabled = false;
   bool _virglEnabled = false;
-  bool _turnipEnabled = false;
-  bool _dri3Enabled = false;
+  
+  // Venus settings
+  bool _androidVenusEnabled = true;
   String _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
-bool _isX11Enabled = false;
+  String _defaultVenusCommand = '--no-virgl --venus --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+  String _defaultVenusOpt = '';
+  String _defaultVirglCommand = '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+  String _defaultVirglOpt = 'GALLIUM_DRIVER=virpipe';
+  bool _isX11Enabled = false;
+  
+  // Server status
+  bool _virglServerRunning = false;
+  bool _venusServerRunning = false;
 
-@override
-void initState() {
-  super.initState();
-  _loadSavedSettings();
-  _loadDriverFiles();
-  // Add mutual exclusivity check
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _ensureMutualExclusivity();
-  });
-}
-
-void _ensureMutualExclusivity() {
-  // If both are enabled from saved settings, disable one
-  if (_virglEnabled && _turnipEnabled) {
-    setState(() {
-      _turnipEnabled = false;
-      _dri3Enabled = false; // DRI3 requires turnip
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSettings();
+    _loadDriverFiles();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkServerStatus();
     });
   }
-}
+
+  Future<void> _checkServerStatus() async {
+    await _updateVirglServerStatus();
+    await _updateVenusServerStatus();
+  }
+
+  Future<void> _updateVirglServerStatus() async {
+    try {
+      final result = await Process.run(
+        '${G.dataPath}/usr/bin/sh',
+        [
+          '-c',
+          '${G.dataPath}/usr/bin/pgrep -a virgl_ |'
+          ' grep use-'
+        ],
+      );
+
+      final output = result.stdout.toString().trim();
+      print('VirGL check output: "$output"');
+
+      setState(() {
+        _virglServerRunning = output.isNotEmpty;
+      });
+    } catch (e) {
+      print('Error checking VirGL server status: $e');
+      setState(() {
+        _virglServerRunning = false;
+      });
+    }
+  }
+
+  Future<void> _updateVenusServerStatus() async {
+    try {
+      final result = await Process.run(
+        '${G.dataPath}/usr/bin/sh',
+        [
+          '-c',
+          '${G.dataPath}/usr/bin/pgrep -a virgl_ |'
+          ' grep venus'
+        ],
+      );
+
+      final output = result.stdout.toString().trim();
+      print('Venus check output: "$output"');
+
+      setState(() {
+        _venusServerRunning = output.isNotEmpty;
+      });
+    } catch (e) {
+      print('Error checking Venus server status: $e');
+      setState(() {
+        _venusServerRunning = false;
+      });
+    }
+  }
 
   Future<void> _loadSavedSettings() async {
     try {
+      _turnipDri3Enabled = G.prefs.getBool('turnip_dri3') ?? false;
+      _wrapperDri3Enabled = G.prefs.getBool('wrapper_dri3') ?? false;
+      _venusDri3Enabled = G.prefs.getBool('venus_dri3') ?? false;
       _virglEnabled = G.prefs.getBool('virgl') ?? false;
-      _turnipEnabled = G.prefs.getBool('turnip') ?? false;
-      _dri3Enabled = G.prefs.getBool('dri3') ?? false;
-      _isX11Enabled = G.prefs.getBool('useX11') ?? false; // termux x11
+      _isX11Enabled = G.prefs.getBool('useX11') ?? false;
+      _androidVenusEnabled = G.prefs.getBool('androidVenus') ?? true;
+      
       String savedTurnipOpt = G.prefs.getString('defaultTurnipOpt') ?? 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
       _defaultTurnipOpt = _removeVkIcdFromEnvString(savedTurnipOpt);
       
@@ -1359,10 +1428,13 @@ void _ensureMutualExclusivity() {
         _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
       }
       
-      _selectedDriverType = G.prefs.getString('gpu_driver_type') ?? 'virgl';
+      _defaultVenusCommand = G.prefs.getString('defaultVenusCommand') ?? '--no-virgl --venus --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+      _defaultVenusOpt = G.prefs.getString('defaultVenusOpt') ?? ' ANDROID_VENUS=1';
+      _defaultVirglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+      _defaultVirglOpt = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
+      
+      _selectedDriverType = G.prefs.getString('gpu_driver_type') ?? 'wrapper';
       _selectedDriverFile = G.prefs.getString('selected_gpu_driver');
-      _useBuiltInTurnip = G.prefs.getBool('use_builtin_turnip') ?? true;
-      _driEnabled = G.prefs.getBool('gpu_dri_enabled') ?? false;
       
       setState(() {});
     } catch (e) {
@@ -1377,30 +1449,17 @@ void _ensureMutualExclusivity() {
   }
 
   Future<void> _saveAndExtract() async {
-      // Enforce mutual exclusivity one more time before saving
-    if (_virglEnabled && _turnipEnabled) {
-      // If somehow both are enabled, disable turnip (virgl takes precedence in this dialog)
-      _turnipEnabled = false;
-      _dri3Enabled = false;
-      _driEnabled = false;
-    }
-    
-    // If DRI3 is enabled but requirements aren't met, disable it
-    if (_dri3Enabled && !(_turnipEnabled && _isX11Enabled)) {
-      _dri3Enabled = false;
-      _driEnabled = false;
-    }
     try {
       await G.prefs.setString('gpu_driver_type', _selectedDriverType);
       if (_selectedDriverFile != null) {
         await G.prefs.setString('selected_gpu_driver', _selectedDriverFile!);
       }
-      await G.prefs.setBool('use_builtin_turnip', _useBuiltInTurnip);
-      await G.prefs.setBool('gpu_dri_enabled', _driEnabled);
       
+      await G.prefs.setBool('turnip_dri3', _turnipDri3Enabled);
+      await G.prefs.setBool('wrapper_dri3', _wrapperDri3Enabled);
+      await G.prefs.setBool('venus_dri3', _venusDri3Enabled);
       await G.prefs.setBool('virgl', _virglEnabled);
-      await G.prefs.setBool('turnip', _turnipEnabled);
-      await G.prefs.setBool('dri3', _dri3Enabled);
+      await G.prefs.setBool('androidVenus', _androidVenusEnabled);
       
       String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
       if (cleanTurnipOpt.isEmpty) {
@@ -1408,19 +1467,20 @@ void _ensureMutualExclusivity() {
       }
       await G.prefs.setString('defaultTurnipOpt', cleanTurnipOpt);
       
+      await G.prefs.setString('defaultVenusCommand', _defaultVenusCommand);
+      await G.prefs.setString('defaultVenusOpt', _defaultVenusOpt);
+      await G.prefs.setString('defaultVirglCommand', _defaultVirglCommand);
+      await G.prefs.setString('defaultVirglOpt', _defaultVirglOpt);
+      
       G.pageIndex.value = 0;
       await Future.delayed(const Duration(milliseconds: 300));
       
-      if (!(_selectedDriverType == 'turnip' && _useBuiltInTurnip) && 
+      // Handle both turnip and wrapper driver extraction
+      if ((_selectedDriverType == 'turnip' || _selectedDriverType == 'wrapper') && 
           _selectedDriverFile != null) {
         await _extractDriver();
       } else {
         await _applyGpuSettings();
-      }
-      
-      if (_virglEnabled && _selectedDriverType == 'virgl') {
-        final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
-        await _startVirglServer(virglCommand);
       }
       
       Navigator.of(context).pop();
@@ -1446,10 +1506,12 @@ void _ensureMutualExclusivity() {
     G.pageIndex.value = 0;
     await Future.delayed(const Duration(milliseconds: 300));
     
-    Util.termWrite("echo '' > /opt/drv");
+    Util.termWrite("echo '' >${G.dataPath}/usr/opt/drv");
     
     if (_selectedDriverType == 'turnip') {
       await _applyTurnipSettings();
+    } else if (_selectedDriverType == 'venus') {
+      await _applyVenusSettings();
     } else if (_selectedDriverType == 'virgl') {
       await _applyVirglSettings();
     } else if (_selectedDriverType == 'wrapper') {
@@ -1462,54 +1524,71 @@ void _ensureMutualExclusivity() {
   }
 
   Future<void> _applyTurnipSettings() async {
-  String dataDir = G.dataPath;
-  String containerDir = "$dataDir/containers/${G.currentContainer}";
-  
-  // remove the .vdrv file using 
-  Util.termWrite("rm -rf '$containerDir/.vdrv'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-    if (_useBuiltInTurnip) {
-      Util.termWrite("echo 'export VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json' >> /opt/drv");
-    } else if (_selectedDriverFile != null) {
-      Util.termWrite("echo 'export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json' >> /opt/drv");
+    Util.termWrite("echo 'export VK_ICD_FILENAMES=${G.dataPath}/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json' >> ${G.dataPath}/usr/opt/drv");
+    
+    String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
+    if (cleanTurnipOpt.isNotEmpty) {
+      Util.termWrite("echo 'export $cleanTurnipOpt' >> ${G.dataPath}/usr/opt/drv");
     }
     
-    if (_turnipEnabled) {
-      String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
-      
-      if (cleanTurnipOpt.isNotEmpty) {
-        Util.termWrite("echo 'export $cleanTurnipOpt' >> /opt/drv");
+    if (!_turnipDri3Enabled) {
+      Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> ${G.dataPath}/usr/opt/drv");
+    }
+  }
+
+  Future<void> _applyVenusSettings() async {
+    String venusEnv = _defaultVenusOpt;
+    
+    if (_androidVenusEnabled) {
+      venusEnv = venusEnv.replaceAll('ANDROID_VENUS=0', 'ANDROID_VENUS=1');
+      if (!venusEnv.contains('ANDROID_VENUS=1')) {
+        venusEnv = '$venusEnv ANDROID_VENUS=1';
       }
-      
-      if (!_dri3Enabled) {
-        Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> /opt/drv");
-      }
+    } else {
+      venusEnv = venusEnv.replaceAll('ANDROID_VENUS=1', 'ANDROID_VENUS=0');
+    }
+    
+    Util.termWrite("echo 'export $venusEnv' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    if (!_venusDri3Enabled) {
+      Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> ${G.dataPath}/usr/opt/drv");
     }
   }
 
   Future<void> _applyVirglSettings() async {
-  String dataDir = G.dataPath;
-  String containerDir = "$dataDir/containers/${G.currentContainer}";
-  
-  // remove the .vdrv file using 
-  Util.termWrite("rm -rf '$containerDir/.vdrv'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-    if (_virglEnabled) {
-      final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
-      final virglEnv = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
-      
-      Util.termWrite("echo 'export $virglEnv' >> /opt/drv");
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      if (_selectedDriverFile != null) {
-        Util.termWrite("echo '# Custom VirGL driver: $_selectedDriverFile' >> /opt/drv");
-      }
-    }
+    Util.termWrite("echo 'export $_defaultVirglOpt' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
   }
 
-  Future<void> _startVirglServer(String virglCommand) async {
+  Future<void> _applyWrapperSettings() async {
+    Util.termWrite("echo '' > ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo '#================================' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo '# Wrapper driver configuration' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'export VK_ICD_FILENAMES=${G.dataPath}/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'export TU_DEBUG=noconform' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    if (!_wrapperDri3Enabled) {
+      Util.termWrite("echo 'export MESA_VK_WSI_DEBUG=sw' >> ${G.dataPath}/usr/opt/drv");
+    }
+    
+    Util.termWrite("echo '#================================' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Wrapper driver configuration complete'");
+    await Future.delayed(const Duration(milliseconds: 50));
+  }
+
+  Future<void> _startVirglServer() async {
     G.pageIndex.value = 0;
     await Future.delayed(const Duration(milliseconds: 300));
     
@@ -1522,79 +1601,82 @@ void _ensureMutualExclusivity() {
     Util.termWrite("echo 'Starting VirGL server...'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("mkdir -p /tmp/.virgl_test");
+    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/.virgl_test");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    String dataDir = G.dataPath;
-    String containerDir = "$dataDir/containers/${G.currentContainer}";
+    String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
     
-    String processedCommand = virglCommand.replaceAll('\$CONTAINER_DIR', containerDir);
-    
-    Util.termWrite("echo 'Using data directory: $dataDir'");
-    await Future.delayed(const Duration(milliseconds: 50));
+    String processedCommand = _defaultVirglCommand.replaceAll('\$CONTAINER_DIR', containerDir);
     
     Util.termWrite("echo 'Container directory: $containerDir'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("$dataDir/bin/virgl_test_server $processedCommand &");
+    Util.termWrite("${G.dataPath}/usr/bin/virgl_test_server $processedCommand &");    
+    await Future.delayed(const Duration(milliseconds: 50));
     
+    Util.termWrite("export GALLIUM_DRIVER=virpipe ");
     await Future.delayed(const Duration(milliseconds: 50));
     
     Util.termWrite("sleep 1 && if pgrep -f virgl_test_server > /dev/null; then echo 'VirGL server started successfully'; else echo 'Failed to start VirGL server'; fi");
     
     await Future.delayed(const Duration(milliseconds: 50));
     Util.termWrite("echo '#================================'");
+    
+    // Update status after starting
+    await Future.delayed(const Duration(seconds: 1));
+    await _updateVirglServerStatus();
   }
 
-  Future<void> _applyWrapperSettings() async {
-  // Clear the drv file first
-  Util.termWrite("echo '' > /opt/drv");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  // Create .vdrv file in the container directory
-  String dataDir = G.dataPath;
-  String containerDir = "$dataDir/containers/${G.currentContainer}";
-  
-  // Create the .vdrv file using touch command
-  Util.termWrite("touch '$containerDir/.vdrv'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  // Write environment variables to /opt/drv
-  Util.termWrite("echo '#================================' >> /opt/drv");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo '# Wrapper driver configuration' >> /opt/drv");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo 'export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/virtio_icd.aarch64.json' >> /opt/drv");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo 'export VORTEK_SERVER_PATH=/tmp/.vortek/V0' >> /opt/drv");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo 'export GALLIUM_DRIVER=zink' >> /opt/drv");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  // Additional wrapper-specific environment variables
+  Future<void> _startVenusServer() async {
+    G.pageIndex.value = 0;
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    Util.termWrite("pkill -f virgl_test_server");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo '#================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Starting Venus server...'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("rm -rf ${G.dataPath}/usr/tmp/.virgl_test");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
+    
+    String processedCommand = _defaultVenusCommand.replaceAll('\$CONTAINER_DIR', containerDir);
+    
+    Util.termWrite("echo 'Container directory: $containerDir'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'export VK_ICD_FILENAMES=${G.dataPath}/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
 
-  Util.termWrite("echo 'export TU_DEBUG=noconform' >> /opt/drv");
-  await Future.delayed(const Duration(milliseconds: 50));
+    String androidVenusEnv = _androidVenusEnabled ? "ANDROID_VENUS=1 " : "";
+    String ldPreload = "LD_PRELOAD=/system/lib64/libvulkan.so";
+ 
+    Util.termWrite(". /data/data/com.xodos/files/usr/opt/drv");    
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("$androidVenusEnv ${G.dataPath}/usr/bin/virgl_test_server $processedCommand &");    
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'export VK_ICD_FILENAMES=${G.dataPath}/usr/share/vulkan/icd.d/virtio_icd.aarch64.json' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("export VN_DEBUG=vtest");  
+    await Future.delayed(const Duration(milliseconds: 50));
   
-  Util.termWrite("7z x '/drivers/vortex' -o'/usr/lib' -y");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("echo '#================================' >> /opt/drv");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  // Verify the files were created
-  Util.termWrite("echo 'Wrapper driver configuration complete'");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("if [ -f '$containerDir/.vdrv' ]; then echo '.vdrv file created successfully'; else echo 'Failed to create .vdrv file'; fi");
-  await Future.delayed(const Duration(milliseconds: 50));
-  
-  Util.termWrite("if [ -s /opt/drv ]; then echo '/opt/drv file updated successfully'; else echo 'Failed to update /opt/drv file'; fi");
-}
+    Util.termWrite("echo '#================================'");
+          
+    // Update status after starting
+    await Future.delayed(const Duration(seconds: 1));
+    await _updateVenusServerStatus();
+  }
 
   Future<void> _extractDriver() async {
     try {
@@ -1622,24 +1704,36 @@ void _ensureMutualExclusivity() {
       Util.termWrite("echo '#================================'");
       await Future.delayed(const Duration(milliseconds: 50));
       
-      Util.termWrite("mkdir -p /usr/share/vulkan/icd.d");
+      Util.termWrite("mkdir -p ${G.dataPath}/usr/share/vulkan/icd.d");
       await Future.delayed(const Duration(milliseconds: 50));
       
-      String containerPath = "/drivers/$_selectedDriverFile";
+      String containerPath = "${G.dataPath}/usr/drivers/files/$_selectedDriverFile";
       
+      // Extract based on file extension
       if (_selectedDriverFile!.endsWith('.zip')) {
-        Util.termWrite("unzip -o '$containerPath' -d '/usr'");
+        Util.termWrite("unzip -o '$containerPath' -d '${G.dataPath}/usr'");
       } else if (_selectedDriverFile!.endsWith('.7z')) {
-        Util.termWrite("7z x '$containerPath' -o'/usr' -y");
+        Util.termWrite("7z x '$containerPath' -o'${G.dataPath}/usr' -y");
       } else if (_selectedDriverFile!.endsWith('.tar.gz') || _selectedDriverFile!.endsWith('.tgz')) {
-        Util.termWrite("tar -xzf '$containerPath' -C '/usr'");
+        Util.termWrite("tar -xzf '$containerPath' -C '${G.dataPath}/usr'");
       } else if (_selectedDriverFile!.endsWith('.tar.xz') || _selectedDriverFile!.endsWith('.txz')) {
-        Util.termWrite("tar -xJf '$containerPath' -C '/usr'");
+        Util.termWrite("tar -xJf '$containerPath' -C '${G.dataPath}/usr'");
+      } else if (_selectedDriverFile!.endsWith('.json')) {
+        // For JSON files (like turnip ICD files), copy to icd.d directory
+        Util.termWrite("cp '$containerPath' '${G.dataPath}/usr/share/vulkan/icd.d/'");
       } else {
-        Util.termWrite("tar -xf '$containerPath' -C '/usr'");
+        Util.termWrite("tar -xf '$containerPath' -C '${G.dataPath}/usr'");
       }
       
       await Future.delayed(const Duration(milliseconds: 50));
+      
+      // Special handling for turnip drivers
+      if (_selectedDriverType == 'turnip' && _selectedDriverFile!.endsWith('.json')) {
+        // Rename the turnip JSON file to the standard freedreno name
+        Util.termWrite("mv '${G.dataPath}/usr/share/vulkan/icd.d/$_selectedDriverFile' "
+                      "'${G.dataPath}/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json'");
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
       
       await _applyGpuSettings();
       
@@ -1656,8 +1750,7 @@ void _ensureMutualExclusivity() {
 
   Future<void> _loadDriverFiles() async {
     try {
-      String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
-      String hostDir = "$containerDir/drivers";
+      String hostDir = "${G.dataPath}/usr/drivers/files";
       
       final dir = Directory(hostDir);
       if (!await dir.exists()) {
@@ -1706,16 +1799,12 @@ void _ensureMutualExclusivity() {
     
     if (_selectedDriverType == 'turnip') {
       filteredFiles = _driverFiles.where((file) => 
-          file.toLowerCase().contains('turnip') || 
-          file.toLowerCase().contains('freedreno')).toList();
-    } else if (_selectedDriverType == 'virgl') {
-      filteredFiles = _driverFiles.where((file) => 
-          file.toLowerCase().contains('virgl') || 
-          file.toLowerCase().contains('virtio')).toList();
+          file.toLowerCase().contains('turnip') ||
+          file.toLowerCase().contains('freedreno') ||
+          file.endsWith('.json')).toList();
     } else if (_selectedDriverType == 'wrapper') {
       filteredFiles = _driverFiles.where((file) => 
-          file.toLowerCase().contains('wrapper') || 
-          file.toLowerCase().contains('wine')).toList();
+          file.toLowerCase().contains('wrapper')).toList();
     }
     
     if (filteredFiles.isNotEmpty) {
@@ -1730,7 +1819,6 @@ void _ensureMutualExclusivity() {
       setState(() {
         _selectedDriverType = newType;
         _selectedDriverFile = null;
-        _useBuiltInTurnip = (newType == 'turnip');
         _filterDriverFiles();
       });
     }
@@ -1786,6 +1874,16 @@ void _ensureMutualExclusivity() {
                             ),
                           ),
                           DropdownMenuItem(
+                            value: 'venus',
+                            child: Row(
+                              children: [
+                                Icon(Icons.hardware, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Text('Venus (Vulkan)'),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem(
                             value: 'wrapper',
                             child: Row(
                               children: [
@@ -1805,106 +1903,188 @@ void _ensureMutualExclusivity() {
               
               const SizedBox(height: 16),
               
-              if (_selectedDriverType == 'virgl')
+              if (_selectedDriverType == 'venus')
                 Card(
-                  child: ListTile(
-                    title: const Text('VirGL Server'),
-                    subtitle: Text(_virglEnabled ? 'Enabled - Click restart to start server' : 'Disabled - Enable VirGL above'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: () {
-                        if (_virglEnabled) {
-                          final virglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
-                          _startVirglServer(virglCommand);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Restarting VirGL server...'),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      },
+                  color: Colors.orange[50],
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Colors.orange[800]),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Experimental Feature Under Development',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange[900],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Venus driver is currently in development. Features may be unstable or incomplete.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              
               const SizedBox(height: 16),
-                          
-              if (_selectedDriverType == 'turnip') _buildTurnipSettings(),
-              if (_selectedDriverType == 'virgl') _buildVirglSettings(),
-              if (_selectedDriverType == 'wrapper') _buildWrapperSettings(),
               
-              if (!(_selectedDriverType == 'turnip' && _useBuiltInTurnip))
-                _buildDriverFileSelection(),
-              
-              if (_selectedDriverType == 'turnip' || _selectedDriverType == 'virgl')
-  Card(
-    child: SwitchListTile(
-      title: const Text('Enable DRI3'),
-      subtitle: const Text('Direct Rendering Infrastructure v3'),
-      value: _driEnabled,
-      onChanged: (_selectedDriverType == 'turnip' && _turnipEnabled && _isX11Enabled) 
-          ? (value) {
-              setState(() {
-                _driEnabled = value;
-                _dri3Enabled = value;
-              });
-            }
-          : null,
-    ),
-  ),
-              
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Graphics Acceleration',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              if (_selectedDriverType == 'virgl')
+                Card(
+                  color: _virglServerRunning ? Colors.green[50] : Colors.red[50],
+                  child: ListTile(
+                    leading: Icon(
+                      _virglServerRunning ? Icons.check_circle : Icons.error,
+                      color: _virglServerRunning ? Colors.green : Colors.red,
+                    ),
+                    title: const Text('VirGL Server'),
+                    subtitle: Text(
+                      _virglServerRunning ? 'Running' : 'Not running',
+                      style: TextStyle(
+                        color: _virglServerRunning ? Colors.green : Colors.red,
                       ),
-                      const SizedBox(height: 8),
-                      SwitchListTile(
-                        title: const Text('Enable VirGL'),
-                        subtitle: const Text('Virtual OpenGL acceleration'),
-                        value: _virglEnabled,
-                        onChanged: _selectedDriverType == 'virgl' ? (value) {
-                          setState(() {
-                            _virglEnabled = value;
-                              if (value) {
-        // If enabling virgl, disable turnip and DRI3
-        _turnipEnabled = false;
-        _dri3Enabled = false;
-        _driEnabled = false;
-      }
-                          });
-                        } : null,
-                      ),
-                      SwitchListTile(
-                        title: const Text('Enable Turnip/Zink'),
-                        subtitle: const Text('Vulkan via Zink driver'),
-                        value: _turnipEnabled,
-                        onChanged: _selectedDriverType == 'turnip' ? (value) {
-                          setState(() {
-                          if (value) {
-        // If enabling turnip, disable virgl
-        _virglEnabled = false;
-      } else {
-        // If disabling turnip, also disable DRI3
-        _dri3Enabled = false;
-        _driEnabled = false;
-      }
-                            _turnipEnabled = value;
-                            if (!value && _dri3Enabled) {
-                              _dri3Enabled = false;
-                            }
-                          });
-                        } : null,
-                      ),
-                    ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: () {
+                            _startVirglServer();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Restarting VirGL server...'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.stop),
+                          onPressed: _virglServerRunning ? () async {
+                            Util.termWrite("pkill -f virgl_test_server");
+                            await Future.delayed(const Duration(seconds: 1));
+                            await _updateVirglServerStatus();
+                          } : null,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              
+              if (_selectedDriverType == 'venus')
+                Card(
+                  color: _venusServerRunning ? Colors.green[50] : Colors.red[50],
+                  child: ListTile(
+                    leading: Icon(
+                      _venusServerRunning ? Icons.check_circle : Icons.error,
+                      color: _venusServerRunning ? Colors.green : Colors.red,
+                    ),
+                    title: const Text('Venus Server'),
+                    subtitle: Text(
+                      _venusServerRunning ? 'Running' : 'Not running',
+                      style: TextStyle(
+                        color: _venusServerRunning ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: () {
+                            _startVenusServer();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Restarting Venus server...'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.stop),
+                          onPressed: _venusServerRunning ? () async {
+                            Util.termWrite("pkill -f virgl_test_server");
+                            await Future.delayed(const Duration(seconds: 1));
+                            await _updateVenusServerStatus();
+                          } : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              
+              const SizedBox(height: 16),
+              
+              // Add driver file selection for both turnip and wrapper
+              if (_selectedDriverType == 'wrapper' || _selectedDriverType == 'turnip')
+                _buildDriverFileSelection(),
+              
+              if (_selectedDriverType == 'turnip') _buildTurnipSettings(),
+              if (_selectedDriverType == 'virgl') _buildVirglSettings(),
+              if (_selectedDriverType == 'venus') _buildVenusSettings(),
+              if (_selectedDriverType == 'wrapper') _buildWrapperSettings(),
+              
+              if (_selectedDriverType == 'turnip')
+                Card(
+                  child: SwitchListTile(
+                    title: const Text('Enable DRI3 for Turnip'),
+                    subtitle: const Text('Direct Rendering Infrastructure v3'),
+                    value: _turnipDri3Enabled,
+                    onChanged: _isX11Enabled 
+                        ? (value) {
+                            setState(() {
+                              _turnipDri3Enabled = value;
+                            });
+                          }
+                        : null,
+                  ),
+                ),
+              
+              if (_selectedDriverType == 'wrapper')
+                Card(
+                  child: SwitchListTile(
+                    title: const Text('Enable DRI3 for Wrapper'),
+                    subtitle: const Text('Direct Rendering Infrastructure v3'),
+                    value: _wrapperDri3Enabled,
+                    onChanged: _isX11Enabled 
+                        ? (value) {
+                            setState(() {
+                              _wrapperDri3Enabled = value;
+                            });
+                          }
+                        : null,
+                  ),
+                ),
+              
+              if (_selectedDriverType == 'venus')
+                Card(
+                  child: SwitchListTile(
+                    title: const Text('Enable DRI3 for Venus'),
+                    subtitle: const Text('Direct Rendering Infrastructure v3'),
+                    value: _venusDri3Enabled,
+                    onChanged: _isX11Enabled 
+                        ? (value) {
+                            setState(() {
+                              _venusDri3Enabled = value;
+                            });
+                          }
+                        : null,
+                  ),
+                ),
             ],
           ),
         ),
@@ -1923,7 +2103,6 @@ void _ensureMutualExclusivity() {
   }
 
   Widget _buildTurnipSettings() {
-  //G.prefs.setBool("virgl", false);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -1935,143 +2114,69 @@ void _ensureMutualExclusivity() {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _useBuiltInTurnip ? Colors.blue.withOpacity(0.1) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
-                        width: 1,
-                      ),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _useBuiltInTurnip = true;
-                        });
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            Radio<bool>(
-                              value: true,
-                              groupValue: _useBuiltInTurnip,
-                              onChanged: (value) {
-                                setState(() {
-                                  _useBuiltInTurnip = value ?? true;
-                                });
-                              },
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Built-in Turnip',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Use bundled driver',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: _useBuiltInTurnip ? Colors.blue : Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+            if (_selectedDriverFile == null)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Using built-in Turnip from: ${G.dataPath}/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue,
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: !_useBuiltInTurnip ? Colors.purple.withOpacity(0.1) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: !_useBuiltInTurnip ? Colors.purple : Colors.grey,
-                        width: 1,
-                      ),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _useBuiltInTurnip = false;
-                        });
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            Radio<bool>(
-                              value: false,
-                              groupValue: _useBuiltInTurnip,
-                              onChanged: (value) {
-                                setState(() {
-                                  _useBuiltInTurnip = value ?? false;
-                                });
-                              },
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Custom Driver',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: !_useBuiltInTurnip ? Colors.purple : Colors.grey,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Extract from drivers folder',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: !_useBuiltInTurnip ? Colors.purple : Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (!_useBuiltInTurnip) ...[
-              const SizedBox(height: 8),
-              const Divider(),
-              const SizedBox(height: 8),
-              TextFormField(
-                maxLines: 2,
-                initialValue: _defaultTurnipOpt,
-                decoration: const InputDecoration(
-                  labelText: 'Turnip Environment Variables (without VK_ICD_FILENAMES)',
-                  hintText: 'Example: MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _defaultTurnipOpt = value;
-                  });
-                },
               ),
-            ],
+            if (_selectedDriverFile != null)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Using custom Turnip driver: $_selectedDriverFile',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
+            TextFormField(
+              maxLines: 2,
+              initialValue: _defaultTurnipOpt,
+              decoration: const InputDecoration(
+                labelText: 'Turnip Environment Variables (without VK_ICD_FILENAMES)',
+                hintText: 'Example: MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _defaultTurnipOpt = value;
+                });
+              },
+            ),
           ],
         ),
       ),
@@ -2079,13 +2184,6 @@ void _ensureMutualExclusivity() {
   }
 
   Widget _buildVirglSettings() {
-    final defaultVirglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
-    final defaultVirglOpt = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
-  //  G.prefs.setBool("turnip", false);
-    // Also disable DRI3 if it was enabled (since it requires turnip)
-//    if (Util.getGlobal("dri3")) {
-//      G.prefs.setBool("dri3", false);
-//    }
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -2099,25 +2197,87 @@ void _ensureMutualExclusivity() {
             const SizedBox(height: 8),
             TextFormField(
               maxLines: 2,
-              initialValue: defaultVirglCommand,
+              initialValue: _defaultVirglCommand,
               decoration: const InputDecoration(
                 labelText: 'VirGL Server Parameters',
                 border: OutlineInputBorder(),
               ),
               onChanged: (value) async {
-                await G.prefs.setString('defaultVirglCommand', value);
+                setState(() {
+                  _defaultVirglCommand = value;
+                });
               },
             ),
             const SizedBox(height: 8),
             TextFormField(
               maxLines: 2,
-              initialValue: defaultVirglOpt,
+              initialValue: _defaultVirglOpt,
               decoration: const InputDecoration(
                 labelText: 'VirGL Environment Variables',
                 border: OutlineInputBorder(),
               ),
               onChanged: (value) async {
-                await G.prefs.setString('defaultVirglOpt', value);
+                setState(() {
+                  _defaultVirglOpt = value;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVenusSettings() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Venus Settings',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              maxLines: 2,
+              initialValue: _defaultVenusCommand,
+              decoration: const InputDecoration(
+                labelText: 'Venus Server Parameters',
+                hintText: 'Example: --no-virgl --venus --socket-path=\$CONTAINER_DIR/tmp/.virgl_test',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _defaultVenusCommand = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              maxLines: 2,
+              initialValue: _defaultVenusOpt,
+              decoration: const InputDecoration(
+                labelText: 'Venus Environment Variables',
+                hintText: 'Example: ANDROID_VENUS=1',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _defaultVenusOpt = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              title: const Text('Enable Android Venus'),
+              subtitle: const Text('Use Android\'s Vulkan driver (requires Android 10+)'),
+              value: _androidVenusEnabled,
+              onChanged: (value) {
+                setState(() {
+                  _androidVenusEnabled = value;
+                });
               },
             ),
           ],
@@ -2127,78 +2287,6 @@ void _ensureMutualExclusivity() {
   }
 
   Widget _buildWrapperSettings() {
-  return Card(
-    child: Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Wrapper Driver Settings',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Wrapper driver provides compatibility layer for specific GPU architectures.',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Note:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  '• Creates .vdrv marker file in container directory',
-                  style: TextStyle(fontSize: 12),
-                ),
-                const Text(
-                  '• Exports environment variables to /opt/drv',
-                  style: TextStyle(fontSize: 12),
-                ),
-                const Text(
-                  '• Sets up wrapper-specific environment variables',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-  Widget _buildDriverFileSelection() {
-    List<String> filteredFiles = [];
-    
-    if (_selectedDriverType == 'turnip') {
-      filteredFiles = _driverFiles.where((file) => 
-          file.toLowerCase().contains('turnip') || 
-          file.toLowerCase().contains('freedreno')).toList();
-    } else if (_selectedDriverType == 'virgl') {
-      filteredFiles = _driverFiles.where((file) => 
-          file.toLowerCase().contains('virgl') || 
-          file.toLowerCase().contains('virtio')).toList();
-    } else if (_selectedDriverType == 'wrapper') {
-      filteredFiles = _driverFiles.where((file) => 
-          file.toLowerCase().contains('wrapper') || 
-          file.toLowerCase().contains('wine')).toList();
-    }
-    
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -2206,8 +2294,43 @@ void _ensureMutualExclusivity() {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Select Driver File',
+              'Wrapper Driver Settings',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Wrapper driver provides compatibility layer for specific GPU architectures.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDriverFileSelection() {
+    List<String> filteredFiles = _driverFiles.where((file) {
+      if (_selectedDriverType == 'turnip') {
+        return file.toLowerCase().contains('turnip') ||
+               file.toLowerCase().contains('freedreno') ||
+               file.endsWith('.json');
+      } else if (_selectedDriverType == 'wrapper') {
+        return file.toLowerCase().contains('wrapper');
+      }
+      return false;
+    }).toList();
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _selectedDriverType == 'turnip' 
+                ? 'Select Turnip Driver File'
+                : 'Select Wrapper Driver File',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             
@@ -2215,19 +2338,29 @@ void _ensureMutualExclusivity() {
               const Center(child: CircularProgressIndicator()),
             
             if (!_isLoading && filteredFiles.isEmpty)
-              const Column(
+              Column(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.orange, size: 48),
-                  SizedBox(height: 8),
+                  const Icon(Icons.error_outline, color: Colors.orange, size: 48),
+                  const SizedBox(height: 8),
                   Text(
-                    'No driver files found',
+                    _selectedDriverType == 'turnip'
+                      ? 'No turnip driver files found'
+                      : 'No wrapper driver files found',
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'Please place driver files in the drivers folder',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    _selectedDriverType == 'turnip'
+                      ? 'Please place turnip driver files in the drivers folder'
+                      : 'Please place wrapper driver files in the drivers folder',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                     textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                    onPressed: _loadDriverFiles,
                   ),
                 ],
               ),
@@ -2235,9 +2368,11 @@ void _ensureMutualExclusivity() {
             if (!_isLoading && filteredFiles.isNotEmpty)
               DropdownButtonFormField<String>(
                 value: _selectedDriverFile,
-                decoration: const InputDecoration(
-                  labelText: 'Driver File',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: _selectedDriverType == 'turnip'
+                    ? 'Turnip Driver File'
+                    : 'Wrapper Driver File',
+                  border: const OutlineInputBorder(),
                 ),
                 items: filteredFiles.map((String value) {
                   return DropdownMenuItem<String>(
@@ -2255,19 +2390,5 @@ void _ensureMutualExclusivity() {
         ),
       ),
     );
-  }
-
-  Future<String> _checkVirglServerStatus() async {
-    try {
-      final result = await Process.run('sh', ['-c', 'pgrep -f virgl_test_server']);
-      final isRunning = result.stdout.toString().trim().isNotEmpty;
-      
-      return isRunning ? 'Running' : 'Not running';
-    } catch (e) {
-      if (_virglEnabled && _selectedDriverType == 'virgl') {
-        return 'Enabled (status unknown)';
-      }
-      return 'Disabled';
-    }
   }
 }

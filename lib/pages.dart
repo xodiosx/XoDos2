@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-
+import 'package:flutter_pty/flutter_pty.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Add this
 import 'package:url_launcher/url_launcher.dart';
@@ -140,9 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// ... then continue with all the other classes from the original file:
-
-// Setting Page
+//
 // Setting Page
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
@@ -713,112 +712,196 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
         ),
 
         // Panel 3: Graphics Acceleration
-        ExpansionPanel(
-          isExpanded: _expandState[3],
-          headerBuilder: (context, isExpanded) {
-            return ListTile(
-              title: Text(AppLocalizations.of(context)!.graphicsAcceleration),
-              subtitle: Text(AppLocalizations.of(context)!.experimentalFeature),
-            );
-          },
-          body: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(children: [
-              Text(AppLocalizations.of(context)!.graphicsAccelerationHint),
-              const SizedBox.square(dimension: 16),
-              TextFormField(
-                maxLines: null,
-                initialValue: Util.getGlobal("defaultVirglCommand") as String,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  labelText: AppLocalizations.of(context)!.virglServerParams,
-                ),
-                onChanged: (value) async {
-                  await G.prefs.setString("defaultVirglCommand", value);
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              TextFormField(
-                maxLines: null,
-                initialValue: Util.getGlobal("defaultVirglOpt") as String,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  labelText: AppLocalizations.of(context)!.virglEnvVar,
-                ),
-                onChanged: (value) async {
-                  await G.prefs.setString("defaultVirglOpt", value);
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.enableVirgl),
-                subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
-                value: Util.getGlobal("virgl") as bool,
-                onChanged: (value) {
-                  if (value) {
-    // If enabling virgl, disable turnip
-    G.prefs.setBool("turnip", false);
-    // Also disable DRI3 if it was enabled (since it requires turnip)
-    if (Util.getGlobal("dri3")) {
-      G.prefs.setBool("dri3", false);
-    }
-  }
-                  G.prefs.setBool("virgl", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 16),
-              const Divider(height: 2, indent: 8, endIndent: 8),
-              const SizedBox.square(dimension: 16),
-              Text(AppLocalizations.of(context)!.turnipAdvantages),
-              const SizedBox.square(dimension: 8),
-              TextFormField(
-                maxLines: null,
-                initialValue: Util.getGlobal("defaultTurnipOpt") as String,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  labelText: AppLocalizations.of(context)!.turnipEnvVar,
-                ),
-                onChanged: (value) async {
-                  await G.prefs.setString("defaultTurnipOpt", value);
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.enableTurnipZink),
-                subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
-                value: Util.getGlobal("turnip") as bool,
-                onChanged: (value) async {
-                G.prefs.setBool("virgl", false);
-                  G.prefs.setBool("turnip", value);
-                  if (!value && Util.getGlobal("dri3")) {
-                    G.prefs.setBool("dri3", false);
-                  }
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.enableDRI3),
-                subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
-                value: Util.getGlobal("dri3") as bool,
-                onChanged: (value) async {
-                  if (value && !(Util.getGlobal("turnip") && Util.getGlobal("useX11"))) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(AppLocalizations.of(context)!.dri3Requirement)),
-                    );
-                    return;
-                  }
-                  G.prefs.setBool("dri3", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 16),
-            ]),
-          ),
+// Panel 3: Graphics Acceleration
+ExpansionPanel(
+  isExpanded: _expandState[3],
+  headerBuilder: (context, isExpanded) {
+    return ListTile(
+      title: Text(AppLocalizations.of(context)!.graphicsAcceleration),
+      subtitle: Text(AppLocalizations.of(context)!.experimentalFeature),
+    );
+  },
+  body: Padding(
+    padding: const EdgeInsets.all(12),
+    child: Column(children: [
+      Text(AppLocalizations.of(context)!.graphicsAccelerationHint),
+      const SizedBox.square(dimension: 16),
+      
+      // Virgl section
+      Text(AppLocalizations.of(context)!.virglServerParams,
+          style: TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultVirglCommand") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.virglServerParams,
         ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultVirglCommand", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultVirglOpt") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.virglEnvVar,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultVirglOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableVirgl),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("virgl") as bool,
+        onChanged: (value) {
+          if (value) {
+            // If enabling virgl, disable venus and turnip
+            G.prefs.setBool("venus", false);
+            G.prefs.setBool("turnip", false);
+            // Also disable DRI3 if it was enabled
+            if (Util.getGlobal("dri3")) {
+              G.prefs.setBool("dri3", false);
+            }
+          }
+          G.prefs.setBool("virgl", value);
+          setState(() {});
+        },
+      ),
+      
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+      
+      // Venus section
+      Text(AppLocalizations.of(context)!.venusAdvantages,
+          style: TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox.square(dimension: 8),
+      Text(AppLocalizations.of(context)!.venusAdvantages),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultVenusCommand") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.venusServerParams,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultVenusCommand", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultVenusOpt") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.venusEnvVar,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultVenusOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableVenus),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("venus") as bool,
+        onChanged: (value) {
+          if (value) {
+            // If enabling venus, disable virgl and turnip
+            G.prefs.setBool("virgl", false);
+            G.prefs.setBool("turnip", false);
+
+          }
+          G.prefs.setBool("venus", value);
+          
+          if (!value && Util.getGlobal("dri3")) {
+            G.prefs.setBool("dri3", false);
+          }
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableAndroidVenus),
+        subtitle: Text(AppLocalizations.of(context)!.venusAdvantages),
+        value: Util.getGlobal("androidVenus") as bool,
+        onChanged: (value) async {
+          await G.prefs.setBool("androidVenus", value);
+          setState(() {});
+        },
+      ),
+      
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+      
+      // Turnip section
+      Text(AppLocalizations.of(context)!.turnipAdvantages,
+          style: TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultTurnipOpt") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.turnipEnvVar,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultTurnipOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableTurnipZink),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("turnip") as bool,
+        onChanged: (value) async {
+          if (value) {
+            // If enabling turnip, disable virgl and venus
+            G.prefs.setBool("virgl", false);
+            G.prefs.setBool("venus", false);
+          }
+          G.prefs.setBool("turnip", value);
+          if (!value && Util.getGlobal("dri3")) {
+            G.prefs.setBool("dri3", false);
+          }
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableDRI3),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("dri3") as bool,
+        onChanged: (value) async {
+        final bool useX11 = Util.getGlobal("useX11") == true;
+  final bool turnip = Util.getGlobal("turnip") == true;
+  final bool venus  = Util.getGlobal("venus") == true;
+           if (value && !(useX11 && (turnip || venus))) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppLocalizations.of(context)!.dri3Requirement)),
+            );
+            return;
+          }
+          G.prefs.setBool("dri3", value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 16),
+    ]),
+  ),
+),
+
+
 
         // Panel 4: Windows App Support (with backup/restore button added)
         ExpansionPanel(
@@ -840,14 +923,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
                 runSpacing: 4.0,
                 children: [
                  
-                  OutlinedButton(
-                    style: D.commandButtonStyle,
-                    child: Text("${AppLocalizations.of(context)!.installHangoverStable}（10.14）"),
-                    onPressed: () async {
-                      Util.termWrite("bash /extra/install-hangover-stable");
-                      G.pageIndex.value = 0;
-                    },
-                  ),
+                  
                   OutlinedButton(
                     style: D.commandButtonStyle,
                     child: Text('Environment Settings'),
@@ -878,8 +954,21 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
                       );
                     },
                   ),
-                ],
-              ),
+                  
+                  
+OutlinedButton(
+            style: D.commandButtonStyle,
+            child: Text('Wine bionic Settings🍷'),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => WineSettingsDialog(),
+              );
+            },
+          ),
+        ],
+      ),
+              
               const SizedBox.square(dimension: 16),
               const Divider(height: 2, indent: 8, endIndent: 8),
               const SizedBox.square(dimension: 16),
@@ -903,6 +992,14 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
                   );
                 }).toList(),
               ),
+              OutlinedButton(
+                    style: D.commandButtonStyle,
+                    child: Text("${AppLocalizations.of(context)!.installHangoverStable}（10.14）"),
+                    onPressed: () async {
+                      Util.termWrite("bash /extra/install-hangover-stable");
+                      G.pageIndex.value = 0;
+                    },
+                  ),
               OutlinedButton(
                 style: D.commandButtonStyle,
                 child: Text(AppLocalizations.of(context)!.installHangoverLatest),
@@ -943,7 +1040,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
                             Util.termWrite("sudo apt autoremove --purge -y hangover*");
-                            Util.termWrite("rm -rf /home/xodos/.wine");
+                            Util.termWrite("rm -rf ~/.wine");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Wine hangover deleted'),
@@ -960,13 +1057,13 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
               ),
               OutlinedButton(
                 style: D.commandButtonStyle,
-                child: Text('Delete Wine x68_64🍷'),
+                child: Text('Delete Wine x86_64🍷'),
                 onPressed: () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
                       icon: const Icon(Icons.warning, color: Colors.orange, size: 48),
-                      title: const Text('Delete Wine x68_64?'),
+                      title: const Text('Delete Wine x86_64?'),
                       content: const Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -974,7 +1071,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
                           SizedBox(height: 8),
                           Text('•❌Full Wine🍷 ', style: TextStyle(color: Colors.red)),
                           Text('•with Windows support', style: TextStyle(color: Colors.red)),
-                          Text('• for wine x68_64!', style: TextStyle(color: Colors.red)),
+                          Text('• for wine x86_64!', style: TextStyle(color: Colors.red)),
                           SizedBox(height: 12),
                           Text('This action cannot be undone!'),
                         ],
@@ -990,7 +1087,54 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
                             Util.termWrite("rm -rf /opt/wine");
-                            Util.termWrite("rm -rf /home/xodos/.wine");
+                            Util.termWrite("rm -rf ~/.wine");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Wine deleted'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          },
+                          child: const Text('Delete Now'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              OutlinedButton(
+                style: D.commandButtonStyle,
+                child: Text('Delete Wine Bionic🍷'),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      icon: const Icon(Icons.warning, color: Colors.orange, size: 48),
+                      title: const Text('Delete Wine bionic?'),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('This will delete:'),
+                          SizedBox(height: 8),
+                          Text('•❌Full Wine🍷 ', style: TextStyle(color: Colors.red)),
+                          Text('•with Windows support', style: TextStyle(color: Colors.red)),
+                          Text('• for wine bionic!', style: TextStyle(color: Colors.red)),
+                          SizedBox(height: 12),
+                          Text('This action cannot be undone!'),
+                        ],
+                      ),
+                      actions: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            G.pageIndex.value = 0;
+                            Util.termWrite("rm -rf ${G.dataPath}/usr/opt/wine");
+                            Util.termWrite("rm -rf ${G.dataPath}/home/.wine");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Wine deleted'),
@@ -1072,6 +1216,9 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
             ]),
           ),
         ),
+
+
+
 
         // Panel 5: System Backup & Restore (New panel)
         ExpansionPanel(
@@ -2230,4 +2377,1446 @@ Widget _buildTermuxKey(String label, {bool isActive = false, VoidCallback? onTap
       ),
     ),
   );
+}
+
+
+// ============================================
+// WINE SETTINGS DIALOG
+// ============================================
+// ============================================
+// WINE SETTINGS DIALOG
+// ============================================
+
+class WineSettingsDialog extends StatefulWidget {
+  const WineSettingsDialog({super.key});
+
+  @override
+  State<WineSettingsDialog> createState() => _WineSettingsDialogState();
+}
+
+class _WineSettingsDialogState extends State<WineSettingsDialog> {
+  // Controllers for text fields
+  final TextEditingController _displayController = TextEditingController();
+  final TextEditingController _winePrefixController = TextEditingController();
+  final TextEditingController _wineArchController = TextEditingController();
+  final TextEditingController _wineCommandController = TextEditingController();
+  
+  // State variables
+  bool _wineRunning = false;
+  bool _isLoading = true;
+  bool _initialized = false;
+  bool _winePrefixExists = false;
+  bool _creatingWinePrefix = false;
+  bool _startingWine = false;
+  bool _startingExplorer = false;
+  late String _dataPath;
+  late String _home;
+  
+  // PTY for Wine
+  Pty? _winePty;
+  
+  // Timer variables for monitoring
+  int _monitorLoopCount = 0;
+  static const int _maxMonitorLoops = 10;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+  
+  @override
+  void dispose() {
+    _winePty?.kill();
+    _displayController.dispose();
+    _winePrefixController.dispose();
+    _wineArchController.dispose();
+    _wineCommandController.dispose();
+    super.dispose();
+  }
+  
+  // ==============================
+  // LOAD SETTINGS
+  // ==============================
+  Future<void> _loadSettings() async {
+    try {
+      // Get data path from main.dart's G.dataPath
+      final context = G.homePageStateContext;
+      _dataPath = G.dataPath;
+      _home = '$_dataPath/home';
+      
+      // Load saved settings or use defaults
+      _displayController.text = ':4';
+      _winePrefixController.text = '$_home/.wine';
+      _wineArchController.text = 'win64';
+      _wineCommandController.text = 'xodxx';
+      
+      // Check if Wine prefix exists
+      await _checkWinePrefixExists();
+      
+      // Check if Wine is already running
+      await _checkWineProcess();
+      
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading settings: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  // ==============================
+  // CHECK IF WINE PREFIX EXISTS
+  // ==============================
+  Future<void> _checkWinePrefixExists() async {
+    try {
+      final winePrefix = _winePrefixController.text;
+      final readyFile = File('$winePrefix/.ready');
+      
+      setState(() {
+        _winePrefixExists = readyFile.existsSync();
+      });
+    } catch (_) {
+      setState(() {
+        _winePrefixExists = false;
+      });
+    }
+  }
+  
+  // ==============================
+  // CREATE WINE PREFIX
+  // ==============================
+  Future<void> _createWinePrefix() async {
+    _creatingWinePrefix = true;
+    _monitorLoopCount = 0;
+    
+    // Show creating wine prefix loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Creating Wine Prefix'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            const Text('Creating Wine prefix, please wait...'),
+            const SizedBox(height: 8),
+            Text(
+              'This may take a few minutes...',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    try {
+      // Initialize PTY if not already done
+      if (!_initialized) {
+        await _initWinePty();
+      }
+      
+      // Send command to create wine prefix
+      final createCommand = '''
+# Create wine prefix
+echo "Creating Wine prefix..."
+export WINEPREFIX="${_winePrefixController.text}"
+export WINEARCH="${_wineArchController.text}"
+
+# Kill any existing wine processes
+pkill -f "wine" 
+pkill -f "winhandler.exe" 
+
+# Create wine prefix using wineboot
+#${_dataPath}/usr/opt/wine/bin/wineboot -i
+xodxx
+# Create .ready file to mark prefix as ready
+mkdir -p "${_winePrefixController.text}"
+#touch "${_winePrefixController.text}/.ready"
+echo "Wine prefix created successfully!"
+sleep 3
+pkill -f "wine" 
+pkill -f "winhandler.exe" 
+
+# Start winhandler.exe to initialize
+#${_dataPath}/usr/opt/wine/bin/wine winhandler.exe &
+echo "WinHandler started"
+''';
+      
+      _winePty!.write(Utf8Encoder().convert(createCommand));
+      await Future.delayed(const Duration(seconds: 60)); //wait for wineboot
+      // Monitor for winhandler.exe in a loop
+      bool winHandlerStarted = await _monitorForWinHandler();
+      
+      if (mounted) {
+        Navigator.of(context).pop(); // Close creating dialog
+        
+        if (winHandlerStarted) {
+          setState(() {
+            _winePrefixExists = true;
+            _creatingWinePrefix = false;
+            
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Wine prefix created successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          _creatingWinePrefix = false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to create Wine prefix'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop();
+        _creatingWinePrefix = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating Wine prefix: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  // ==============================
+  // MONITOR FOR WINHANDLER.EXE
+  // ==============================
+  Future<bool> _monitorForWinHandler() async {
+    for (_monitorLoopCount = 0; _monitorLoopCount < _maxMonitorLoops; _monitorLoopCount++) {
+      await Future.delayed(const Duration(seconds: 20)); // Check every minute
+      
+      try {
+        final result = await Process.run(
+          '/system/bin/sh',
+          ['-c', 'pgrep -x "winhandler.exe" >/dev/null 2>&1 && echo "RUNNING"'],
+          environment: _buildEnvironment(),
+        );
+        
+        if (result.stdout.toString().contains('RUNNING')) {
+          print('WinHandler.exe detected after $_monitorLoopCount minutes');
+          return true;
+        }
+      } catch (_) {}
+      
+      // Also check if .ready file exists
+      final readyFile = File('${_winePrefixController.text}/.ready');
+      if (readyFile.existsSync()) {
+        print('.ready file found after $_monitorLoopCount minutes');
+        return true;
+      }
+    }
+    
+    return false; // WinHandler not started within timeout
+  }
+  
+  // ==============================
+  // SAVE SETTINGS
+  // ==============================
+  Future<void> _saveSettings() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Settings saved'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save settings: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  // ==============================
+  // BUILD ENVIRONMENT VARIABLES
+  // ==============================
+  Map<String, String> _buildEnvironment() {
+    final env = <String, String>{};
+    
+    // Set up PATH and library paths
+    env['PATH'] = '$_dataPath/bin:$_dataPath/usr/bin';
+    env['LD_LIBRARY_PATH'] = '$_dataPath/lib:$_dataPath/usr/lib';
+    
+    // Core environment variables
+    env['HOME'] = _home;
+    env['DATA_DIR'] = _dataPath;
+    env['PREFIX'] = '$_dataPath/usr';
+    env['TMPDIR'] = '$_dataPath/usr/tmp';
+    env['XDG_RUNTIME_DIR'] = '$_dataPath/usr/tmp/runtime';
+    env['XDG_CACHE_HOME'] = '$_dataPath/usr/tmp/.cache';
+    
+    // Display and X11
+    env['DISPLAY'] = _displayController.text;
+    env['XDG_RUNTIME_DIR'] = '$_dataPath/usr/tmp';
+    env['X11_UNIX_PATH'] = '$_dataPath/usr/tmp/.X11-unix';
+    
+    // Wine specific
+    env['WINEPREFIX'] = _winePrefixController.text;
+    env['WINEARCH'] = _wineArchController.text;
+    env['WINE'] = '$_dataPath/usr/opt/wine/bin/wine';
+    
+    // Terminal and locale
+    env['TERM'] = 'xterm-256color';
+    env['LANG'] = 'en_US.UTF-8';
+    env['SHELL'] = '$_dataPath/usr/bin/bash';
+    
+    // Performance and debugging
+    env['BOX64_LOG'] = '0';
+    env['DXVK_STATE_CACHE'] = '1';
+    env['DXVK_LOG_PATH'] = '$_home/.cache';
+    env['DXVK_STATE_CACHE_PATH'] = '$_home/.cache';
+    
+    // Android specific
+    env['ANDROID_ROOT'] = '/system';
+    env['ANDROID_DATA'] = '/data';
+    env['ANDROID_STORAGE'] = '/storage';
+    env['EXTERNAL_STORAGE'] = '/sdcard';
+    
+    return env;
+  }
+  
+  // ==============================
+  // BUILD FULL COMMAND
+  // ==============================
+  String _buildFullCommand() {
+    final envVars = _buildEnvironment();
+    final envString = envVars.entries.map((e) => 'export ${e.key}="${e.value}"').join('\n');
+    
+    return '''
+$envString
+[ -f $_dataPath/usr/opt/drv ] && . $_dataPath/usr/opt/drv
+${_wineCommandController.text}
+''';
+  }
+  
+  // ==============================
+  // INITIALIZE WINE PTY
+  // ==============================
+  Future<void> _initWinePty() async {
+    if (_initialized && _winePty != null) {
+      return;
+    }
+    
+    final envVars = _buildEnvironment();
+    
+    // Create PTY with proper environment
+    _winePty = Pty.start(
+      '$_dataPath/usr/bin/sh',
+      workingDirectory: _home,
+      environment: envVars,
+    );
+    
+    // Set up environment in the shell
+    final setupCommands = '''
+# Set up the shell environment
+cd $_dataPath
+export PATH=\${PATH}:$_dataPath/bin:$_dataPath/usr/bin
+export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:$_dataPath/lib:$_dataPath/usr/lib
+
+# Create necessary directories
+mkdir -p $_home
+mkdir -p $_dataPath/usr/tmp
+mkdir -p \${WINEPREFIX}
+
+# Set up X11 socket link
+mkdir -p $_dataPath/usr/tmp/.X11-unix
+
+# Source Settings  if available
+[ -f $_dataPath/usr/opt/env ] && . $_dataPath/usr/opt/env
+[ -f $_dataPath/usr/opt/drv ] && . $_dataPath/usr/opt/drv
+[ -f $_dataPath/usr/opt/hud ] && . $_dataPath/usr/opt/hud
+[ -f $_dataPath/usr/opt/dyna ] && . $_dataPath/usr/opt/dyna
+
+
+echo "Wine environment initialized on ${_displayController.text}"
+''';
+    
+    _winePty!.write(Utf8Encoder().convert(setupCommands));
+    
+    // Listen for output (for debugging)
+    _winePty!.output.cast<List<int>>().transform(Utf8Decoder()).listen((data) {
+      print('Wine PTY: $data');
+    });
+    
+    _initialized = true;
+  }
+  
+  // ==============================
+  // DISMISS ALL DIALOGS
+  // ==============================
+  void _dismissAllDialogs() {
+    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+  }
+  
+  // ==============================
+  // LAUNCH DESKTOP AFTER WINE
+  // ==============================
+  void _launchDesktopAfterWine() async {
+    // Dismiss all dialogs first
+   // _dismissAllDialogs();
+    Navigator.of(context).pop(true);
+    // Add a small delay to ensure dialog is fully dismissed
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    // Then launch desktop from the main context
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (G.wasX11Enabled) {
+        Workflow.launchX11();
+      } else if (G.wasAvncEnabled) {
+        Workflow.launchAvnc();
+      } else {
+        Workflow.launchBrowser();
+      }
+    });
+  }
+  
+  // ==============================
+  // START TASK MANAGER
+  // ==============================
+  Future<void> _startTaskManager() async {
+    // Check if Wine is running
+    await _checkWineProcess();
+    Navigator.of(context).pop();
+    if (!_wineRunning) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please start Wine first'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    try {
+      // Initialize PTY if not already done
+      if (!_initialized) {
+        await _initWinePty();
+      }
+      
+      // Send taskmgr command to the existing Wine PTY
+      final taskMgrCommand = 'xod taskmgr\n';
+      _winePty!.write(Utf8Encoder().convert(taskMgrCommand));
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task Manager started'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to start Task Manager: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  // ==============================
+  // START WINE
+  // ==============================
+  Future<void> _startWine() async {
+    try {
+      // Check if already running
+      await _checkWineProcess();
+      if (_wineRunning) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Wine is already running'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+        
+        // If already running, still dismiss and launch desktop
+        _launchDesktopAfterWine();
+        return;
+      }
+      
+      // Check if wine prefix exists
+      await _checkWinePrefixExists();
+      
+      if (!_winePrefixExists) {
+        // Show option to create wine prefix first
+        bool createPrefix = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Wine Prefix Not Found'),
+            content: const Text('Wine prefix does not exist. Create it now?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Create'),
+              ),
+            ],
+          ),
+        ) ?? false;
+        
+        if (createPrefix) {
+          await _createWinePrefix();
+          // After creating prefix, continue with starting wine
+          if (!_winePrefixExists) {
+            return; // Prefix creation failed
+          }
+        } else {
+          return; // User cancelled
+        }
+      }
+      
+      // Show starting wine loading dialog
+      _startingWine = true;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Starting Wine'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text('Launching Windows environment...'),
+              const SizedBox(height: 8),
+              Text(
+                'Waiting for Wine to start...',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+      
+      // Initialize PTY if not already done
+      if (!_initialized) {
+        await _initWinePty();
+      }
+      
+      // Build and send command to Wine PTY using the user-editable command
+      final command = '''
+# Kill any existing Wine processes
+pkill -f "wine" 2>/dev/null || true
+pkill -f "winhandler.exe" 2>/dev/null || true
+pkill -f ".exe" 2>/dev/null || true
+
+# Run the Wine command (user-editable)
+echo "Starting: ${_wineCommandController.text}"
+${_wineCommandController.text} 
+''';
+      
+      _winePty!.write(Utf8Encoder().convert(command));
+      
+      // Start monitoring for winhandler.exe
+      _monitorLoopCount = 0;
+      bool winHandlerStarted = await _monitorForWinHandler();
+      
+      if (mounted) {
+        Navigator.of(context).pop(); // Close starting dialog
+        
+        if (winHandlerStarted) {
+          _startingWine = false;
+          await _checkWineProcess();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Wine started successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _launchDesktopAfterWine();
+          
+        } else {
+          _startingWine = false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to start Wine (timeout)'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        // Try to close any open dialogs
+       if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        _startingWine = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start Wine: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error starting wine: $e');
+    }
+  }
+  
+  // ==============================
+  // START EXPLORER
+  // ==============================
+  Future<void> _startExplorer() async {
+    try {
+      // Check if already running
+      await _checkWineProcess();
+      if (_wineRunning) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Wine is already running'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+      
+      // Check if wine prefix exists
+      await _checkWinePrefixExists();
+      
+      if (!_winePrefixExists) {
+        // Show option to create wine prefix first
+        bool createPrefix = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Wine Prefix Not Found'),
+            content: const Text('Wine prefix does not exist. Create it now?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Create'),
+              ),
+            ],
+          ),
+        ) ?? false;
+        
+        if (createPrefix) {
+          await _createWinePrefix();
+          // After creating prefix, continue with starting explorer
+          if (!_winePrefixExists) {
+            return; // Prefix creation failed
+          }
+        } else {
+          return; // User cancelled
+        }
+      }
+      
+      // Show starting explorer loading dialog
+      _startingExplorer = true;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Starting Explorer'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text('Launching Windows Explorer...'),
+              const SizedBox(height: 8),
+              Text(
+                'Waiting for Explorer to start...',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+      
+      // Initialize PTY if not already done
+      if (!_initialized) {
+        await _initWinePty();
+      }
+      
+      // Build and send command to Wine PTY for explorer
+      final command = '''
+# Kill any existing Wine processes
+
+
+# Run the Explorer command
+echo "Starting: xod explorer"
+xod $_dataPath/usr/opt/apps/wfm.exe
+''';
+      
+      _winePty!.write(Utf8Encoder().convert(command));
+      
+      // Start monitoring for winhandler.exe
+      _monitorLoopCount = 0;
+      bool winHandlerStarted = await _monitorForWinHandler();
+      
+      if (mounted) {
+        Navigator.of(context).pop(); // Close starting dialog
+        
+        if (winHandlerStarted) {
+          _startingExplorer = false;
+          await _checkWineProcess();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Explorer started successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _launchDesktopAfterWine();
+        } else {
+          _startingExplorer = false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to start Explorer (timeout)'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        // Try to close any open dialogs
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        _startingExplorer = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start Explorer: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error starting explorer: $e');
+    }
+  }
+  
+  // ==============================
+  // STOP WINE
+  // ==============================
+  Future<void> _stopWine() async {
+    try {
+      // Show confirmation dialog
+      bool confirmed = await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Stop Wine?'),
+          content: const Text('This will stop all Wine processes. Continue?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Stop'),
+            ),
+          ],
+        ),
+      ) ?? false;
+      
+      if (!confirmed) return;
+      try {
+        final result = await Process.run(
+          '/system/bin/sh',
+          ['-c', 'pkill -f "wine" && pkill -f "winhandler.exe" && pkill -f "*.exe"'],
+          environment: _buildEnvironment(),
+        );
+        
+        
+      } catch (_) {}
+      
+      
+      /*  
+      // Send kill command to Wine PTY
+      final killCommand = '''
+# Kill Wine processes
+pkill -f "wine" && pkill -f "winhandler.exe" && pkill -f "*.exe"
+echo "Wine processes stopped"
+''';
+      
+      _winePty?.write(Utf8Encoder().convert(killCommand));
+      */
+      await Future.delayed(const Duration(seconds: 1));
+      await _checkWineProcess();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Wine stopped'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+  
+  // ==============================
+  // CHECK WINE PROCESS
+  // ==============================
+  Future<void> _checkWineProcess() async {
+    try {
+      final result = await Process.run(
+        '/system/bin/sh',
+        ['-c', 'pgrep -x *.exe >/dev/null 2>&1 && echo RUNNING || echo STOPPED'],
+        environment: _buildEnvironment(),
+      );
+      
+      final isRunning = result.stdout.toString().trim() == 'RUNNING';
+      
+      if (mounted) {
+        setState(() {
+          _wineRunning = isRunning;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _wineRunning = false;
+        });
+      }
+    }
+  }
+  
+  // ==============================
+  // RESET TO DEFAULT SETTINGS
+  // ==============================
+  void _resetToDefault() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset to Default?'),
+        content: const Text('This will reset all settings to default values. Continue?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _displayController.text = ':4';
+                _winePrefixController.text = '$_home/.wine';
+                _wineArchController.text = 'win64';
+                _wineCommandController.text = 'xodxx';
+              });
+              _saveSettings();
+            },
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ==============================
+  // TEST WINE CONFIGURATION
+  // ==============================
+  Future<void> _testWineConfig() async {
+    try {
+      if (!_initialized) {
+        await _initWinePty();
+      }
+      
+      final testPty = Pty.start(
+        '$_dataPath/usr/bin/sh',
+        workingDirectory: _home,
+        environment: _buildEnvironment(),
+      );
+      
+      String output = '';
+      
+      testPty.output.cast<List<int>>().transform(Utf8Decoder()).listen((data) {
+        output += data;
+      });
+      
+      final cmd = '''
+export PATH="$_dataPath/usr/bin:\$PATH"
+export LD_LIBRARY_PATH="$_dataPath/usr/lib:\$LD_LIBRARY_PATH"
+export WINEPREFIX="${_winePrefixController.text}"
+export WINEARCH="${_wineArchController.text}"
+echo "=== Wine Configuration Test ==="
+echo "Wine Prefix: \$WINEPREFIX"
+echo "Wine Arch: \$WINEARCH"
+echo "Display: \$DISPLAY"
+echo "\\n=== Checking Wine Prefix ==="
+if [ -f "\$WINEPREFIX/.ready" ]; then
+  echo "✓ Wine prefix exists and is ready"
+else
+  echo "✗ Wine prefix not found or not ready"
+fi
+echo "\\n=== Wine Version ==="
+box64 "${_dataPath}/usr/opt/wine/bin/wine" --version 2>&1 || echo "Failed to get wine version"
+cat "${_dataPath}/usr/opt/drv"
+echo "\\n=== Test Complete ==="
+''';
+      
+      testPty.write(Utf8Encoder().convert(cmd));
+      
+      await Future.delayed(const Duration(seconds: 3));
+      testPty.kill();
+      
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Wine Test Result'),
+          content: SingleChildScrollView(
+            child: Text(output.isEmpty ? 'No output' : output),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            )
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Wine test failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  // ==============================
+  // EDIT FULL COMMAND
+  // ==============================
+  void _editFullCommand() {
+    final fullCommand = _buildFullCommand();
+    final TextEditingController editController = TextEditingController(text: fullCommand);
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.edit, size: 20),
+                SizedBox(width: 8),
+                Text('Edit Launcher Command'),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Edit the full launcher command below:',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Note: The actual wine command is the last line',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      constraints: const BoxConstraints(minHeight: 200),
+                      child: TextFormField(
+                        controller: editController,
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.all(12),
+                          hintText: 'Enter full launcher command...',
+                        ),
+                        style: const TextStyle(
+                          fontFamily: 'Monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Tip: The command will be saved and used when starting Wine',
+                      style: TextStyle(fontSize: 11, color: Colors.blue),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final editedCommand = editController.text;
+                  // Extract the wine command (last non-empty line)
+                  final lines = editedCommand.split('\n');
+                  String wineCommand = '';
+                  
+                  // Find the last non-empty line (should be the wine command)
+                  for (int i = lines.length - 1; i >= 0; i--) {
+                    if (lines[i].trim().isNotEmpty) {
+                      wineCommand = lines[i].trim();
+                      break;
+                    }
+                  }
+                  
+                  // Update the wine command controller
+                  _wineCommandController.text = wineCommand;
+                  
+                  // Save settings
+                  _saveSettings();
+                  
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Launcher command updated'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                child: const Text('Save Command'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  
+  // ==============================
+  // SHOW FULL COMMAND PREVIEW
+  // ==============================
+  void _showCommandPreview() {
+    final fullCommand = _buildFullCommand();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Full Command Preview'),
+        content: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: SelectableText(
+            fullCommand,
+            style: const TextStyle(
+              fontFamily: 'Monospace',
+              color: Colors.white,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: fullCommand));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Command copied to clipboard')),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ==============================
+  // UI
+  // ==============================
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const AlertDialog(
+        title: Text('Loading Wine Settings...'),
+        content: Center(child: CircularProgressIndicator()),
+      );
+    }
+    
+    return AlertDialog(
+      title: Row(
+        children: const [
+          Icon(Icons.wine_bar, color: Colors.deepPurple),
+          SizedBox(width: 8),
+          Text('Wine Launcher'),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Wine Prefix Status Card
+              Card(
+                color: _winePrefixExists ? Colors.green[900] : Colors.orange[900],
+                child: ListTile(
+                  leading: Icon(
+                    _winePrefixExists ? Icons.check_circle : Icons.warning,
+                    color: _winePrefixExists ? Colors.green : Colors.orange,
+                  ),
+                  title: const Text('Wine Prefix Status'),
+                  subtitle: Text(_winePrefixExists ? 'Ready' : 'Not Created'),
+                  trailing: !_winePrefixExists && !_creatingWinePrefix
+                      ? IconButton(
+                          icon: const Icon(Icons.add_circle, color: Colors.blue),
+                          onPressed: _createWinePrefix,
+                          tooltip: 'Create Wine Prefix',
+                        )
+                      : _creatingWinePrefix
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : null,
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Wine Running Status Card - ORIGINAL LAYOUT
+              Card(
+                color: _wineRunning ? Colors.green[150] : Colors.red[150],
+                child: ListTile(
+                  leading: Icon(
+                    _wineRunning ? Icons.check_circle : Icons.cancel,
+                    color: _wineRunning ? Colors.green : Colors.red,
+                  ),
+                  title: const Text('Wine Status'),
+                  subtitle: Text(_wineRunning ? 'Running' : 'Not Running'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: _checkWineProcess,
+                        tooltip: 'Refresh Status',
+                      ),
+                      if (_wineRunning)
+                        IconButton(
+                          icon: const Icon(Icons.stop, color: Colors.red),
+                          onPressed: _stopWine,
+                          tooltip: 'Stop Wine',
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Configuration Settings
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Wine Configuration',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _displayController,
+                              decoration: const InputDecoration(
+                                labelText: 'DISPLAY',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.display_settings),
+                                hintText: ':4',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _wineArchController,
+                              decoration: const InputDecoration(
+                                labelText: 'Architecture',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.architecture),
+                                hintText: 'win64',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      TextFormField(
+                        controller: _winePrefixController,
+                        decoration: const InputDecoration(
+                          labelText: 'Wine Prefix',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.folder),
+                          hintText: '/data/data/com.xodos/files/home/.wine',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      TextFormField(
+                        controller: _wineCommandController,
+                        decoration: const InputDecoration(
+                          labelText: 'Wine Command',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.terminal),
+                          hintText: 'xod explorer.exe, xod notepad.exe, etc.',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Quick Action Buttons
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.edit, size: 18),
+                              label: const Text('Edit Command'),
+                              onPressed: _editFullCommand,
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(0, 40),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.visibility, size: 18),
+                              label: const Text('Preview'),
+                              onPressed: _showCommandPreview,
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 40),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.bug_report, size: 18),
+                        label: const Text('Test Configuration'),
+                        onPressed: _testWineConfig,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 40),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Main Action Buttons
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      // Start Wine Button
+                      ElevatedButton.icon(
+                        icon: _startingWine
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.play_arrow),
+                        label: _startingWine
+                            ? const Text('Starting Wine. Desktop..')
+                            : const Text('Start Wine Desktop'),
+                        onPressed: _startingWine ? null : _startWine,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Start Explorer Button
+/*
+                      
+                      */
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.task, size: 20),
+                        label: const Text('Start Explorer'),
+                        onPressed: _startExplorer,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                          side: BorderSide(
+                            color: _wineRunning ? Colors.grey : Colors.purple,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      
+                      // Task Manager Button
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.task, size: 20),
+                        label: const Text('Task Manager'),
+                        onPressed: _startTaskManager,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                          side: BorderSide(
+                            color: _wineRunning ? Colors.blue : Colors.grey,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.save),
+                              label: const Text('Save'),
+                              onPressed: _saveSettings,
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 40),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.restart_alt),
+                              label: const Text('Reset'),
+                              onPressed: _resetToDefault,
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 40),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Information
+              Card(
+                color: Colors.blue[900],
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Wine Launcher Information',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '• uses wine bionic arm64\n'
+                        '• support for native vulkan wrapper/drivers \n'
+                        '• support for gamepad using x11\n'
+                        '• dri3 and touch controls only with x11 \n'
+                        '• Uses X11 socket :4 for display\n'
+                        '• More Settings can be adjusted on the Settings',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          Chip(
+                            label: const Text('wine'),
+                            backgroundColor: Colors.deepPurple[700],
+                          ),
+                          Chip(
+                            label: const Text('bionic'),
+                            backgroundColor: Colors.green[700],
+                          ),
+                          Chip(
+                            label: const Text('Box64'),
+                            backgroundColor: Colors.purple[700],
+                          ),
+                          Chip(
+                            label: const Text('windows'),
+                            backgroundColor: Colors.orange[700],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            _saveSettings();
+            Navigator.pop(context);
+          },
+          child: const Text('Save & Close'),
+        ),
+      ],
+    );
+  }
 }
