@@ -40,9 +40,11 @@ import 'default_values.dart';
 
 class Util {
 
-  static Future<void> copyAsset(String src, String dst) async {
-    await File(dst).writeAsBytes((await rootBundle.load(src)).buffer.asUint8List());
+  static Future<void> copyAsset2(String src, String dst) async {
+    ByteData data = await rootBundle.load(src);
+    await File(dst).writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
   }
+  
   
   static Future<void> copyAsset(String src, String dst) async {
   final data = (await rootBundle.load(src)).buffer.asUint8List();
