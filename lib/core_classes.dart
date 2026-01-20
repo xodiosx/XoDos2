@@ -472,7 +472,7 @@ chmod 1777 tmp
 
 // Copy single container tarball instead of split xa files
 await Util.copyAsset(
-  "assets/container.tar.xz",
+  "assets/xodos.tar.xz",
   "${G.dataPath}/xodos.tar.xz",
 );
 
