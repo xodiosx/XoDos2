@@ -43,10 +43,19 @@ class Util {
   static Future<void> copyAsset(String src, String dst) async {
     await File(dst).writeAsBytes((await rootBundle.load(src)).buffer.asUint8List());
   }
-  static Future<void> copyAsset2(String src, String dst) async {
-    ByteData data = await rootBundle.load(src);
-    await File(dst).writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+  
+  static Future<void> copyAsset(String src, String dst) async {
+  final data = (await rootBundle.load(src)).buffer.asUint8List();
+  final file = File(dst);
+  await file.writeAsBytes(data, flush: true); // force disk flush
+
+  // wait until file is actually ready
+  while (!await file.exists() || (await file.length()) == 0) {
+    await Future.delayed(const Duration(milliseconds: 200));
   }
+}
+  
+  
   static void createDirFromString(String dir) {
     Directory.fromRawPath(const Utf8Encoder().convert(dir)).createSync(recursive: true);
   }
@@ -385,34 +394,40 @@ class Workflow {
   }
 
   static Future<void> setupBootstrap() async {
-  // Folder for sharing data files
-  Util.createDirFromString("${G.dataPath}/share");
-  // Folder for storing executable files
-  Util.createDirFromString("${G.dataPath}/bin");
-  // Folder for storing libraries
-  Util.createDirFromString("${G.dataPath}/lib");
-  // Folder to be mounted to /dev/shm
-  Util.createDirFromString("${G.dataPath}/tmp");
-  // tmp folder for proot, though I don't know why proot needs this
-  Util.createDirFromString("${G.dataPath}/proot_tmp");
-  // tmp folder for pulseaudio
-  Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
-  
-  // After extraction, get bin folder and libexec folder
-  // bin contains proot, pulseaudio, tar, etc.
-  // libexec contains proot loader
-  
-  // Copy assets first
-  await Util.copyAsset("assets/assets.zip", "${G.dataPath}/assets.zip");
-  await Util.copyAsset("assets/patch.tar.xz", "${G.dataPath}/patch.tar.xz");
-  
-  // EXECUTE AND WAIT FOR COMPLETION
-  int result = await Util.execute("""
+    // Folder for sharing data files
+    Util.createDirFromString("${G.dataPath}/share");
+    // Folder for storing executable files
+    Util.createDirFromString("${G.dataPath}/bin");
+    // Folder for storing libraries
+    Util.createDirFromString("${G.dataPath}/lib");
+    // Folder to be mounted to /dev/shm
+    Util.createDirFromString("${G.dataPath}/tmp");
+    // tmp folder for proot, though I don't know why proot needs this
+    Util.createDirFromString("${G.dataPath}/proot_tmp");
+    // tmp folder for pulseaudio
+    Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
+    // After extraction, get bin folder and libexec folder
+    // bin contains proot, pulseaudio, tar, etc.
+    // libexec contains proot loader
+    await Util.copyAsset(
+    "assets/assets.zip",
+    "${G.dataPath}/assets.zip",
+    );
+    // patch.tar.xz contains the xodos folder with bionic rootfs
+    // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
+    await Util.copyAsset(
+    "assets/patch.tar.xz",
+    "${G.dataPath}/patch.tar.xz",
+    );
+  /*  await Util.copyAsset(
+    "assets/native.tar.xz",
+    "${G.dataPath}/native.tar.xz",
+    );*/
+    await Util.execute(
+"""
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
 cd \$DATA_DIR
-
-# Create symbolic links
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/busybox
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/sh
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/cat
@@ -425,40 +440,18 @@ ln -sf ../applib/libexec_getifaddrs_bridge_server.so \$DATA_DIR/bin/getifaddrs_b
 ln -sf ../applib/libexec_pulseaudio.so \$DATA_DIR/bin/pulseaudio
 ln -sf ../applib/libbusybox.so \$DATA_DIR/lib/libbusybox.so.1.37.0
 ln -sf ../applib/libtalloc.so \$DATA_DIR/lib/libtalloc.so.2
+#ln -sf ../applib/libvirglrenderer.so \$DATA_DIR/lib/libvirglrenderer.so
+#ln -sf ../applib/libepoxy.so \$DATA_DIR/lib/libepoxy.so
 ln -sf ../applib/libproot-loader32.so \$DATA_DIR/lib/loader32
 ln -sf ../applib/libproot-loader.so \$DATA_DIR/lib/loader
 
-# Extract assets.zip
 \$DATA_DIR/bin/busybox unzip -o assets.zip
-
-# Set permissions
+#\$DATA_DIR/bin/busybox tar -xf native.tar.xz -C /data/data/com.xodos/files/ --preserve-permissions
 chmod -R +x libexec/proot/*
 chmod 1777 tmp
-
-# Extract patch.tar.xz - THIS MUST COMPLETE BEFORE CONTINUING
-echo "Starting patch.tar.xz extraction..."
-\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -f patch.tar.xz
-echo "patch.tar.xz extraction complete!"
-
-# Clean up
-\$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
-
-# Verify extraction
-if [ -d "\$DATA_DIR/usr" ]; then
-  echo "Extraction verified: usr directory exists"
-  exit 0
-else
-  echo "ERROR: Extraction failed - usr directory not found"
-  exit 1
-fi
+\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
 """);
-
-  if (result != 0) {
-    throw Exception("Bootstrap setup failed with exit code: $result");
   }
-  
-  print("Bootstrap setup completed successfully!");
-}
 
   // Things to do on first startup
   static Future<void> initForFirstTime() async {
