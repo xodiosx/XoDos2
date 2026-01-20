@@ -83,10 +83,21 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
 
   Future<void> _restoreSystem() async {
     try {
+    setState(() {
+      _isProcessing = true;
+      _statusMessage = AppLocalizations.of(context)!.preparingFile;
+    });
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any,
         allowMultiple: false,
       );
+
+//  HIDE loading BEFORE showing any confirm dialog
+if (mounted) {
+  setState(() {
+    _isProcessing = false;
+  });
+}
 
       if (result != null && result.files.single.path != null) {
         final filePath = result.files.single.path!;
