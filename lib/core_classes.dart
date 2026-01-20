@@ -448,10 +448,12 @@ ln -sf ../applib/libproot-loader32.so \$DATA_DIR/lib/loader32
 ln -sf ../applib/libproot-loader.so \$DATA_DIR/lib/loader
 
 \$DATA_DIR/bin/busybox unzip -o assets.zip
-#\$DATA_DIR/bin/busybox tar -xf native.tar.xz -C /data/data/com.xodos/files/ --preserve-permissions
 chmod -R +x libexec/proot/*
 chmod 1777 tmp
-\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+#\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/ && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C  /data/data/com.xodos/files/"
+\$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+
 """);
   }
 
@@ -813,6 +815,7 @@ export MESA_VK_WSI_PRESENT_MODE=mailbox
       extraOpt += "LANG=ja_JP.UTF-8 ";
     }
     extraMount += "--mount=\$DATA_DIR/tiny/font:/usr/share/fonts/tiny ";
+    extraMount += "--mount=\$DATA_DIR/tmp:/dev/dri ";
     extraMount += "--mount=\$DATA_DIR/tiny/extra/cmatrix:/home/tiny/.local/bin/cmatrix ";
   
     
