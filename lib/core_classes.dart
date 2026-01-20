@@ -46,24 +46,17 @@ class Util {
   }
   
   
-  static Future<void> copyAsset(String assetPath, String destPath) async {
-  final byteData = await rootBundle.load(assetPath);
-  final buffer = byteData.buffer;
-  final file = File(destPath);
-  final sink = file.openWrite();
+  static Future<void> copyAsset(String src, String dst) async {
+  final data = (await rootBundle.load(src)).buffer.asUint8List();
+  final file = File(dst);
+  await file.writeAsBytes(data, flush: true); // force disk flush
 
-  const chunkSize = 1024 * 1024; // 1MB
-  int offset = 0;
-
-  while (offset < buffer.lengthInBytes) {
-    final end = (offset + chunkSize).clamp(0, buffer.lengthInBytes);
-    sink.add(buffer.asUint8List(offset, end - offset));
-    offset = end;
+  // wait until file is actually ready
+  while (!await file.exists() || (await file.length()) == 0) {
+    await Future.delayed(const Duration(milliseconds: 200));
   }
-
-  await sink.flush();
-  await sink.close();
 }
+  
   
   static void createDirFromString(String dir) {
     Directory.fromRawPath(const Utf8Encoder().convert(dir)).createSync(recursive: true);
@@ -491,37 +484,21 @@ print("patch and assets extracted,,,");
     Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
     // This is the container rootfs, split into xa* by split command, placed in assets
     // On first startup, use this, don't let the user choose another one
-/*
+
     // Load custom manifest for container files
     final manifestString = await rootBundle.loadString('assets/container_manifest.json');
     final Map<String, dynamic> manifest = json.decode(manifestString);
 
-    // Get the list of xa files
+    // Get the list of xa files flutter won't support copying More then 1gb file
     final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
 
     for (String assetPath in xaFiles) {
       final fileName = assetPath.split('/').last;
       await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
     }
-*/
 
-// Copy single container tarball instead of split xa files
-await Util.copyAsset(
-  "assets/xodos.tar.xz",
-  "${G.dataPath}/xodos.tar.xz",
-);
 
-print("xodos system archive ready to extract");
-    final xodosFile = File("${G.dataPath}/xodos.tar.xz");
-  if (await xodosFile.exists()) {
-    final size = await xodosFile.length();
-    print("xodos.tar.xz exists, size: $size bytes");
-    if (size < 900 * 1024 * 1024) { // Less than 900MB
-      print("WARNING: File size seems too small for 1GB archive!");
-    }
-  } else {
-    print("ERROR: xodos.tar.xz doesn't exist after copy!");
-  }
+
   
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
@@ -537,9 +514,7 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
-#\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C containers/0"
-\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f xodos.tar.xz -C containers/0" && \$DATA_DIR/bin/busybox rm -rf xodos.tar.xz
-
+\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C containers/0"
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
@@ -554,9 +529,8 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
-#\$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
-\$DATA_DIR/bin/busybox rm -rf tmp1 tmp2 tmp3
-ls
+\$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
+
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
