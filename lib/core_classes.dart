@@ -411,7 +411,7 @@ class Workflow {
     // After extraction, get bin folder and libexec folder
     // bin contains proot, pulseaudio, tar, etc.
     // libexec contains proot loader
-
+final prefs = await SharedPreferences.getInstance();
   await prefs.remove('extractionProgressT');
     
         await Util.copyAsset(
@@ -505,7 +505,17 @@ await Util.copyAsset(
 );
 
 print("xodos system archive ready to extract");
-    
+    final xodosFile = File("${G.dataPath}/xodos.tar.xz");
+  if (await xodosFile.exists()) {
+    final size = await xodosFile.length();
+    print("xodos.tar.xz exists, size: $size bytes");
+    if (size < 900 * 1024 * 1024) { // Less than 900MB
+      print("WARNING: File size seems too small for 1GB archive!");
+    }
+  } else {
+    print("ERROR: xodos.tar.xz doesn't exist after copy!");
+  }
+  
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
 """
@@ -565,6 +575,7 @@ ls
     
        if (G.onExtractionComplete != null) {
       G.onExtractionComplete!();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.remove('extractionProgressT');
     
     }
