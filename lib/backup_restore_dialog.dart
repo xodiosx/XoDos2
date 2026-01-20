@@ -85,7 +85,7 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
     try {
     setState(() {
       _isProcessing = true;
-      _statusMessage = AppLocalizations.of(context)!.preparingFile;
+      _statusMessage = 'Preparing please wait...';
     });
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any,
