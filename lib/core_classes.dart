@@ -46,17 +46,24 @@ class Util {
   }
   
   
-  static Future<void> copyAsset(String src, String dst) async {
-  final data = (await rootBundle.load(src)).buffer.asUint8List();
-  final file = File(dst);
-  await file.writeAsBytes(data, flush: true); // force disk flush
+  static Future<void> copyAsset(String assetPath, String destPath) async {
+  final byteData = await rootBundle.load(assetPath);
+  final buffer = byteData.buffer;
+  final file = File(destPath);
+  final sink = file.openWrite();
 
-  // wait until file is actually ready
-  while (!await file.exists() || (await file.length()) == 0) {
-    await Future.delayed(const Duration(milliseconds: 200));
+  const chunkSize = 1024 * 1024; // 1MB
+  int offset = 0;
+
+  while (offset < buffer.lengthInBytes) {
+    final end = (offset + chunkSize).clamp(0, buffer.lengthInBytes);
+    sink.add(buffer.asUint8List(offset, end - offset));
+    offset = end;
   }
+
+  await sink.flush();
+  await sink.close();
 }
-  
   
   static void createDirFromString(String dir) {
     Directory.fromRawPath(const Utf8Encoder().convert(dir)).createSync(recursive: true);
