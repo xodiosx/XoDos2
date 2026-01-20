@@ -428,7 +428,14 @@ class Workflow {
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
+
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+export PATH=\$DATA_DIR/bin:\$PATH
+export CONTAINER_DIR=\$DATA_DIR/containers/0
+export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
+export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
+export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
+#export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 cd \$DATA_DIR
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/busybox
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/sh
@@ -449,10 +456,11 @@ ln -sf ../applib/libproot-loader.so \$DATA_DIR/lib/loader
 
 \$DATA_DIR/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
+chmod -R +x bin/*
 chmod 1777 tmp
-#\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/ && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
-\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C  /data/data/com.xodos/files/"
-\$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+sleep 1
+\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/ && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C  /data/data/com.xodos/files/" && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
 
 """);
   }
