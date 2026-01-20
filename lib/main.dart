@@ -187,7 +187,7 @@ class _FakeLoadingStatusState extends State<FakeLoadingStatus> {
     }
 
     if (!_extractionComplete) {
-      _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+      _timer = Timer.periodic(const Duration(milliseconds: 135), (timer) async {
         if (_extractionComplete) {
           timer.cancel();
           return;

@@ -411,7 +411,10 @@ class Workflow {
     // After extraction, get bin folder and libexec folder
     // bin contains proot, pulseaudio, tar, etc.
     // libexec contains proot loader
-    await Util.copyAsset(
+
+  await prefs.remove('extractionProgressT');
+    
+        await Util.copyAsset(
     "assets/assets.zip",
     "${G.dataPath}/assets.zip",
     );
@@ -518,7 +521,7 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 #\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C containers/0"
-\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f xodos.tar.xz -C containers/0"
+\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f xodos.tar.xz -C containers/0" && \$DATA_DIR/bin/busybox rm -rf xodos.tar.xz
 
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
@@ -535,7 +538,7 @@ cat tmp3 | while read -r group_name group_id; do
 	fi
 done
 #\$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
-\$DATA_DIR/bin/busybox rm -rf xodos.tar.xz tmp1 tmp2 tmp3
+\$DATA_DIR/bin/busybox rm -rf tmp1 tmp2 tmp3
 ls
 """);
     // Some data initialization
@@ -562,6 +565,8 @@ ls
     
        if (G.onExtractionComplete != null) {
       G.onExtractionComplete!();
+      await prefs.remove('extractionProgressT');
+    
     }
     
      
