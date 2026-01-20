@@ -425,6 +425,9 @@ class Workflow {
     "assets/native.tar.xz",
     "${G.dataPath}/native.tar.xz",
     );*/
+    
+    print("preparing system environment ");
+    
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
@@ -460,9 +463,11 @@ chmod -R +x bin/*
 chmod 1777 tmp
 sleep 1
 \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/ && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
-\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C  /data/data/com.xodos/files/" && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+#\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C  /data/data/com.xodos/files/" && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
 
 """);
+print("patch and assets extracted,,,");
+    
   }
 
   // Things to do on first startup
@@ -496,7 +501,8 @@ await Util.copyAsset(
   "${G.dataPath}/xodos.tar.xz",
 );
 
-
+print("xodos system archive ready to extract");
+    
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
 """
@@ -530,11 +536,12 @@ cat tmp3 | while read -r group_name group_id; do
 done
 #\$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
 \$DATA_DIR/bin/busybox rm -rf xodos.tar.xz tmp1 tmp2 tmp3
-
+ls
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
     // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of stuff code :P
+    print("xodos proot is ready");
     
     // Use LanguageManager for proper language support
     final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
