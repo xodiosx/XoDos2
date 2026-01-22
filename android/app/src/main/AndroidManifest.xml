@@ -12,6 +12,8 @@
 android:requestLegacyExternalStorage="true"
         android:label="@string/tc_app_name"
         android:name=".MainApplication"
+        android:appCategory="game"
+        android:isGame="true"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:launchMode="singleInstance"
@@ -53,6 +55,8 @@ android:grantUriPermissions="true">
 android:name="android.content.action.DOCUMENTS_PROVIDER"/>
 </intent-filter>
 </provider>
+
+       
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
