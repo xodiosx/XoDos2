@@ -2728,8 +2728,10 @@ ${_wineCommandController.text}
     final setupCommands = '''
 # Set up the shell environment
 cd $_dataPath
-export PATH=\${PATH}:$_dataPath/bin:$_dataPath/usr/bin
-export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:$_dataPath/lib:$_dataPath/usr/lib
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
+export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+unset LD_LIBRARY_PATH
 
 # Create necessary directories
 mkdir -p $_home
@@ -3253,7 +3255,7 @@ echo "Wine processes stopped"
       
       final cmd = '''
 export PATH="$_dataPath/usr/bin:\$PATH"
-export LD_LIBRARY_PATH="$_dataPath/usr/lib:\$LD_LIBRARY_PATH"
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export WINEPREFIX="${_winePrefixController.text}"
 export WINEARCH="${_wineArchController.text}"
 echo "=== Wine Configuration Test ==="

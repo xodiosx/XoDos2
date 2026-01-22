@@ -436,7 +436,7 @@ final prefs = await SharedPreferences.getInstance();
 export DATA_DIR=${G.dataPath}
 
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
-export PATH=\$DATA_DIR/bin:\$PATH
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/0
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
@@ -628,14 +628,16 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
   if (!G.termPtys.containsKey(G.currentContainer)) {
     G.termPtys[G.currentContainer] = TermPty();
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    final versionName = packageInfo.version;   // "1.0.4"
-    final versionCode = packageInfo.buildNumber; // "4"
+    final versionName = packageInfo.version;   // "version"
+    final versionCode = packageInfo.buildNumber; // "1"
     
     // Write environment variables at the very beginning
     String envCommands = """
 export DATA_DIR=${G.dataPath}
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/bin
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
+export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+unset LD_LIBRARY_PATH
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
@@ -710,12 +712,16 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
 #export XDG_DATA_HOME=\$HOME/.local/share
 #export XDG_CACHE_HOME=\$HOME/.cache
 unset VK_ICD_FILENAMES
+unset PATH
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
+export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+unset LD_LIBRARY_PATH
+      cd 
+     if [ -d "\$prefixsh" ]; then
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 exec \$DATA_DIR/usr/bin/bash --login   
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/:\$LD_LIBRARY_PATH
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/bin
-
-      cd 
+fi
      fi
 
 
@@ -734,8 +740,7 @@ export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/bin
     );
     G.audioPty!.write(const Utf8Encoder().convert("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
+#path
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
@@ -775,8 +780,10 @@ bool turnipEnabled = Util.getGlobal("turnip") as bool;
 if (Util.getGlobal("virgl")) {
   Util.execute("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
+export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 #${G.dataPath}/usr/bin/virgl_test_server ${Util.getGlobal("defaultVirglCommand")} &
 """);
@@ -799,8 +806,10 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
   
   Util.execute("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:/system/lib64
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
+export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 #$fullCommand
@@ -834,8 +843,10 @@ export MESA_VK_WSI_PRESENT_MODE=mailbox
         Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
+export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
@@ -962,8 +973,10 @@ static Future<void> startGraphicsServerInTerminal() async {
     // Send to terminal
     Util.termWrite("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$PATH:\$DATA_DIR/usr/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
+export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'virgl_*'  2>/dev/null || true
@@ -980,8 +993,10 @@ echo "Venus server started in background"
     
     Util.termWrite("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$PATH:/data/data/com.xodos/files/usr/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:/data/data/com.xodos/files/usr/lib
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
+export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'virgl_*' 2>/dev/null || true
