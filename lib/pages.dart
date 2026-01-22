@@ -2795,16 +2795,15 @@ echo "Wine environment initialized on ${_displayController.text}"
     // Check if Wine is running
     await _checkWineProcess();
     Navigator.of(context).pop();
-    if (!_wineRunning) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please start Wine first'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
+
+      if (_wineRunning) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Wine is already running'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
     
     try {
       // Initialize PTY if not already done
@@ -3179,7 +3178,7 @@ echo "Wine processes stopped"
     try {
       final result = await Process.run(
         '/system/bin/sh',
-        ['-c', 'pgrep -x *.exe >/dev/null 2>&1 && echo RUNNING || echo STOPPED'],
+        ['-c', 'pgrep -x start.exe >/dev/null 2>&1 && echo RUNNING || echo STOPPED'],
         environment: _buildEnvironment(),
       );
       
