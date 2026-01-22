@@ -636,7 +636,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
-export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+export LD_PRELOAD="\$DATA_DIR/lib/libtermux-exec.so"
 unset LD_LIBRARY_PATH
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
@@ -715,7 +715,7 @@ unset VK_ICD_FILENAMES
 unset PATH
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
-export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+export LD_PRELOAD="\$DATA_DIR/lib/libtermux-exec.so"
 unset LD_LIBRARY_PATH
       cd 
      if [ -d "\$prefixsh" ]; then
@@ -782,7 +782,7 @@ if (Util.getGlobal("virgl")) {
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
-export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+export LD_PRELOAD="\$DATA_DIR/lib/libtermux-exec.so"
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 #${G.dataPath}/usr/bin/virgl_test_server ${Util.getGlobal("defaultVirglCommand")} &
@@ -808,7 +808,7 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
-export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+export LD_PRELOAD="\$DATA_DIR/lib/libtermux-exec.so"
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
@@ -845,7 +845,7 @@ export MESA_VK_WSI_PRESENT_MODE=mailbox
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
-export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+export LD_PRELOAD="\$DATA_DIR/lib/libtermux-exec.so"
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
@@ -975,7 +975,7 @@ static Future<void> startGraphicsServerInTerminal() async {
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
-export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+export LD_PRELOAD="\$DATA_DIR/lib/libtermux-exec.so"
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
@@ -995,7 +995,7 @@ echo "Venus server started in background"
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
-export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+export LD_PRELOAD="\$DATA_DIR/lib/libtermux-exec.so"
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 

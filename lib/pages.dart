@@ -2730,7 +2730,7 @@ ${_wineCommandController.text}
 cd $_dataPath
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:/system/lib64
-export LD_PRELOAD="$DATA_DIR/lib/libtermux-exec.so"
+export LD_PRELOAD="\$DATA_DIR/lib/libtermux-exec.so"
 unset LD_LIBRARY_PATH
 
 # Create necessary directories
