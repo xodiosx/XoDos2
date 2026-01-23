@@ -1665,7 +1665,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
     Util.termWrite("$androidVenusEnv ${G.dataPath}/usr/bin/virgl_test_server $processedCommand &");    
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("echo 'export VK_ICD_FILENAMES=${G.dataPath}/usr/share/vulkan/icd.d/virtio_icd.aarch64.json' >> ${G.dataPath}/usr/opt/drv");
+    Util.termWrite("echo 'VK_ICD_FILENAMES=${G.dataPath}/usr/share/vulkan/icd.d/virtio_icd.aarch64.json' >> ${G.dataPath}/usr/opt/drv");
     await Future.delayed(const Duration(milliseconds: 50));
     
     Util.termWrite("export VN_DEBUG=vtest");  
