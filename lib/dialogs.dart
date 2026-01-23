@@ -593,6 +593,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
      'DXVK_ASYNC',
      'adrenotool',
      'GALLIUM_DRIVER',
+       'MESA_VK_WSI_PRESENT_MODE',
    'MESA_LOADER_DRIVER_OVERRIDE',
     'VK_LOADER_DEBUG',
    'LD_DEBUG',
@@ -770,10 +771,10 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     }
     
     if (_wineEsyncEnabled) {
-      Util.termWrite("echo 'export WINEESYNC=1' >> ${G.dataPath}/usr/opt/sync");
+      Util.termWrite("echo 'export WINEFSYNC=1' >> ${G.dataPath}/usr/opt/sync");
       Util.termWrite("echo 'export WINEESYNC_TERMUX=1' >> ${G.dataPath}/usr/opt/sync");
     } else {
-      Util.termWrite("echo 'export WINEESYNC=0' >> ${G.dataPath}/usr/opt/sync");
+      Util.termWrite("echo 'export WINEFSYNC=0' >> ${G.dataPath}/usr/opt/sync");
       Util.termWrite("echo 'export WINEESYNC_TERMUX=0' >> ${G.dataPath}/usr/opt/sync");
     }
     
@@ -1140,8 +1141,8 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
               
               Card(
                 child: SwitchListTile(
-                  title: const Text('Wine Esync'),
-                  subtitle: const Text('Enable Wine Esync for better performance'),
+                  title: const Text('Wine Fsync'),
+                  subtitle: const Text('Enable Wine Fsync for better performance'),
                   value: _wineEsyncEnabled,
                   onChanged: (value) {
                     setState(() {

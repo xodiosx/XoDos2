@@ -820,7 +820,7 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 if (Util.getGlobal("turnip")) {
  Util.termWrite("""
-. /data/data/com.xodos/files/usr/opt/drv
+#. /data/data/com.xodos/files/usr/opt/drv
 export MESA_VK_WSI_PRESENT_MODE=mailbox
 """);
   extraOpt += "${Util.getGlobal("defaultTurnipOpt")} ";
