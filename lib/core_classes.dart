@@ -716,13 +716,13 @@ export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/
 unset PATH
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 unset LD_LIBRARY_PATH
-      cd 
+l
      if [ -d "\$prefixsh" ]; then
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 exec \$DATA_DIR/usr/bin/bash --login   
 fi
      fi
-
+cd
 """;
     
     // Write the commands to the terminal
@@ -969,6 +969,7 @@ static Future<void> startGraphicsServerInTerminal() async {
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'virgl_*'  2>/dev/null || true
@@ -987,6 +988,7 @@ echo "Venus server started in background"
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:/data/data/com.xodos/files/usr/lib
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'virgl_*' 2>/dev/null || true
