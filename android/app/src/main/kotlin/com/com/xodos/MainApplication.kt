@@ -20,7 +20,7 @@ class MainApplication : Application() {
         DynamicColors.applyToActivitiesIfAvailable(this)
 
         clearLogcat()
-      //  startLogcatCapture()
+        startLogcatCapture()
     }
 
     override fun onTerminate() {
