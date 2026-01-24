@@ -27,7 +27,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           sudo apt update
-          sudo apt install -y python3-pip
+          sudo apt install -y python3-pip wget
           pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
       # ✅ Step 3: Save Google Drive JSON key
@@ -64,6 +64,18 @@ jobs:
           print("Download complete!")
           EOF
 
+      # ✅ Step 4.5: Download Steam Lite package
+      - name: Download Steam Lite Package
+        run: |
+          wget -O xodos_steam-lite.tar.xz \
+            https://github.com/xodiosx/XoDos/releases/download/v6.0.0/xodos_steam-lite.tar.xz
+
+      # ✅ Step 4.6: Download Wine build and rename it
+      - name: Download Wine Proot Build
+        run: |
+          wget -O wine-9.17-proot-amd64-wow64.tar.xz \
+            https://github.com/Kron4ek/Wine-Builds/releases/download/9.17/wine-9.17-amd64-wow64.tar.xz
+
       # ✅ Step 5: Create Git Tag
       - name: Create Git Tag
         run: |
@@ -72,19 +84,23 @@ jobs:
           git tag "v${{ github.event.inputs.version_tag }}"
           git push origin "v${{ github.event.inputs.version_tag }}"
 
-      # ✅ Step 6: Generate MD5 Checksums
+      # ✅ Step 6: Generate MD5 Checksums (for ALL files)
       - name: Generate MD5 Checksums
         id: md5
         run: |
           echo "### File Checksums:" > checksums.txt
-          for f in XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk; do
+          for f in \
+            XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk \
+            xodos_steam-lite.tar.xz \
+            wine-9.17-proot-amd64-wow64.tar.xz
+          do
             md5sum "$f" | awk '{print "- **"$2"** → `"$1"`"}' >> checksums.txt
           done
           echo "md5_list<<EOF" >> $GITHUB_ENV
           cat checksums.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      # ✅ Step 7: Create GitHub Release and upload files
+      # ✅ Step 7: Create GitHub Release and upload ALL files
       - name: Create GitHub Release with Files
         uses: softprops/action-gh-release@v2
         env:
@@ -94,6 +110,8 @@ jobs:
           name: "XoDos v${{ github.event.inputs.version_tag }}"
           files: |
             XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk
+            xodos_steam-lite.tar.xz
+            wine-9.17-proot-amd64-wow64.tar.xz
           body: |
             🧩 **XoDos v${{ github.event.inputs.version_tag }} full release**
 
