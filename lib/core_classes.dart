@@ -970,7 +970,7 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 pkill -f 'getifad_*' 2>/dev/null || true
 rm -f \${CONTAINER_DIR}/tmp/.getifaddrs-bridge 2>/dev/null || true
 
-bin/getifaddrs_bridge_server usr/tmp/.getifaddrs-bridge
+bin/getifaddrs_bridge_server usr/tmp/.getifaddrs-bridge &
 echo "getifaddrs server started in background"
 sleep 1
 """);      
