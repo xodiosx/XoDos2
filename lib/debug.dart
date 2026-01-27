@@ -1,188 +1,81 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/foundation.dart';
 
 class LogcatManager {
-  // Singleton instance
   static final LogcatManager _instance = LogcatManager._internal();
   factory LogcatManager() => _instance;
   LogcatManager._internal();
 
-  // Variables similar to your Kotlin class
-  static const String _tag = "LogcatManager";
-  bool _isRunning = false;
   Process? _logcatProcess;
-  IOSink? _logFileWriter;
-  Timer? _healthCheckTimer;
+  bool _isRunning = false;
   
-  // File management
-  Directory? _logDir;
-  String? _currentLogFile;
-  
-  // For isolating heavy file operations
-  final ReceivePort _receivePort = ReceivePort();
-  Isolate? _logIsolate;
-  
-  // Public getter
   bool get isRunning => _isRunning;
-  
-  // Initialize - similar to Kotlin onCreate
-  Future<void> initialize() async {
-    print("[$_tag] Initializing LogcatManager...");
-    
-    // Get log directory
-    _logDir = await getLogDirectory();
-    
-    // Log device info
-    await _logDeviceInfo();
-    
-    // Clear old logs (optional)
-    // await clearLogs();
-    
-    print("[$_tag] LogcatManager initialized. Log dir: ${_logDir?.path}");
-  }
-  
-  // Get log directory - similar to Kotlin getLogDirectory()
-  Future<Directory> getLogDirectory() async {
-    try {
-      // Try external storage first
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        final logDir = Directory('${externalDir.path}/logs');
-        if (!await logDir.exists()) {
-          await logDir.create(recursive: true);
-        }
-        return logDir;
-      }
-    } catch (e) {
-      print("[$_tag] Failed to get external storage: $e");
-    }
-    
-    // Fall back to application documents
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final logDir = Directory('${appDocDir.path}/logs');
-    if (!await logDir.exists()) {
-      await logDir.create(recursive: true);
-    }
-    return logDir;
-  }
-  
-  // Log device info - similar to Kotlin logDeviceInfo()
-  Future<void> _logDeviceInfo() async {
-    try {
-      final infoFile = File('${_logDir?.path}/device_info.txt');
-      final sink = infoFile.openWrite(mode: FileMode.write);
-      
-      final now = DateTime.now();
-      await sink.write('=== Device Information ===\n');
-      await sink.write('Time: ${now.toIso8601String()}\n');
-      await sink.write('Platform: ${Platform.operatingSystem}\n');
-      await sink.write('OS Version: ${Platform.operatingSystemVersion}\n');
-      await sink.write('Dart Version: ${Platform.version}\n');
-      await sink.write('Local Hostname: ${Platform.localHostname}\n');
-      await sink.write('Number of Processors: ${Platform.numberOfProcessors}\n');
-      await sink.write('Executable: ${Platform.executable}\n');
-      await sink.write('Resolved Executable: ${Platform.resolvedExecutable}\n');
-      
-      // Try to get Android-specific info if available
-      if (Platform.isAndroid) {
-        try {
-          // You could run adb shell commands here if needed
-          await sink.write('Is Android: true\n');
-        } catch (e) {
-          // Ignore if we can't get Android info
-        }
-      }
-      
-      await sink.close();
-      print("[$_tag] Device info saved");
-    } catch (e) {
-      print("[$_tag] Failed to save device info: $e");
-    }
-  }
-  
-  // Start logcat capture - similar to Kotlin startLogcatCapture()
+
+  // Start logcat capture - EXACTLY LIKE KOTLIN
   Future<void> startCapture() async {
     if (_isRunning) {
-      print("[$_tag] Logcat capture is already running");
+      print("Logcat already running");
       return;
     }
-    
+
     try {
-      print("[$_tag] Starting logcat capture...");
+      print("Starting logcat capture...");
       
-      // Create log file with timestamp
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      _currentLogFile = 'app_$timestamp.log';
-      final logFile = File('${_logDir?.path}/$_currentLogFile');
-      
-      // Open file for writing
-      _logFileWriter = logFile.openWrite(mode: FileMode.write);
-      
-      // Write header
-      await _logFileWriter?.write('=== Logcat started at $timestamp ===\n');
-      await _logFileWriter?.write('Device: ${Platform.localHostname}\n');
-      await _logFileWriter?.write('=================================\n\n');
-      await _logFileWriter?.flush();
-      
-      // Clear existing logs (optional)
+      // Clear logcat buffer - EXACTLY LIKE KOTLIN
       await _clearLogcatBuffer();
       
-      // Start logcat process using PTY - JUST LIKE PULSEAUDIO!
+      // Get directory for logs
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final logDir = Directory('${appDocDir.path}/logs');
+      if (!await logDir.exists()) {
+        await logDir.create(recursive: true);
+      }
+      
+      // Create log file
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
+      final logFile = File('${logDir.path}/app_$timestamp.log');
+      
+      // Start logcat process - EXACTLY LIKE KOTLIN
       _logcatProcess = await Process.start(
         '/system/bin/logcat', 
-        ['-v', 'time', '*:V'], // Format and verbosity
+        ['-v', 'time'],  // time format
         runInShell: true,
       );
       
-      // Set running flag
       _isRunning = true;
       
-      // Listen to stdout (logcat output)
-      _logcatProcess!.stdout.transform(utf8.decoder).listen(
+      // Write to file - EXACTLY LIKE KOTLIN
+      final file = await logFile.open(mode: FileMode.write);
+      
+      _logcatProcess!.stdout.listen(
         (data) {
-          if (_isRunning && _logFileWriter != null) {
-            _logFileWriter!.write(data);
-            // Flush periodically
-            if (data.contains('\n')) {
-              _logFileWriter!.flush();
-            }
-          }
+          file.writeFrom(data);
+        },
+        onDone: () async {
+          await file.close();
+          _isRunning = false;
         },
         onError: (error) {
-          print("[$_tag] Logcat stdout error: $error");
+          print("Logcat stdout error: $error");
         },
-        onDone: () {
-          print("[$_tag] Logcat stdout stream closed");
-        },
-        cancelOnError: true,
       );
       
-      // Listen to stderr
-      _logcatProcess!.stderr.transform(utf8.decoder).listen(
+      _logcatProcess!.stderr.listen(
         (data) {
-          print("[$_tag] Logcat stderr: $data");
-          if (_isRunning && _logFileWriter != null) {
-            _logFileWriter!.write('[STDERR] $data');
-          }
+          print("Logcat stderr: ${String.fromCharCodes(data)}");
         },
       );
       
-      // Check process health periodically
-      _startHealthCheck();
-      
-      print("[$_tag] Logcat capture started successfully");
+      print("Logcat capture started");
       
     } catch (e) {
-      print("[$_tag] Failed to start logcat capture: $e");
-      await _cleanup();
+      print("Failed to start logcat: $e");
+      _isRunning = false;
     }
   }
-  
-  // Clear logcat buffer - similar to Kotlin clearLogcat()
+
+  // Clear logcat buffer - EXACTLY LIKE KOTLIN
   Future<void> _clearLogcatBuffer() async {
     try {
       final clearProcess = await Process.run(
@@ -191,165 +84,71 @@ class LogcatManager {
         runInShell: true,
       );
       if (clearProcess.exitCode == 0) {
-        print("[$_tag] Logcat buffer cleared");
+        print("Logcat buffer cleared");
       } else {
-        print("[$_tag] Failed to clear logcat buffer: ${clearProcess.stderr}");
+        print("Failed to clear logcat buffer: ${clearProcess.stderr}");
       }
     } catch (e) {
-      print("[$_tag] Error clearing logcat buffer: $e");
+      print("Error clearing logcat buffer: $e");
     }
   }
-  
-  // Health check timer
-  void _startHealthCheck() {
-    _healthCheckTimer?.cancel();
-    _healthCheckTimer = Timer.periodic(Duration(seconds: 30), (timer) async {
-      if (!_isRunning) {
-        timer.cancel();
-        return;
-      }
-      
-      try {
-        // Check if process is still alive
-        final exitCode = await _logcatProcess?.exitCode.timeout(
-          Duration(seconds: 1),
-          onTimeout: () => null,
-        );
-        
-        if (exitCode != null) {
-          print("[$_tag] Logcat process died with exit code: $exitCode");
-          await _cleanup();
-          timer.cancel();
-          
-          // Optionally restart
-          // await startCapture();
-        }
-      } catch (e) {
-        print("[$_tag] Health check error: $e");
-      }
-    });
-  }
-  
-  // Stop logcat capture - similar to Kotlin stopLogcatCapture()
+
+  // Stop logcat capture - EXACTLY LIKE KOTLIN
   Future<void> stopCapture() async {
-    if (!_isRunning) {
-      return;
-    }
+    if (!_isRunning) return;
     
-    print("[$_tag] Stopping logcat capture...");
-    
-    // Set flag first to prevent new writes
+    print("Stopping logcat...");
     _isRunning = false;
-    
-    // Cancel health check
-    _healthCheckTimer?.cancel();
-    _healthCheckTimer = null;
-    
-    // Kill process
-    if (_logcatProcess != null) {
-      try {
-        _logcatProcess!.kill();
-        await _logcatProcess!.exitCode.timeout(Duration(seconds: 2));
-      } catch (e) {
-        print("[$_tag] Error killing process: $e");
-      }
-      _logcatProcess = null;
-    }
-    
-    // Close file writer
-    if (_logFileWriter != null) {
-      try {
-        await _logFileWriter!.flush();
-        await _logFileWriter!.close();
-        _logFileWriter = null;
-      } catch (e) {
-        print("[$_tag] Error closing log file: $e");
-      }
-    }
-    
-    print("[$_tag] Logcat capture stopped");
-  }
-  
-  // Cleanup resources
-  Future<void> _cleanup() async {
-    _isRunning = false;
-    _healthCheckTimer?.cancel();
     
     if (_logcatProcess != null) {
       _logcatProcess!.kill();
       _logcatProcess = null;
     }
     
-    if (_logFileWriter != null) {
-      try {
-        await _logFileWriter!.flush();
-        await _logFileWriter!.close();
-      } catch (e) {
-        // Ignore errors during cleanup
-      }
-      _logFileWriter = null;
-    }
+    print("Logcat stopped");
   }
-  
-  // Clear logs - similar to Kotlin clearLogs()
+
+  // Clear all logs - EXACTLY LIKE KOTLIN
   Future<bool> clearLogs() async {
     try {
-      if (_logDir != null && await _logDir!.exists()) {
-        final files = await _logDir!.list().toList();
-        int deletedCount = 0;
-        
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final logDir = Directory('${appDocDir.path}/logs');
+      
+      if (await logDir.exists()) {
+        final files = await logDir.list().toList();
         for (var file in files) {
-          if (file is File && 
-              (file.path.endsWith('.log') || file.path.endsWith('.txt'))) {
+          if (file is File && file.path.endsWith('.log')) {
             await file.delete();
-            deletedCount++;
           }
         }
-        
-        print("[$_tag] Cleared $deletedCount log files");
         return true;
       }
     } catch (e) {
-      print("[$_tag] Failed to clear logs: $e");
+      print("Failed to clear logs: $e");
     }
     return false;
   }
-  
-  // Get log files - similar to Kotlin getLogFiles()
+
+  // Get log files - EXACTLY LIKE KOTLIN
   Future<List<String>> getLogFiles() async {
     try {
-      if (_logDir != null && await _logDir!.exists()) {
-        final files = await _logDir!.list().toList();
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final logDir = Directory('${appDocDir.path}/logs');
+      
+      if (await logDir.exists()) {
+        final files = await logDir.list().toList();
         return files
-            .where((file) => file is File && 
-                (file.path.endsWith('.log') || file.path.endsWith('.txt')))
+            .where((file) => file is File && file.path.endsWith('.log'))
             .map((file) => file.path.split('/').last)
             .toList();
       }
     } catch (e) {
-      print("[$_tag] Failed to get log files: $e");
+      print("Failed to get log files: $e");
     }
     return [];
   }
-  
-  // Read log file - similar to Kotlin readLogFile()
-  Future<String?> readLogFile(String filename) async {
-    try {
-      final file = File('${_logDir?.path}/$filename');
-      if (await file.exists()) {
-        return await file.readAsString();
-      }
-    } catch (e) {
-      print("[$_tag] Failed to read log file: $filename, error: $e");
-    }
-    return null;
-  }
-  
-  // Cleanup on dispose
+
   Future<void> dispose() async {
     await stopCapture();
-    _receivePort.close();
-    _logIsolate?.kill(priority: Isolate.immediate);
-    print("[$_tag] LogcatManager disposed");
   }
 }

@@ -939,6 +939,10 @@ static Future<void> workflow() async {
   
   // Setup audio first
   setupAudio();
+    // Simple logcat initialization - JUST LIKE PULSEAUDIO
+  if (G.prefs.getBool('logcatEnabled') ?? true) {
+    LogcatManager().startCapture();
+  }
   
   // Send virgl/venus server command to terminal BEFORE container starts
   await startGraphicsServerInTerminal();

@@ -471,27 +471,25 @@ ExpansionPanel(
           setState(() {});
         },
       ),
-      // ✅ ADD LOGCAT SWITCH HERE (right after getifaddrsBridge)
-      const SizedBox.square(dimension: 8),
-      SwitchListTile(
-        title: Text('Logcat Capture'),
-        subtitle: Text('Capture system logs for debugging'),
-        value: Util.getGlobal("logcatEnabled") as bool,
-        onChanged: (value) async {
-          await G.prefs.setBool("logcatEnabled", value);
-          setState(() {});
-          
-          // Show notification
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(value 
-                ? 'Logcat will start on next app launch'
-                : 'Logcat disabled - will stop on next launch'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        },
-      ),
+      //  ADD LOGCAT SWITCH HERE (right after getifaddrsBridge)
+// Add this switch right after getifaddrsBridge in your settings:
+SwitchListTile(
+  title: Text('Debug Logcat'),
+  subtitle: Text('Capture system logs (saved to s
+  sdcard/android/data/com.xodos/files)'),
+  value: G.prefs.getBool('logcatEnabled') ?? true,  // Enabled by default
+  onChanged: (value) async {
+    await G.prefs.setBool('logcatEnabled', value);
+    setState(() {});
+    
+    // Optional: Start/stop immediately
+    if (value) {
+      LogcatManager().startCapture();
+    } else {
+      LogcatManager().stopCapture();
+    }
+  },
+),
       // END OF LOGCAT SWITCH
       const SizedBox.square(dimension: 8),
       SwitchListTile(
