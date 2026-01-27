@@ -359,7 +359,7 @@ class _SettingPageState extends State<SettingPage> {
           ),
         ),
 
-    // Panel 1: Global Settings
+// Panel 1: Global Settings
 ExpansionPanel(
   isExpanded: _expandState[1],
   headerBuilder: (context, isExpanded) {
@@ -471,26 +471,133 @@ ExpansionPanel(
           setState(() {});
         },
       ),
-      //  ADD LOGCAT SWITCH HERE (right after getifaddrsBridge)
-// Add this switch right after getifaddrsBridge in your settings:
-SwitchListTile(
-  title: Text('Debug Logcat'),
-  subtitle: Text('Capture system logs (saved to s
-  sdcard/android/data/com.xodos/files)'),
-  value: G.prefs.getBool('logcatEnabled') ?? true,  // Enabled by default
-  onChanged: (value) async {
-    await G.prefs.setBool('logcatEnabled', value);
-    setState(() {});
-    
-    // Optional: Start/stop immediately
-    if (value) {
-      LogcatManager().startCapture();
-    } else {
-      LogcatManager().stopCapture();
-    }
-  },
-),
-      // END OF LOGCAT SWITCH
+      const SizedBox.square(dimension: 8),
+      // LOGCAT SWITCH - IMMEDIATE START/STOP
+      SwitchListTile(
+        title: Text('Logcat Capture'),
+        subtitle: Text('Save system logs to app storage'),
+        value: Util.getGlobal("logcatEnabled") as bool,
+        onChanged: (value) async {
+          await G.prefs.setBool("logcatEnabled", value);
+          if (value) {
+            LogcatManager().startCapture();
+          } else {
+            LogcatManager().stopCapture();
+          }
+          setState(() {});
+        },
+      ),
+      // LOG MANAGEMENT BUTTONS
+      const SizedBox.square(dimension: 8),
+      Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              icon: Icon(Icons.folder, size: 16),
+              label: Text('View Logs'),
+              onPressed: () async {
+                final files = await LogcatManager().getLogFiles();
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Log Files (${files.length})'),
+                    content: Container(
+                      width: double.maxFinite,
+                      height: 300,
+                      child: ListView.builder(
+                        itemCount: files.length,
+                        itemBuilder: (context, index) => ListTile(
+                          title: Text(files[index]),
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete, size: 16),
+                            onPressed: () async {
+                              final logDir = await LogcatManager().getLogDirectory();
+                              final file = File('${logDir.path}/${files[index]}');
+                              await file.delete();
+                              Navigator.pop(context);
+                              setState(() {});
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Deleted ${files[index]}')),
+                              );
+                            },
+                          ),
+                          onTap: () async {
+                            final content = await LogcatManager().readLogFile(files[index]);
+                            if (content != null) {
+                              Navigator.pop(context);
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text(files[index]),
+                                  content: Container(
+                                    width: double.maxFinite,
+                                    height: 400,
+                                    child: SingleChildScrollView(
+                                      child: SelectableText(content),
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('Close'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Close'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton.icon(
+              icon: Icon(Icons.delete, size: 16, color: Colors.red),
+              label: Text('Clear All', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Clear All Logs?'),
+                    content: Text('This will delete all log files. This cannot be undone.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          final success = await LogcatManager().clearLogs();
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success 
+                                ? 'All logs cleared successfully'
+                                : 'Failed to clear logs'),
+                            ),
+                          );
+                        },
+                        child: Text('Clear All', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
       const SizedBox.square(dimension: 8),
       SwitchListTile(
         title: Text(AppLocalizations.of(context)!.fakeUOSSystem),

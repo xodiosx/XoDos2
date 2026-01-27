@@ -139,7 +139,7 @@ class Util {
       case "defaultTurnipOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("MESA_LOADER_DRIVER_OVERRIDE=zink VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json TU_DEBUG=noconform");
       case "defaultHidpiOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("GDK_SCALE=2 QT_FONT_DPI=192");
       case "containersInfo" : return G.prefs.getStringList(key)!;
-      case "logcatEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true); // ← ENABLED BY DEFAULT
+      case "logcatEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
  
       }
   }
@@ -939,10 +939,11 @@ static Future<void> workflow() async {
   
   // Setup audio first
   setupAudio();
-    // Simple logcat initialization - JUST LIKE PULSEAUDIO
-  if (G.prefs.getBool('logcatEnabled') ?? true) {
+  
+    if (Util.getGlobal("logcatEnabled") as bool) {
     LogcatManager().startCapture();
   }
+  
   
   // Send virgl/venus server command to terminal BEFORE container starts
   await startGraphicsServerInTerminal();

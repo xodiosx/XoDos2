@@ -12,7 +12,17 @@ class LogcatManager {
   
   bool get isRunning => _isRunning;
 
-  // Start logcat capture - EXACTLY LIKE KOTLIN
+  // Get log directory
+  Future<Directory> getLogDirectory() async {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final logDir = Directory('${appDocDir.path}/logs');
+    if (!await logDir.exists()) {
+      await logDir.create(recursive: true);
+    }
+    return logDir;
+  }
+
+  // Start logcat capture
   Future<void> startCapture() async {
     if (_isRunning) {
       print("Logcat already running");
@@ -22,35 +32,31 @@ class LogcatManager {
     try {
       print("Starting logcat capture...");
       
-      // Clear logcat buffer - EXACTLY LIKE KOTLIN
+      // Clear logcat buffer
       await _clearLogcatBuffer();
       
-      // Get directory for logs
-      final appDocDir = await getApplicationDocumentsDirectory();
-      final logDir = Directory('${appDocDir.path}/logs');
-      if (!await logDir.exists()) {
-        await logDir.create(recursive: true);
-      }
+      // Get directory
+      final logDir = await getLogDirectory();
       
       // Create log file
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
       final logFile = File('${logDir.path}/app_$timestamp.log');
       
-      // Start logcat process - EXACTLY LIKE KOTLIN
+      // Start process
       _logcatProcess = await Process.start(
         '/system/bin/logcat', 
-        ['-v', 'time'],  // time format
+        ['-v', 'time'],
         runInShell: true,
       );
       
       _isRunning = true;
       
-      // Write to file - EXACTLY LIKE KOTLIN
+      // Write to file
       final file = await logFile.open(mode: FileMode.write);
       
       _logcatProcess!.stdout.listen(
         (data) {
-          file.writeFrom(data);
+          file.writeFromSync(data);
         },
         onDone: () async {
           await file.close();
@@ -75,7 +81,7 @@ class LogcatManager {
     }
   }
 
-  // Clear logcat buffer - EXACTLY LIKE KOTLIN
+  // Clear logcat buffer
   Future<void> _clearLogcatBuffer() async {
     try {
       final clearProcess = await Process.run(
@@ -93,7 +99,7 @@ class LogcatManager {
     }
   }
 
-  // Stop logcat capture - EXACTLY LIKE KOTLIN
+  // Stop logcat capture
   Future<void> stopCapture() async {
     if (!_isRunning) return;
     
@@ -108,20 +114,21 @@ class LogcatManager {
     print("Logcat stopped");
   }
 
-  // Clear all logs - EXACTLY LIKE KOTLIN
+  // Clear all logs
   Future<bool> clearLogs() async {
     try {
-      final appDocDir = await getApplicationDocumentsDirectory();
-      final logDir = Directory('${appDocDir.path}/logs');
-      
+      final logDir = await getLogDirectory();
       if (await logDir.exists()) {
         final files = await logDir.list().toList();
+        int deletedCount = 0;
         for (var file in files) {
           if (file is File && file.path.endsWith('.log')) {
             await file.delete();
+            deletedCount++;
           }
         }
-        return true;
+        print("Cleared $deletedCount log files");
+        return deletedCount > 0;
       }
     } catch (e) {
       print("Failed to clear logs: $e");
@@ -129,12 +136,10 @@ class LogcatManager {
     return false;
   }
 
-  // Get log files - EXACTLY LIKE KOTLIN
+  // Get log files
   Future<List<String>> getLogFiles() async {
     try {
-      final appDocDir = await getApplicationDocumentsDirectory();
-      final logDir = Directory('${appDocDir.path}/logs');
-      
+      final logDir = await getLogDirectory();
       if (await logDir.exists()) {
         final files = await logDir.list().toList();
         return files
@@ -146,6 +151,20 @@ class LogcatManager {
       print("Failed to get log files: $e");
     }
     return [];
+  }
+
+  // Read log file
+  Future<String?> readLogFile(String filename) async {
+    try {
+      final logDir = await getLogDirectory();
+      final file = File('${logDir.path}/$filename');
+      if (await file.exists()) {
+        return await file.readAsString();
+      }
+    } catch (e) {
+      print("Failed to read log file: $filename, error: $e");
+    }
+    return null;
   }
 
   Future<void> dispose() async {
