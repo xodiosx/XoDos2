@@ -34,6 +34,7 @@ import 'package:x11_flutter/x11_flutter.dart';
 import 'spirited_mini_games.dart';
 
 // Import the split files
+import 'debug.dart';
 import 'constants.dart';
 import 'default_values.dart';
 // DXVK Installer Class
@@ -138,7 +139,9 @@ class Util {
       case "defaultTurnipOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("MESA_LOADER_DRIVER_OVERRIDE=zink VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json TU_DEBUG=noconform");
       case "defaultHidpiOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("GDK_SCALE=2 QT_FONT_DPI=192");
       case "containersInfo" : return G.prefs.getStringList(key)!;
-    }
+      case "logcatEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true); // ← ENABLED BY DEFAULT
+ 
+      }
   }
 
   static dynamic getCurrentProp(String key) {
@@ -960,36 +963,31 @@ static Future<void> startGraphicsServerInTerminal() async {
   bool virglEnabled = Util.getGlobal("virgl") as bool;
   bool venusEnabled = Util.getGlobal("venus") as bool;
   
-   if (Util.getGlobal("getifaddrsBridge")) {
+final bashrcPath = '${G.dataPath}/containers/0/home/xodos/.bashrc';
+final ldLine = 'export LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ';
 
-    String bashrcPath = G.dataPath + "/containers/${G.currentContainer}/home/xodos/.bashrc";
-    String ldLine = "export LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
-
-    // Start getifaddrs bridge server
-    Util.termWrite("""
+if (Util.getGlobal("getifaddrsBridge")) {
+  // Write shell commands to start the bridge server
+  Util.termWrite('''
 export DATA_DIR=${G.dataPath}
-export PATH=$DATA_DIR/usr/bin:$DATA_DIR/bin:$PATH
-export CONTAINER_DIR=$DATA_DIR/containers/${G.currentContainer}
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'getifad_*' 2>/dev/null || true
-rm -f ${CONTAINER_DIR}/tmp/.getifaddrs-bridge 2>/dev/null || true
+rm -f \${CONTAINER_DIR}/tmp/.getifaddrs-bridge 2>/dev/null || true
 
 bin/getifaddrs_bridge_server usr/tmp/.getifaddrs-bridge &
 echo "getifaddrs server started in background"
 sleep 1
-""");
+''');
 
-    // Add LD_PRELOAD to bashrc if not already present
-    Util.execute("grep -qxF '" + ldLine + "' " + bashrcPath + " || echo '" + ldLine + "' >> " + bashrcPath);
+  // Append LD_PRELOAD line if not present
+  Util.execute("grep -qxF '$ldLine' $bashrcPath || echo '$ldLine' >> $bashrcPath");
 
 } else {
-    // Remove LD_PRELOAD line from bashrc if it exists
-    String bashrcPath = G.dataPath + "/home/xodos/.bashrc";
-    String ldLine = "export LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
-
-    Util.execute("sed -i '/^" + ldLine.replace("/", "\\/") + "$/d' " + bashrcPath);
+  // Remove LD_PRELOAD line if it exists
+  Util.execute("sed -i '/^${ldLine.replaceAll('/', r'\/')}\$/d' $bashrcPath");
 }
-  
   
   if (venusEnabled) {
     print("Sending Venus server command to terminal");

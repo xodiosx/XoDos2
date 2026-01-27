@@ -22,7 +22,7 @@ import 'core_classes.dart';
 import 'spirited_mini_games.dart';
 import 'main.dart'; // For RTLWrapper, etc.
 import 'dialogs.dart';
-
+import 'debug.dart';
 //import 'app_colors.dart'; // Add this
 
 import 'package:xodos/l10n/app_localizations.dart';
@@ -359,131 +359,152 @@ class _SettingPageState extends State<SettingPage> {
           ),
         ),
 
-        // Panel 1: Global Settings
-        ExpansionPanel(
-          isExpanded: _expandState[1],
-          headerBuilder: (context, isExpanded) {
-            return ListTile(
-              title: Text(AppLocalizations.of(context)!.globalSettings),
-              subtitle: Text(AppLocalizations.of(context)!.enableTerminalEditing),
-            );
-          },
-          body: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(children: [
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                initialValue: (Util.getGlobal("termMaxLines") as int).toString(),
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  labelText: AppLocalizations.of(context)!.terminalMaxLines,
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  return Util.validateBetween(value, 1024, 2147483647, () async {
-                    await G.prefs.setInt("termMaxLines", int.parse(value!));
-                  });
-                },
-              ),
-              const SizedBox.square(dimension: 16),
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                initialValue: (Util.getGlobal("defaultAudioPort") as int).toString(),
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  labelText: AppLocalizations.of(context)!.pulseaudioPort,
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  return Util.validateBetween(value, 0, 65535, () async {
-                    await G.prefs.setInt("defaultAudioPort", int.parse(value!));
-                  });
-                },
-              ),
-              const SizedBox.square(dimension: 16),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.enableTerminal),
-                value: Util.getGlobal("isTerminalWriteEnabled") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("isTerminalWriteEnabled", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.enableTerminalKeypad),
-                value: Util.getGlobal("isTerminalCommandsEnabled") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("isTerminalCommandsEnabled", value);
-                  setState(() {
-                    G.terminalPageChange.value = !G.terminalPageChange.value;
-                  });
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.terminalStickyKeys),
-                value: Util.getGlobal("isStickyKey") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("isStickyKey", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.keepScreenOn),
-                value: Util.getGlobal("wakelock") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("wakelock", value);
-                  WakelockPlus.toggle(enable: value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              const Divider(height: 2, indent: 8, endIndent: 8),
-              const SizedBox.square(dimension: 16),
-              Text(AppLocalizations.of(context)!.restartRequiredHint),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.startWithGUI),
-                value: Util.getGlobal("autoLaunchVnc") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("autoLaunchVnc", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.reinstallBootPackage),
-                value: Util.getGlobal("reinstallBootstrap") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("reinstallBootstrap", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.getifaddrsBridge),
-                subtitle: Text(AppLocalizations.of(context)!.fixGetifaddrsPermission),
-                value: Util.getGlobal("getifaddrsBridge") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("getifaddrsBridge", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.fakeUOSSystem),
-                value: Util.getGlobal("uos") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("uos", value);
-                  setState(() {});
-                },
-              ),
-            ]),
-          ),
+    // Panel 1: Global Settings
+ExpansionPanel(
+  isExpanded: _expandState[1],
+  headerBuilder: (context, isExpanded) {
+    return ListTile(
+      title: Text(AppLocalizations.of(context)!.globalSettings),
+      subtitle: Text(AppLocalizations.of(context)!.enableTerminalEditing),
+    );
+  },
+  body: Padding(
+    padding: const EdgeInsets.all(12),
+    child: Column(children: [
+      TextFormField(
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        initialValue: (Util.getGlobal("termMaxLines") as int).toString(),
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.terminalMaxLines,
         ),
-
+        keyboardType: TextInputType.number,
+        validator: (value) {
+          return Util.validateBetween(value, 1024, 2147483647, () async {
+            await G.prefs.setInt("termMaxLines", int.parse(value!));
+          });
+        },
+      ),
+      const SizedBox.square(dimension: 16),
+      TextFormField(
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        initialValue: (Util.getGlobal("defaultAudioPort") as int).toString(),
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.pulseaudioPort,
+        ),
+        keyboardType: TextInputType.number,
+        validator: (value) {
+          return Util.validateBetween(value, 0, 65535, () async {
+            await G.prefs.setInt("defaultAudioPort", int.parse(value!));
+          });
+        },
+      ),
+      const SizedBox.square(dimension: 16),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableTerminal),
+        value: Util.getGlobal("isTerminalWriteEnabled") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("isTerminalWriteEnabled", value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableTerminalKeypad),
+        value: Util.getGlobal("isTerminalCommandsEnabled") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("isTerminalCommandsEnabled", value);
+          setState(() {
+            G.terminalPageChange.value = !G.terminalPageChange.value;
+          });
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.terminalStickyKeys),
+        value: Util.getGlobal("isStickyKey") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("isStickyKey", value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.keepScreenOn),
+        value: Util.getGlobal("wakelock") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("wakelock", value);
+          WakelockPlus.toggle(enable: value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+      Text(AppLocalizations.of(context)!.restartRequiredHint),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.startWithGUI),
+        value: Util.getGlobal("autoLaunchVnc") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("autoLaunchVnc", value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.reinstallBootPackage),
+        value: Util.getGlobal("reinstallBootstrap") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("reinstallBootstrap", value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.getifaddrsBridge),
+        subtitle: Text(AppLocalizations.of(context)!.fixGetifaddrsPermission),
+        value: Util.getGlobal("getifaddrsBridge") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("getifaddrsBridge", value);
+          setState(() {});
+        },
+      ),
+      // ✅ ADD LOGCAT SWITCH HERE (right after getifaddrsBridge)
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text('Logcat Capture'),
+        subtitle: Text('Capture system logs for debugging'),
+        value: Util.getGlobal("logcatEnabled") as bool,
+        onChanged: (value) async {
+          await G.prefs.setBool("logcatEnabled", value);
+          setState(() {});
+          
+          // Show notification
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(value 
+                ? 'Logcat will start on next app launch'
+                : 'Logcat disabled - will stop on next launch'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+      ),
+      // END OF LOGCAT SWITCH
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.fakeUOSSystem),
+        value: Util.getGlobal("uos") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("uos", value);
+          setState(() {});
+        },
+      ),
+    ]),
+  ),
+),
         // Panel 2: Display Settings
         ExpansionPanel(
           isExpanded: _expandState[2],
@@ -1004,7 +1025,7 @@ OutlinedButton(
                 style: D.commandButtonStyle,
                 child: Text(AppLocalizations.of(context)!.installHangoverLatest),
                 onPressed: () async {
-                  Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover");
+                  Util.termWrite("bash //extra/install-hangover");
                   G.pageIndex.value = 0;
                 },
               ),
