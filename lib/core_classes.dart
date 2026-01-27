@@ -760,7 +760,7 @@ TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$
             
 //   Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
 //Util.termWrite("getifaddrs_bridge_server /tmp/.getifaddrs-bridge &")
-      extraOpt += "LD_PRELOAD=/extra/getifaddrs_bridge_client_lib.so ";
+     // extraOpt += "LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
     }
   
   
@@ -960,24 +960,35 @@ static Future<void> startGraphicsServerInTerminal() async {
   bool virglEnabled = Util.getGlobal("virgl") as bool;
   bool venusEnabled = Util.getGlobal("venus") as bool;
   
-      if (Util.getGlobal("getifaddrsBridge")) {
-     
-       Util.termWrite("""
+   if (Util.getGlobal("getifaddrsBridge")) {
+
+    String bashrcPath = G.dataPath + "/containers/${G.currentContainer}/home/xodos/.bashrc";
+    String ldLine = "export LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
+
+    // Start getifaddrs bridge server
+    Util.termWrite("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+export PATH=$DATA_DIR/usr/bin:$DATA_DIR/bin:$PATH
+export CONTAINER_DIR=$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'getifad_*' 2>/dev/null || true
-rm -f \${CONTAINER_DIR}/tmp/.getifaddrs-bridge 2>/dev/null || true
+rm -f ${CONTAINER_DIR}/tmp/.getifaddrs-bridge 2>/dev/null || true
 
 bin/getifaddrs_bridge_server usr/tmp/.getifaddrs-bridge &
 echo "getifaddrs server started in background"
 sleep 1
-""");      
-//   Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
-//Util.termWrite("getifaddrs_bridge_server /tmp/.getifaddrs-bridge &")
-     // extraOpt += "LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
-    }
+""");
+
+    // Add LD_PRELOAD to bashrc if not already present
+    Util.execute("grep -qxF '" + ldLine + "' " + bashrcPath + " || echo '" + ldLine + "' >> " + bashrcPath);
+
+} else {
+    // Remove LD_PRELOAD line from bashrc if it exists
+    String bashrcPath = G.dataPath + "/home/xodos/.bashrc";
+    String ldLine = "export LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
+
+    Util.execute("sed -i '/^" + ldLine.replace("/", "\\/") + "$/d' " + bashrcPath);
+}
   
   
   if (venusEnabled) {

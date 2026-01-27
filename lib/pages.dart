@@ -996,7 +996,7 @@ OutlinedButton(
                     style: D.commandButtonStyle,
                     child: Text("${AppLocalizations.of(context)!.installHangoverStable}（10.14）"),
                     onPressed: () async {
-                      Util.termWrite("bash /extra/install-hangover-stable");
+                      Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover-stable");
                       G.pageIndex.value = 0;
                     },
                   ),
@@ -1004,7 +1004,7 @@ OutlinedButton(
                 style: D.commandButtonStyle,
                 child: Text(AppLocalizations.of(context)!.installHangoverLatest),
                 onPressed: () async {
-                  Util.termWrite("bash /extra/install-hangover");
+                  Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover");
                   G.pageIndex.value = 0;
                 },
               ),
