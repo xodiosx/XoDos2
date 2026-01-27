@@ -755,7 +755,15 @@ TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$
     String extraMount = ""; //mount options and other proot options
     String extraOpt = "";
     
-
+  
+      if (Util.getGlobal("getifaddrsBridge")) {
+            
+//   Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
+//Util.termWrite("getifaddrs_bridge_server /tmp/.getifaddrs-bridge &")
+      extraOpt += "LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
+    }
+  
+  
     if (Util.getGlobal("isHidpiEnabled")) {
       extraOpt += "${Util.getGlobal("defaultHidpiOpt")} ";
     }
@@ -966,11 +974,10 @@ rm -f \${CONTAINER_DIR}/tmp/..getifaddrs-bridge 2>/dev/null || true
 
 \$DATA_DIR/bin/getifaddrs_bridge_server \$DATA_DIR/usr/tmp/.getifaddrs-bridge
 echo "getifaddrs server started in background"
-""");
-      
+""");      
 //   Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
 //Util.termWrite("getifaddrs_bridge_server /tmp/.getifaddrs-bridge &")
-      extraOpt += "LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
+     // extraOpt += "LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
     }
   
   
