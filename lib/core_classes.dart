@@ -965,15 +965,14 @@ static Future<void> startGraphicsServerInTerminal() async {
        Util.termWrite("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:/data/data/com.xodos/files/usr/lib
-unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'getifad_*' 2>/dev/null || true
-rm -f \${CONTAINER_DIR}/tmp/..getifaddrs-bridge 2>/dev/null || true
+rm -f \${CONTAINER_DIR}/tmp/.getifaddrs-bridge 2>/dev/null || true
 
-\$DATA_DIR/bin/getifaddrs_bridge_server \$DATA_DIR/usr/tmp/.getifaddrs-bridge
+bin/getifaddrs_bridge_server usr/tmp/.getifaddrs-bridge
 echo "getifaddrs server started in background"
+sleep 1
 """);      
 //   Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
 //Util.termWrite("getifaddrs_bridge_server /tmp/.getifaddrs-bridge &")

@@ -1,75 +1,280 @@
-package com.com.xodos
+package com.xodos
 
 import android.app.Application
 import android.content.Context
+import android.os.Build
+import android.util.Log
 import com.google.android.material.color.DynamicColors
 import me.weishu.reflection.Reflection
 import java.io.*
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MainApplication : Application() {
 
-    private var logcatProcess: Process? = null
+    companion object {
+        private const val TAG = "MainApplication"
+        private var isLogcatRunning = AtomicBoolean(false)
+        private var logcatProcess: Process? = null
+        private var logFileWriter: BufferedWriter? = null
+        
+        // Method Channel constants (if you want Flutter control)
+        const val METHOD_START_LOGCAT = "startLogcat"
+        const val METHOD_STOP_LOGCAT = "stopLogcat"
+        const val METHOD_CLEAR_LOGS = "clearLogs"
+        const val METHOD_GET_LOGS = "getLogs"
+    }
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
-        Reflection.unseal(base)
+        try {
+            Reflection.unseal(base)
+            Log.d(TAG, "Reflection unsealed successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to unseal reflection", e)
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
+        Log.d(TAG, "Application onCreate")
+        
+        // Apply dynamic colors if available
         DynamicColors.applyToActivitiesIfAvailable(this)
-
-        clearLogcat()
-      //  startLogcatCapture()
+        
+        // Optional: Start logcat automatically on app start
+        // startLogcatCapture()
+        
+        // Log device info for debugging
+        logDeviceInfo()
     }
 
     override fun onTerminate() {
         super.onTerminate()
-        logcatProcess?.destroy()
+        Log.d(TAG, "Application terminating")
+        stopLogcatCapture()
     }
 
-    private fun clearLogcat() {
+    override fun onLowMemory() {
+        super.onLowMemory()
+        Log.w(TAG, "Low memory - stopping logcat to save resources")
+        stopLogcatCapture()
+    }
+
+    private fun logDeviceInfo() {
         try {
-            Runtime.getRuntime().exec("logcat -c")
+            val logDir = getLogDirectory()
+            val infoFile = File(logDir, "device_info.txt")
+            val writer = BufferedWriter(FileWriter(infoFile, false))
+            
+            writer.write("=== Device Information ===\n")
+            writer.write("Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}\n")
+            writer.write("Model: ${Build.MODEL}\n")
+            writer.write("Device: ${Build.DEVICE}\n")
+            writer.write("Product: ${Build.PRODUCT}\n")
+            writer.write("Brand: ${Build.BRAND}\n")
+            writer.write("Manufacturer: ${Build.MANUFACTURER}\n")
+            writer.write("Android SDK: ${Build.VERSION.SDK_INT}\n")
+            writer.write("Android Release: ${Build.VERSION.RELEASE}\n")
+            writer.write("Fingerprint: ${Build.FINGERPRINT}\n")
+            writer.write("ABIs: ${Build.SUPPORTED_ABIS.joinToString()}\n")
+            writer.write("Board: ${Build.BOARD}\n")
+            writer.write("Bootloader: ${Build.BOOTLOADER}\n")
+            writer.write("\n=== Application Info ===\n")
+            writer.write("Package: ${packageName}\n")
+            writer.write("Data Dir: ${applicationContext.dataDir.absolutePath}\n")
+            writer.write("Files Dir: ${applicationContext.filesDir.absolutePath}\n")
+            writer.write("External Files Dir: ${applicationContext.getExternalFilesDir(null)?.absolutePath ?: "N/A"}\n")
+            
+            writer.close()
+            Log.d(TAG, "Device info saved to: ${infoFile.absolutePath}")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to save device info", e)
         }
     }
 
-    private fun startLogcatCapture() {
+    private fun getLogDirectory(): File {
+        // Try external storage first
+        val externalDir = getExternalFilesDir("logs")
+        return if (externalDir != null && externalDir.exists()) {
+            externalDir
+        } else {
+            // Fall back to internal storage
+            val internalDir = File(filesDir, "logs")
+            if (!internalDir.exists()) {
+                internalDir.mkdirs()
+            }
+            internalDir
+        }
+    }
+
+    fun startLogcatCapture() {
+        if (isLogcatRunning.getAndSet(true)) {
+            Log.w(TAG, "Logcat capture is already running")
+            return
+        }
+
         Thread {
             try {
-                val logDir = File(getExternalFilesDir(null), "logs")
-                if (!logDir.exists()) logDir.mkdirs()
-
-                // Overwrite each launch
-                val logFile = File(logDir, "app.log")
+                val logDir = getLogDirectory()
+                
+                // Create dated log file
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
+                val timestamp = dateFormat.format(Date())
+                val logFile = File(logDir, "app_$timestamp.log")
+                
+                // Append to today's main log file
+                val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                val dailyFile = File(logDir, "app_$today.log")
+                
+                Log.d(TAG, "Starting logcat capture to: ${logFile.absolutePath}")
+                
+                // Create both writers
                 val writer = BufferedWriter(FileWriter(logFile, false))
-
-                val command = arrayOf(
-                    "logcat",
-                    "-v", "time"
-                )
-
-                logcatProcess = Runtime.getRuntime().exec(command)
-
-                val reader = BufferedReader(
-                    InputStreamReader(logcatProcess!!.inputStream)
-                )
-
+                val dailyWriter = BufferedWriter(FileWriter(dailyFile, true))
+                
+                // Write header
+                writer.write("=== Logcat started at $timestamp ===\n")
+                writer.write("Device: ${Build.MODEL} (SDK ${Build.VERSION.SDK_INT})\n")
+                writer.write("=================================\n\n")
+                
+                dailyWriter.write("\n=== Session started at $timestamp ===\n")
+                
+                // Build logcat command with filters
+                val command = mutableListOf("logcat", "-v", "time")
+                
+                // Add filters to reduce noise (optional)
+                command.addAll(listOf(
+                    // Include our app's logs
+                    "*:V",
+                    // Filter out some system noise
+                    // "AndroidRuntime:W",
+                    // "System.err:W"
+                ))
+                
+                // Clear existing logs
+                Runtime.getRuntime().exec("logcat -c")
+                
+                // Start logcat process
+                logcatProcess = Runtime.getRuntime().exec(command.toTypedArray())
+                
+                // Read and write logs
+                val reader = BufferedReader(InputStreamReader(logcatProcess!!.inputStream))
+                
                 var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    writer.write(line!!)
-                    writer.newLine()
-                    writer.flush()
+                while (isLogcatRunning.get() && reader.readLine().also { line = it } != null) {
+                    synchronized(this) {
+                        writer.write(line!!)
+                        writer.newLine()
+                        writer.flush()
+                        
+                        dailyWriter.write(line!!)
+                        dailyWriter.newLine()
+                        dailyWriter.flush()
+                    }
                 }
-
+                
+                // Cleanup
                 reader.close()
                 writer.close()
-
+                dailyWriter.close()
+                
+                Log.d(TAG, "Logcat capture stopped")
+                
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error in logcat capture", e)
+                isLogcatRunning.set(false)
+            } finally {
+                logcatProcess?.destroy()
+                logcatProcess = null
+                isLogcatRunning.set(false)
             }
+        }.apply {
+            name = "LogcatCaptureThread"
+            priority = Thread.MIN_PRIORITY // Lower priority to avoid affecting app performance
         }.start()
+    }
+
+    fun stopLogcatCapture() {
+        if (!isLogcatRunning.getAndSet(false)) {
+            return
+        }
+        
+        Log.d(TAG, "Stopping logcat capture...")
+        
+        try {
+            // Send SIGTERM to logcat process
+            logcatProcess?.destroy()
+            
+            // Wait a bit then force kill if needed
+            Thread.sleep(100)
+            logcatProcess?.destroyForcibly()
+            
+            // Close writers
+            synchronized(this) {
+                logFileWriter?.close()
+                logFileWriter = null
+            }
+            
+            logcatProcess = null
+            Log.d(TAG, "Logcat capture stopped successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping logcat", e)
+        }
+    }
+
+    fun clearLogs(): Boolean {
+        try {
+            val logDir = getLogDirectory()
+            if (logDir.exists() && logDir.isDirectory) {
+                val files = logDir.listFiles()
+                files?.forEach { file ->
+                    if (file.isFile && file.name.endsWith(".log")) {
+                        file.delete()
+                    }
+                }
+                Log.d(TAG, "Logs cleared from: ${logDir.absolutePath}")
+                return true
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear logs", e)
+        }
+        return false
+    }
+
+    fun getLogFiles(): List<String> {
+        return try {
+            val logDir = getLogDirectory()
+            if (logDir.exists() && logDir.isDirectory) {
+                logDir.listFiles { _, name -> 
+                    name.endsWith(".log") || name.endsWith(".txt")
+                }?.map { it.name } ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get log files", e)
+            emptyList()
+        }
+    }
+
+    fun readLogFile(filename: String): String? {
+        return try {
+            val logDir = getLogDirectory()
+            val file = File(logDir, filename)
+            if (file.exists() && file.isFile) {
+                file.readText()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read log file: $filename", e)
+            null
+        }
+    }
+
+    fun isLogcatRunning(): Boolean {
+        return isLogcatRunning.get()
     }
 }
