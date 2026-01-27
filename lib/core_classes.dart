@@ -760,7 +760,7 @@ TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$
             
 //   Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
 //Util.termWrite("getifaddrs_bridge_server /tmp/.getifaddrs-bridge &")
-      extraOpt += "LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
+      extraOpt += "LD_PRELOAD=/extra/getifaddrs_bridge_client_lib.so ";
     }
   
   
