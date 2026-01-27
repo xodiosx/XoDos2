@@ -411,8 +411,8 @@ class Workflow {
     // After extraction, get bin folder and libexec folder
     // bin contains proot, pulseaudio, tar, etc.
     // libexec contains proot loader
-final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('extractionProgressT');
+//final prefs = await SharedPreferences.getInstance();
+ // await prefs.remove('extractionProgressT');
     
         await Util.copyAsset(
     "assets/assets.zip",
@@ -424,10 +424,8 @@ final prefs = await SharedPreferences.getInstance();
     "assets/patch.tar.xz",
     "${G.dataPath}/patch.tar.xz",
     );
-  /*  await Util.copyAsset(
-    "assets/native.tar.xz",
-    "${G.dataPath}/native.tar.xz",
-    );*/
+    
+  /*  */
     
     print("preparing system environment ");
     
@@ -604,7 +602,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     // Need to reinstall bootstrap package?
     if (Util.getGlobal("reinstallBootstrap")) {
       G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.reinstallingBootPackage;
-      await setupBootstrap();
+      await initForFirstTime();
       G.prefs.setBool("reinstallBootstrap", false);
     }
 
@@ -716,7 +714,6 @@ export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$DATA_DIR/usr/libexec/
 unset PATH
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 unset LD_LIBRARY_PATH
-l
      if [ -d "\$prefixsh" ]; then
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 exec \$DATA_DIR/usr/bin/bash --login   
@@ -758,10 +755,7 @@ TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$
     String extraMount = ""; //mount options and other proot options
     String extraOpt = "";
     
-    if (Util.getGlobal("getifaddrsBridge")) {
-      Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
-      extraOpt += "LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
-    }
+
     if (Util.getGlobal("isHidpiEnabled")) {
       extraOpt += "${Util.getGlobal("defaultHidpiOpt")} ";
     }
@@ -815,6 +809,7 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
   extraOpt += "$venusOpt ";
     if (!(Util.getGlobal("dri3"))) {
     extraOpt += "MESA_VK_WSI_DEBUG=sw ";
+    extraOpt += "MESA_VK_WSI_PRESENT_MODE=mailbox ";
   }
 }
 
@@ -826,6 +821,7 @@ export MESA_VK_WSI_PRESENT_MODE=mailbox
   extraOpt += "${Util.getGlobal("defaultTurnipOpt")} ";
   if (!(Util.getGlobal("dri3"))) {
     extraOpt += "MESA_VK_WSI_DEBUG=sw ";
+    extraOpt += "MESA_VK_WSI_PRESENT_MODE=mailbox ";
   }
 }
     if (Util.getGlobal("isJpEnabled")) {
@@ -856,7 +852,7 @@ ${G.postCommand} > /dev/null 2>&1
 """);
 
 
-// Remove the "clear" command at the end
+//
   }
 
 static Future<void> launchGUIBackend() async {
@@ -872,7 +868,7 @@ static Future<void> launchGUIBackend() async {
       Util.termWrite("$vncCmd > /dev/null 2>&1 &");
     }
   }
-  // Remove the clear command
+  // 
   // Util.termWrite("clear"); // 
 }
 
@@ -955,6 +951,28 @@ static Future<void> workflow() async {
 static Future<void> startGraphicsServerInTerminal() async {
   bool virglEnabled = Util.getGlobal("virgl") as bool;
   bool venusEnabled = Util.getGlobal("venus") as bool;
+  
+      if (Util.getGlobal("getifaddrsBridge")) {
+     
+       Util.termWrite("""
+export DATA_DIR=${G.dataPath}
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:/data/data/com.xodos/files/usr/lib
+unset LD_LIBRARY_PATH
+export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+
+pkill -f 'getifad_*' 2>/dev/null || true
+rm -f \${CONTAINER_DIR}/tmp/..getifaddrs-bridge 2>/dev/null || true
+
+\$DATA_DIR/bin/getifaddrs_bridge_server \$DATA_DIR/usr/tmp/.getifaddrs-bridge
+echo "getifaddrs server started in background"
+""");
+      
+//   Util.execute("${G.dataPath}/bin/getifaddrs_bridge_server ${G.dataPath}/containers/${G.currentContainer}/tmp/.getifaddrs-bridge");
+//Util.termWrite("getifaddrs_bridge_server /tmp/.getifaddrs-bridge &")
+      extraOpt += "LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ";
+    }
+  
   
   if (venusEnabled) {
     print("Sending Venus server command to terminal");
