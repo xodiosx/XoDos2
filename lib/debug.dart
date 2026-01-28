@@ -12,14 +12,36 @@ class LogcatManager {
   
   bool get isRunning => _isRunning;
 
-  // Get log directory
+  // Get EXTERNAL storage directory - PHONE STORAGE
   Future<Directory> getLogDirectory() async {
+    try {
+      // First try external storage (phone storage)
+      final externalDir = await getExternalStorageDirectory();
+      if (externalDir != null) {
+        // Create path: /storage/emulated/0/Android/data/com.xodos/files/logs
+        final logDir = Directory('${externalDir.path}/logs');
+        if (!await logDir.exists()) {
+          await logDir.create(recursive: true);
+        }
+        return logDir;
+      }
+    } catch (e) {
+      print("Failed to get external storage: $e");
+    }
+    
+    // Fallback to internal storage if external fails
     final appDocDir = await getApplicationDocumentsDirectory();
     final logDir = Directory('${appDocDir.path}/logs');
     if (!await logDir.exists()) {
       await logDir.create(recursive: true);
     }
     return logDir;
+  }
+
+  // Get the readable path for display
+  Future<String> getLogPath() async {
+    final dir = await getLogDirectory();
+    return dir.path;
   }
 
   // Start logcat capture
@@ -38,42 +60,63 @@ class LogcatManager {
       // Get directory
       final logDir = await getLogDirectory();
       
-      // Create log file
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final logFile = File('${logDir.path}/app_$timestamp.log');
+      // Create log file with timestamp
+      final now = DateTime.now();
+      final timestamp = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(2, '0')}-${now.second.toString().padLeft(2, '0')}";
+      final logFile = File('${logDir.path}/xodos_$timestamp.log');
       
-      // Start process
+      print("Saving logs to: ${logFile.path}");
+      
+      // Start logcat process
       _logcatProcess = await Process.start(
         '/system/bin/logcat', 
-        ['-v', 'time'],
+        ['-v', 'time', '*:V'],  // time format, verbose
         runInShell: true,
       );
       
       _isRunning = true;
       
-      // Write to file
-      final file = await logFile.open(mode: FileMode.write);
+      // Write header to file
+      final sink = logFile.openWrite(mode: FileMode.write);
+      sink.write('=== XoDos Logcat Capture ===\n');
+      sink.write('Started: ${now.toIso8601String()}\n');
+      sink.write('Device: ${Platform.localHostname}\n');
+      sink.write('=================================\n\n');
+      await sink.flush();
       
+      // Listen to stdout and write to file
       _logcatProcess!.stdout.listen(
         (data) {
-          file.writeFromSync(data);
+          sink.add(data);
         },
         onDone: () async {
-          await file.close();
+          await sink.flush();
+          await sink.close();
           _isRunning = false;
+          print("Logcat capture completed");
         },
         onError: (error) {
           print("Logcat stdout error: $error");
+          sink.write('[ERROR] $error\n');
         },
       );
       
+      // Listen to stderr
       _logcatProcess!.stderr.listen(
         (data) {
-          print("Logcat stderr: ${String.fromCharCodes(data)}");
+          final error = String.fromCharCodes(data);
+          print("Logcat stderr: $error");
+          sink.write('[STDERR] $error\n');
         },
       );
       
-      print("Logcat capture started");
+      // Check process health
+      _logcatProcess!.exitCode.then((code) {
+        print("Logcat process exited with code: $code");
+        _isRunning = false;
+      });
+      
+      print("Logcat capture started successfully");
       
     } catch (e) {
       print("Failed to start logcat: $e");
@@ -108,6 +151,7 @@ class LogcatManager {
     
     if (_logcatProcess != null) {
       _logcatProcess!.kill();
+      await _logcatProcess!.exitCode;
       _logcatProcess = null;
     }
     
@@ -127,7 +171,7 @@ class LogcatManager {
             deletedCount++;
           }
         }
-        print("Cleared $deletedCount log files");
+        print("Cleared $deletedCount log files from ${logDir.path}");
         return deletedCount > 0;
       }
     } catch (e) {
@@ -142,10 +186,10 @@ class LogcatManager {
       final logDir = await getLogDirectory();
       if (await logDir.exists()) {
         final files = await logDir.list().toList();
-        return files
-            .where((file) => file is File && file.path.endsWith('.log'))
-            .map((file) => file.path.split('/').last)
-            .toList();
+        // Sort by modification time (newest first)
+        final fileList = files.whereType<File>().where((f) => f.path.endsWith('.log')).toList();
+        fileList.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+        return fileList.map((file) => file.path.split('/').last).toList();
       }
     } catch (e) {
       print("Failed to get log files: $e");

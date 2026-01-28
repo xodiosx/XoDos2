@@ -968,30 +968,50 @@ static Future<void> startGraphicsServerInTerminal() async {
   bool virglEnabled = Util.getGlobal("virgl") as bool;
   bool venusEnabled = Util.getGlobal("venus") as bool;
   
-final bashrcPath = '${G.dataPath}/containers/0/home/xodos/.bashrc';
-final ldLine = 'export LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so ';
-
 if (Util.getGlobal("getifaddrsBridge")) {
-  // Write shell commands to start the bridge server
-  Util.termWrite('''
+  print("Enabling getifaddrs bridge");
+
+  Util.termWrite("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+BASHRC="\$CONTAINER_DIR/home/xodos/.bashrc"
 
-pkill -f 'getifad_*' 2>/dev/null || true
-rm -f \${CONTAINER_DIR}/tmp/.getifaddrs-bridge 2>/dev/null || true
+LD_LINE='export LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so'
 
-bin/getifaddrs_bridge_server usr/tmp/.getifaddrs-bridge &
-echo "getifaddrs server started in background"
-sleep 1
-''');
+# Ensure bashrc exists
+touch "\$BASHRC"
 
-  // Append LD_PRELOAD line if not present
-  Util.execute("grep -qxF '$ldLine' $bashrcPath || echo '$ldLine' >> $bashrcPath");
+# Remove old entry if any (idempotent)
+sed -i '\\|^export LD_PRELOAD=.*/getifaddrs_bridge_client_lib.so\$|d' "\$BASHRC"
+
+# Append
+echo "\$LD_LINE" >> "\$BASHRC"
+
+# Start server
+pkill -f getifaddrs_bridge_server 2>/dev/null || true
+rm -f "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" 2>/dev/null || true
+bin/getifaddrs_bridge_server "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" &
+
+echo "getifaddrs bridge enabled"
+""");
 
 } else {
-  // Remove LD_PRELOAD line if it exists
-  Util.execute("sed -i '/^${ldLine.replaceAll('/', r'\/')}\$/d' $bashrcPath");
+  print("Disabling getifaddrs bridge");
+
+  Util.termWrite("""
+export DATA_DIR=${G.dataPath}
+export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+BASHRC="\$CONTAINER_DIR/home/xodos/.bashrc"
+
+# Remove LD_PRELOAD line
+sed -i '\\|^export LD_PRELOAD=.*/getifaddrs_bridge_client_lib.so\$|d' "\$BASHRC"
+
+# Stop server
+pkill -f getifaddrs_bridge_server 2>/dev/null || true
+rm -f "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" 2>/dev/null || true
+
+echo "getifaddrs bridge disabled"
+""");
 }
   
   if (venusEnabled) {
