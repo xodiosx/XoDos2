@@ -63,16 +63,21 @@ XoDos is currently in active development. We're working hard to deliver a stable
 - [✓] Android compatibility layer
 - [✓] User interface optimization
 - [✓] Performance tuning
-- [ ] touch gamepad controls
-- [ ] easy wine settings
-- [ ] gamepad support
+- [✓] touch gamepad controls
+- [✓] easy wine settings
+- [✓] gamepad support
 - [✓] More GPU drivers for Android devices
-- [✓] Initial release preparation
+- [✓] native android bionic terminal shell support
 
-## building
+## building rootfs using termux or other Linux terminal
 [XoDos Proot(rootfs)](https://github.com/xodiosx/XoDos2/tree/main/extra/rootfs)
 
+for flutter just clone this repo and build using flutter SDK and android SDK make sure
+the building environment is ready with Android sdk and Java jdk and ndk and using this command
 
+```
+git clone https://github.com/xodiosx/XoDos2.git && cd XoDos2 && flutter build apk --target-platform android-arm64 --split-per-abi
+```
 
 ## 🤝 Contributing
 
