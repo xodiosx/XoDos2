@@ -990,7 +990,7 @@ echo "\$LD_LINE" >> "\$BASHRC"
 # Start server
 pkill -f getifaddrs_bridge_server 2>/dev/null || true
 rm -f "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" 2>/dev/null || true
-bin/getifaddrs_bridge_server "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" &
+bin/getifaddrs_bridge_server "usr/tmp/.getifaddrs-bridge" &
 
 echo "getifaddrs bridge enabled"
 """);
