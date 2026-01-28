@@ -988,9 +988,9 @@ sed -i '\\|^export LD_PRELOAD=.*/getifaddrs_bridge_client_lib.so\$|d' "\$BASHRC"
 echo "\$LD_LINE" >> "\$BASHRC"
 
 # Start server
-pkill -f getifaddrs_bridge_server 2>/dev/null || true
+pkill -f getifaddrs_* 2>/dev/null || true
 rm -f "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" 2>/dev/null || true
-bin/getifaddrs_bridge_server "usr/tmp/.getifaddrs-bridge" &
+\$DATA_DIR/bin/getifaddrs_bridge_server "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" &
 
 echo "getifaddrs bridge enabled"
 """);
