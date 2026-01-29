@@ -59,6 +59,19 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+
+@override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    G.isForeground = true;
+  }
+
+@override
+  void dispose() {
+    G.isForeground = false;
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     G.homePageStateContext = context;
