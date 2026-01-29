@@ -954,9 +954,7 @@ static Future<void> launchGUIBackend() async {
   }
   
 static Future<void> workflow() async {
-if (!AndroidAppState.isForeground) {
-  return;
-}
+
   grantPermissions();
   await initData();
   await initTerminalForCurrent();
@@ -971,7 +969,11 @@ if (!AndroidAppState.isForeground) {
   
   // Send virgl/venus server command to terminal BEFORE container starts
   await startGraphicsServerInTerminal();
-  
+print('Foreground: ${AndroidAppState.isForeground}');
+if (!AndroidAppState.isForeground) {
+print('Foreground: ${AndroidAppState.isForeground}');
+  return;
+}  
   // Then launch container
   launchCurrentContainer();
   
