@@ -45,6 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     Future.delayed(Duration.zero,() {
+    G.isForeground = true;
       _initializeWorkflow();
     });
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: []);
@@ -1424,7 +1425,7 @@ class _InfoPageState extends State<InfoPage> {
   final List<bool> _expandState = [false, false, false, false, false];
   late AudioPlayer _gamesMusicPlayer;
   bool _isGamesMusicPlaying = false;
- G.isForeground = false; 
+  
   @override
   void initState() {
     super.initState();
@@ -1501,7 +1502,7 @@ class _InfoPageState extends State<InfoPage> {
       children: [
         ExpansionPanel(
           headerBuilder: (context, isExpanded) {
-            return ListTile(title: Text(AppLocalizations.of(context)!.G.isForeground = true;Manual));
+            return ListTile(title: Text(AppLocalizations.of(context)!.userManual));
           },
           body: Padding(padding: const EdgeInsets.all(8), child: Column(
             children: [
