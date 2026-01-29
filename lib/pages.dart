@@ -45,7 +45,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     Future.delayed(Duration.zero,() {
-    G.isForeground = true;
       _initializeWorkflow();
     });
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: []);
@@ -59,14 +58,6 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     }
   }
-
-
-@override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    G.isForeground = true;
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -1477,7 +1468,6 @@ class _InfoPageState extends State<InfoPage> {
   void dispose() {
     _stopGamesMusic();
     _gamesMusicPlayer.dispose();
-    G.isForeground = false;
     super.dispose();
   }
 

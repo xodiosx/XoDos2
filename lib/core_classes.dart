@@ -39,6 +39,27 @@ import 'constants.dart';
 import 'default_values.dart';
 // DXVK Installer Class
 
+/////////
+
+class AndroidAppState {
+  static bool isForeground = true;
+  static const MethodChannel _channel = MethodChannel('android');
+
+  static void init() {
+    _channel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'appBackground':
+          isForeground = false;
+          break;
+        case 'appForeground':
+          isForeground = true;
+          break;
+      }
+    });
+  }
+}
+
+
 class Util {
 
   static Future<void> copyAsset2(String src, String dst) async {
@@ -361,7 +382,6 @@ class TermPty{
 
 // Global variables
 class G {
-static bool isForeground = false;
 
 static VoidCallback? onExtractionComplete;
   
@@ -567,7 +587,8 @@ done
   }
 
   static Future<void> initData() async {
-  G.dataPath = (await getApplicationSupportDirectory()).path;
+
+    G.dataPath = (await getApplicationSupportDirectory()).path;
 
     G.termPtys = {};
 
@@ -610,16 +631,12 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     }
 
     // What graphical interface is enabled?
-/*    if (Util.getGlobal("useX11")) {
+    if (Util.getGlobal("useX11")) {
       G.wasX11Enabled = true;
       Workflow.launchXServer();
     } else if (Util.getGlobal("useAvnc")) {
       G.wasAvncEnabled = true;
     }
-*/
-
-G.wasX11Enabled = Util.getGlobal("useX11");
-G.wasAvncEnabled = Util.getGlobal("useAvnc");
 
     G.termFontScale.value = Util.getGlobal("termFontScale") as double;
 
@@ -937,17 +954,10 @@ static Future<void> launchGUIBackend() async {
   }
   
 static Future<void> workflow() async {
-
-if (Util.getGlobal("logcatEnabled") as bool) {
-    LogcatManager().startCapture();
-  }
-  
-  
-
-if (!G.isForeground) {
-  debugPrint("Terminal init blocked (background)");
-  return;
-}
+if (!AndroidAppState.isForeground) {
+      await Future.delayed(const Duration(seconds: 1));
+      continue;
+    }
   grantPermissions();
   await initData();
   await initTerminalForCurrent();
@@ -955,7 +965,11 @@ if (!G.isForeground) {
   // Setup audio first
   setupAudio();
   
-    
+    if (Util.getGlobal("logcatEnabled") as bool) {
+    LogcatManager().startCapture();
+  }
+  
+  
   // Send virgl/venus server command to terminal BEFORE container starts
   await startGraphicsServerInTerminal();
   

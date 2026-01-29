@@ -28,6 +28,7 @@ import 'package:xodos/l10n/app_localizations.dart';
 import 'backup_restore_dialog.dart';
 
 void main() {
+AndroidAppState.init(); 
   runApp(const MyApp());
 }
 
