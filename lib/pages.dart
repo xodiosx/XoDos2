@@ -66,11 +66,6 @@ class _MyHomePageState extends State<MyHomePage> {
     G.isForeground = true;
   }
 
-@override
-  void dispose() {
-    G.isForeground = false;
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1429,7 +1424,7 @@ class _InfoPageState extends State<InfoPage> {
   final List<bool> _expandState = [false, false, false, false, false];
   late AudioPlayer _gamesMusicPlayer;
   bool _isGamesMusicPlaying = false;
-  
+ G.isForeground = false; 
   @override
   void initState() {
     super.initState();
@@ -1481,6 +1476,7 @@ class _InfoPageState extends State<InfoPage> {
   void dispose() {
     _stopGamesMusic();
     _gamesMusicPlayer.dispose();
+    G.isForeground = false;
     super.dispose();
   }
 
@@ -1505,7 +1501,7 @@ class _InfoPageState extends State<InfoPage> {
       children: [
         ExpansionPanel(
           headerBuilder: (context, isExpanded) {
-            return ListTile(title: Text(AppLocalizations.of(context)!.userManual));
+            return ListTile(title: Text(AppLocalizations.of(context)!.G.isForeground = true;Manual));
           },
           body: Padding(padding: const EdgeInsets.all(8), child: Column(
             children: [

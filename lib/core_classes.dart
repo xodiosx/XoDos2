@@ -567,11 +567,7 @@ done
   }
 
   static Future<void> initData() async {
-  if (!G.isForeground) {
-    debugPrint("initData skipped (not foreground)");
-    return;
-  }
-    G.dataPath = (await getApplicationSupportDirectory()).path;
+  G.dataPath = (await getApplicationSupportDirectory()).path;
 
     G.termPtys = {};
 
@@ -634,12 +630,6 @@ G.wasAvncEnabled = Util.getGlobal("useAvnc");
   }
 
     static Future<void> initTerminalForCurrent() async {
-    
-    if (!G.isForeground) {
-  debugPrint("Terminal init blocked (background)");
-  return;
-}
-
   if (!G.termPtys.containsKey(G.currentContainer)) {
     G.termPtys[G.currentContainer] = TermPty();
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -947,6 +937,17 @@ static Future<void> launchGUIBackend() async {
   }
   
 static Future<void> workflow() async {
+
+if (Util.getGlobal("logcatEnabled") as bool) {
+    LogcatManager().startCapture();
+  }
+  
+  
+
+if (!G.isForeground) {
+  debugPrint("Terminal init blocked (background)");
+  return;
+}
   grantPermissions();
   await initData();
   await initTerminalForCurrent();
@@ -954,11 +955,7 @@ static Future<void> workflow() async {
   // Setup audio first
   setupAudio();
   
-    if (Util.getGlobal("logcatEnabled") as bool) {
-    LogcatManager().startCapture();
-  }
-  
-  
+    
   // Send virgl/venus server command to terminal BEFORE container starts
   await startGraphicsServerInTerminal();
   
