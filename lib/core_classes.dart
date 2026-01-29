@@ -41,19 +41,23 @@ import 'default_values.dart';
 
 /////////
 
-class AndroidAppState {
-  static bool isForeground = true;
-  static const MethodChannel _channel = MethodChannel('android');
 
+
+class AndroidAppState {
+  /// False by default – Kotlin will flip it
+  static bool isForeground = false;
+
+  static const MethodChannel _channel =
+      MethodChannel('app.lifecycle');
+
+  /// Call ONCE at app startup
   static void init() {
     _channel.setMethodCallHandler((call) async {
-      switch (call.method) {
-        case 'appBackground':
-          isForeground = false;
-          break;
-        case 'appForeground':
-          isForeground = true;
-          break;
+      if (call.method == 'foreground') {
+        isForeground = call.arguments as bool;
+        debugPrint(
+          'AndroidAppState → isForeground = $isForeground',
+        );
       }
     });
   }
@@ -976,18 +980,21 @@ static Future<void> launchGUIBackend() async {
   }
   
 static Future<void> workflow() async {
-    if (Util.getGlobal("logcatEnabled") as bool) {
-    LogcatManager().startCapture();
-  }
+
 print('Foreground: ${AndroidAppState.isForeground}');
 if (!AndroidAppState.isForeground) {
-print('Foreground: ${AndroidAppState.isForeground}');
+  debugPrint("App in background, aborting operation");
   return;
-}  
+}
+
   grantPermissions();
   await initData();
   await initTerminalForCurrent();
   
+  
+    if (Util.getGlobal("logcatEnabled") as bool) {
+    LogcatManager().startCapture();
+  }  
   // Setup audio first
   setupAudio();
  

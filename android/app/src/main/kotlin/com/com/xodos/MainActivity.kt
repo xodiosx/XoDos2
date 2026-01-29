@@ -37,15 +37,28 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // ✅ APP GOES BACKGROUND
-    override fun onPause() {
-        super.onPause()
-        channel?.invokeMethod("appBackground", null)
-    }
+    // APP GOES BACKGROUND
+override fun onResume() {
+    super.onResume()
+    Log.d("XoDosLifecycle", "onResume → FOREGROUND")
 
-    // ✅ APP COMES FOREGROUND
-    override fun onResume() {
-        super.onResume()
-        channel?.invokeMethod("appForeground", null)
+    flutterEngine?.dartExecutor?.binaryMessenger?.let {
+        MethodChannel(it, "app.lifecycle").invokeMethod(
+            "foreground",
+            true
+        )
     }
+}
+
+override fun onPause() {
+    super.onPause()
+    Log.d("XoDosLifecycle", "onPause → BACKGROUND")
+
+    flutterEngine?.dartExecutor?.binaryMessenger?.let {
+        MethodChannel(it, "app.lifecycle").invokeMethod(
+            "foreground",
+            false
+        )
+    }
+}
 }
