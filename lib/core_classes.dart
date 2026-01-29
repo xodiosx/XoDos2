@@ -976,6 +976,9 @@ static Future<void> launchGUIBackend() async {
   }
   
 static Future<void> workflow() async {
+    if (Util.getGlobal("logcatEnabled") as bool) {
+    LogcatManager().startCapture();
+  }
 print('Foreground: ${AndroidAppState.isForeground}');
 if (!AndroidAppState.isForeground) {
 print('Foreground: ${AndroidAppState.isForeground}');
