@@ -31,7 +31,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   AndroidAppState.init();
-
+    if (Util.getGlobal("logcatEnabled") as bool) {
+    LogcatManager().startCapture();
+  }
   runApp(const MyApp());
 }
 class MyApp extends StatelessWidget {

@@ -84,7 +84,19 @@ class Util {
     Directory.fromRawPath(const Utf8Encoder().convert(dir)).createSync(recursive: true);
   }
 
-  static Future<int> execute(String str) async {
+static Future<int> execute(String str) async {
+  return await compute(_executeTask, str);
+}
+
+static Future<int> _executeTask(String cmd) async {
+  final pty = Pty.start("/system/bin/sh");
+  pty.write(const Utf8Encoder().convert("$cmd\nexit \$?\n"));
+  return await pty.exitCode;
+}
+
+
+
+  static Future<int> execute0(String str) async {
     Pty pty = Pty.start(
       "/system/bin/sh"
     );
@@ -444,10 +456,20 @@ class Workflow {
     );
     // patch.tar.xz contains the xodos folder with bionic rootfs
     // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
-    await Util.copyAsset(
-    "assets/patch.tar.xz",
-    "${G.dataPath}/patch.tar.xz",
-    );
+    // inside Workflow.setupBootstrap
+await Util.copyAsset(
+  "assets/patch.tar.xz",
+  "${G.dataPath}/patch.tar.xz",
+);
+
+// Wait for file to exist and not zero
+final patchFile = File("${G.dataPath}/patch.tar.xz");
+while (!await patchFile.exists() || await patchFile.length() == 0) {
+  await Future.delayed(const Duration(milliseconds: 200));
+}
+
+// Now start extraction safely
+
     
   /*  */
     
@@ -965,11 +987,7 @@ print('Foreground: ${AndroidAppState.isForeground}');
   
   // Setup audio first
   setupAudio();
-  
-    if (Util.getGlobal("logcatEnabled") as bool) {
-    LogcatManager().startCapture();
-  }
-  
+ 
   
   // Send virgl/venus server command to terminal BEFORE container starts
   await startGraphicsServerInTerminal();
