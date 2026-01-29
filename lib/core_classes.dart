@@ -955,9 +955,8 @@ static Future<void> launchGUIBackend() async {
   
 static Future<void> workflow() async {
 if (!AndroidAppState.isForeground) {
-      await Future.delayed(const Duration(seconds: 1));
-      continue;
-    }
+  return;
+}
   grantPermissions();
   await initData();
   await initTerminalForCurrent();
