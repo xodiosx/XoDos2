@@ -6,7 +6,7 @@ import com.google.android.material.color.DynamicColors
 import me.weishu.reflection.Reflection
 import java.io.*
 
-class MainApplication : FlutterApplication() {
+class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
