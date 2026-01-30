@@ -27,13 +27,10 @@ import 'dialogs.dart'; // ← ADD THIS IMPORT
 import 'package:xodos/l10n/app_localizations.dart';
 import 'backup_restore_dialog.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-//  AndroidAppState.init();
-
+void main() {
   runApp(const MyApp());
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 

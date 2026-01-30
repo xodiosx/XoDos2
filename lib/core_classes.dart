@@ -39,31 +39,6 @@ import 'constants.dart';
 import 'default_values.dart';
 // DXVK Installer Class
 
-/////////
-
-
-
-class AndroidAppState {
-  /// False by default – Kotlin will flip it
-  static bool isForeground = false;
-
-  static const MethodChannel _channel =
-      MethodChannel('app.lifecycle');
-
-  /// Call ONCE at app startup
-  static void init() {
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'foreground') {
-        isForeground = call.arguments as bool;
-        debugPrint(
-          'AndroidAppState → isForeground = $isForeground',
-        );
-      }
-    });
-  }
-}
-
-
 class Util {
 
   static Future<void> copyAsset2(String src, String dst) async {
@@ -88,19 +63,7 @@ class Util {
     Directory.fromRawPath(const Utf8Encoder().convert(dir)).createSync(recursive: true);
   }
 
-static Future<int> execute(String str) async {
-  return await compute(_executeTask, str);
-}
-
-static Future<int> _executeTask(String cmd) async {
-  final pty = Pty.start("/system/bin/sh");
-  pty.write(const Utf8Encoder().convert("$cmd\nexit \$?\n"));
-  return await pty.exitCode;
-}
-
-
-
-  static Future<int> execute0(String str) async {
+  static Future<int> execute(String str) async {
     Pty pty = Pty.start(
       "/system/bin/sh"
     );
@@ -403,8 +366,7 @@ static VoidCallback? onExtractionComplete;
   
   static late final String dataPath;
   static Pty? audioPty;
-    static WebViewController? controller;
-//  static late WebViewController controller;
+  static late WebViewController controller;
   static late BuildContext homePageStateContext;
   static late int currentContainer; // Currently running which container
   static late Map<int, TermPty> termPtys; // Store TermPty data for container<int>
@@ -461,20 +423,10 @@ class Workflow {
     );
     // patch.tar.xz contains the xodos folder with bionic rootfs
     // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
-    // inside Workflow.setupBootstrap
-await Util.copyAsset(
-  "assets/patch.tar.xz",
-  "${G.dataPath}/patch.tar.xz",
-);
-
-// Wait for file to exist and not zero
-final patchFile = File("${G.dataPath}/patch.tar.xz");
-while (!await patchFile.exists() || await patchFile.length() == 0) {
-  await Future.delayed(const Duration(milliseconds: 200));
-}
-
-// Now start extraction safely
-
+    await Util.copyAsset(
+    "assets/patch.tar.xz",
+    "${G.dataPath}/patch.tar.xz",
+    );
     
   /*  */
     
@@ -941,42 +893,32 @@ static Future<void> launchGUIBackend() async {
   }
 
   static Future<void> launchBrowser() async {
-  // 🔥 CREATE WebView HERE (not earlier)
-  G.controller ??= WebViewController()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted);
-
-  await G.controller!.loadRequest(
-    Uri.parse(Util.getCurrentProp("vncUrl")),
-  );
-
-  Navigator.push(
-    G.homePageStateContext,
-    MaterialPageRoute(
-      builder: (context) {
-        return Focus(
-          onKeyEvent: (node, event) {
-            if (!kIsWeb) {
-              if ({
-                LogicalKeyboardKey.arrowLeft,
-                LogicalKeyboardKey.arrowRight,
-                LogicalKeyboardKey.arrowUp,
-                LogicalKeyboardKey.arrowDown,
-                LogicalKeyboardKey.tab,
-              }.contains(event.logicalKey)) {
-                return KeyEventResult.skipRemainingHandlers;
-              }
+    G.controller.loadRequest(Uri.parse(Util.getCurrentProp("vncUrl")));
+    Navigator.push(G.homePageStateContext, MaterialPageRoute(builder: (context) {
+      return Focus(
+        onKeyEvent: (node, event) {
+          // Allow webview to handle cursor keys. Without this, the
+          // arrow keys seem to get "eaten" by Flutter and therefore
+          // never reach the webview.
+          // (https://github.com/flutter/flutter/issues/102505).
+          if (!kIsWeb) {
+            if ({
+              LogicalKeyboardKey.arrowLeft,
+              LogicalKeyboardKey.arrowRight,
+              LogicalKeyboardKey.arrowUp,
+              LogicalKeyboardKey.arrowDown,
+              LogicalKeyboardKey.tab
+            }.contains(event.logicalKey)) {
+              return KeyEventResult.skipRemainingHandlers;
             }
-            return KeyEventResult.ignored;
-          },
-          child: GestureDetector(
-            onSecondaryTap: () {},
-            child: WebViewWidget(controller: G.controller!),
-          ),
-        );
-      },
-    ),
-  );
-}
+          }
+          return KeyEventResult.ignored;
+        },
+        child: GestureDetector(onSecondaryTap: () {
+        }, child: WebViewWidget(controller: G.controller))
+      );
+    }));
+  }
 
   static Future<void> launchAvnc() async {
     await AvncFlutter.launchUsingUri(Util.getCurrentProp("vncUri") as String, resizeRemoteDesktop: Util.getGlobal("avncResizeDesktop") as bool, resizeRemoteDesktopScaleFactor: pow(4, Util.getGlobal("avncScaleFactor") as double).toDouble());
@@ -991,27 +933,19 @@ static Future<void> launchGUIBackend() async {
   }
   
 static Future<void> workflow() async {
-
-
-
   grantPermissions();
   await initData();
   await initTerminalForCurrent();
   
-  
-    if (Util.getGlobal("logcatEnabled") as bool) {
+      if (Util.getGlobal("logcatEnabled") as bool) {
     LogcatManager().startCapture();
-  }  
-  
-  print('Foreground: ${AndroidAppState.isForeground}');
-if (!AndroidAppState.isForeground) {
-  debugPrint("App in background, aborting operation");
-  return;
-}
+  }
+
   
   // Setup audio first
   setupAudio();
- 
+  
+  
   
   // Send virgl/venus server command to terminal BEFORE container starts
   await startGraphicsServerInTerminal();
