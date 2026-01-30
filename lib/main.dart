@@ -30,7 +30,7 @@ import 'backup_restore_dialog.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  AndroidAppState.init();
+//  AndroidAppState.init();
 
   runApp(const MyApp());
 }

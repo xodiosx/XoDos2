@@ -29,9 +29,9 @@ import 'package:xodos/l10n/app_localizations.dart';
 
 // Add the missing MyHomePage class at the TOP of the file:
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
   final String title;
+
+  const MyHomePage({super.key, required this.title});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -40,18 +40,21 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   bool bannerAdsFailedToLoad = false;
   bool isLoadingComplete = false;
+  bool isWorkflowRunning = false;
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration.zero,() {
-      _initializeWorkflow();
-    });
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: []);
   }
 
-  Future<void> _initializeWorkflow() async {
+  Future<void> _startWorkflow() async {
+    if (isWorkflowRunning) return;
+    setState(() => isWorkflowRunning = true);
+
+    await AndroidAppState.init(); // heavy init
     await Workflow.workflow();
+
     if (mounted) {
       setState(() {
         isLoadingComplete = true;
@@ -117,6 +120,55 @@ class _MyHomePageState extends State<MyHomePage> {
                   );
                 },
               )
+            : Center(
+                child: SizedBox(
+                  width: 260,
+                  height: 80,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: _startWorkflow,
+                    child: isWorkflowRunning
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                          )
+                        : const Text("START"),
+                  ),
+                ),
+              ),
+        bottomNavigationBar: ValueListenableBuilder(
+          valueListenable: G.pageIndex,
+          builder: (context, value, child) {
+            return Visibility(
+              visible: isLoadingComplete,
+              child: NavigationBar(
+                selectedIndex: G.pageIndex.value,
+                destinations: [
+                  NavigationDestination(
+                      icon: const Icon(Icons.monitor),
+                      label: AppLocalizations.of(context)!.terminal),
+                  NavigationDestination(
+                      icon: const Icon(Icons.video_settings),
+                      label: AppLocalizations.of(context)!.control),
+                ],
+                onDestinationSelected: (index) {
+                  G.pageIndex.value = index;
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
             : const LoadingPage(),
         bottomNavigationBar: ValueListenableBuilder(
           valueListenable: G.pageIndex,
