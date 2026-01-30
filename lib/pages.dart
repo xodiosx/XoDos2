@@ -30,7 +30,6 @@ import 'package:xodos/l10n/app_localizations.dart';
 // Add the missing MyHomePage class at the TOP of the file:
 class MyHomePage extends StatefulWidget {
   final String title;
-
   const MyHomePage({super.key, required this.title});
 
   @override
@@ -38,28 +37,34 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool bannerAdsFailedToLoad = false;
   bool isLoadingComplete = false;
   bool isWorkflowRunning = false;
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: []);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky,
+      overlays: [],
+    );
   }
 
   Future<void> _startWorkflow() async {
     if (isWorkflowRunning) return;
-    setState(() => isWorkflowRunning = true);
 
-    await AndroidAppState.init(); // heavy init
+    setState(() {
+      isWorkflowRunning = true;
+    });
+
+    // init is sync
+    AndroidAppState.init();
+
     await Workflow.workflow();
 
-    if (mounted) {
-      setState(() {
-        isLoadingComplete = true;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      isLoadingComplete = true;
+    });
   }
 
   @override
@@ -69,18 +74,24 @@ class _MyHomePageState extends State<MyHomePage> {
     return RTLWrapper(
       child: Scaffold(
         appBar: AppBar(
-          title: Text(isLoadingComplete ? Util.getCurrentProp("name") : widget.title),
+          title: Text(
+            isLoadingComplete
+                ? Util.getCurrentProp("name")
+                : widget.title,
+          ),
         ),
+
+        // ---------------- BODY ----------------
         body: isLoadingComplete
-            ? ValueListenableBuilder(
+            ? ValueListenableBuilder<int>(
                 valueListenable: G.pageIndex,
                 builder: (context, value, child) {
                   return IndexedStack(
-                    index: G.pageIndex.value,
-                    children: const [
+                    index: value,
+                    children: [
                       TerminalPage(),
                       Padding(
-                        padding: EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(8),
                         child: AspectRatioMax1To1(
                           child: Scrollbar(
                             child: SingleChildScrollView(
@@ -88,22 +99,22 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: Column(
                                 children: [
                                   Padding(
-                                    padding: EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(16),
                                     child: FractionallySizedBox(
                                       widthFactor: 0.4,
-                                      child: Image(image: AssetImage("images/icon.png")),
+                                      child: Image.asset("images/icon.png"),
                                     ),
                                   ),
                                   FastCommands(),
                                   Padding(
-                                    padding: EdgeInsets.all(8),
+                                    padding: const EdgeInsets.all(8),
                                     child: Card(
                                       child: Padding(
-                                        padding: EdgeInsets.all(8),
+                                        padding: const EdgeInsets.all(8),
                                         child: Column(
                                           children: [
                                             SettingPage(),
-                                            SizedBox.square(dimension: 8),
+                                            const SizedBox.square(dimension: 8),
                                             InfoPage(openFirstInfo: false),
                                           ],
                                         ),
@@ -125,6 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: 260,
                   height: 80,
                   child: ElevatedButton(
+                    onPressed: _startWorkflow,
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -134,65 +146,41 @@ class _MyHomePageState extends State<MyHomePage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onPressed: _startWorkflow,
                     child: isWorkflowRunning
-                        ? const CircularProgressIndicator(
-                            color: Colors.white,
-                          )
+                        ? const CircularProgressIndicator(color: Colors.white)
                         : const Text("START"),
                   ),
                 ),
               ),
-        bottomNavigationBar: ValueListenableBuilder(
-          valueListenable: G.pageIndex,
-          builder: (context, value, child) {
-            return Visibility(
-              visible: isLoadingComplete,
-              child: NavigationBar(
-                selectedIndex: G.pageIndex.value,
-                destinations: [
-                  NavigationDestination(
-                      icon: const Icon(Icons.monitor),
-                      label: AppLocalizations.of(context)!.terminal),
-                  NavigationDestination(
-                      icon: const Icon(Icons.video_settings),
-                      label: AppLocalizations.of(context)!.control),
-                ],
-                onDestinationSelected: (index) {
-                  G.pageIndex.value = index;
-                },
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-            : const LoadingPage(),
-        bottomNavigationBar: ValueListenableBuilder(
-          valueListenable: G.pageIndex,
-          builder: (context, value, child) {
-            return Visibility(
-              visible: isLoadingComplete,
-              child: NavigationBar(
-                selectedIndex: G.pageIndex.value,
-                destinations: [
-                  NavigationDestination(icon: const Icon(Icons.monitor), label: AppLocalizations.of(context)!.terminal),
-                  NavigationDestination(icon: const Icon(Icons.video_settings), label: AppLocalizations.of(context)!.control),
-                ],
-                onDestinationSelected: (index) {
-                  G.pageIndex.value = index;
-                },
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
 
+        // ---------------- NAV BAR ----------------
+        bottomNavigationBar: isLoadingComplete
+            ? ValueListenableBuilder<int>(
+                valueListenable: G.pageIndex,
+                builder: (context, value, child) {
+                  return NavigationBar(
+                    selectedIndex: value,
+                    onDestinationSelected: (index) {
+                      G.pageIndex.value = index;
+                    },
+                    destinations: [
+                      NavigationDestination(
+                        icon: const Icon(Icons.monitor),
+                        label: AppLocalizations.of(context)!.terminal,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.video_settings),
+                        label: AppLocalizations.of(context)!.control,
+                      ),
+                    ],
+                  );
+                },
+              )
+            : null,
+      ),
+    );
+  }
+}
 //
 // Setting Page
 class SettingPage extends StatefulWidget {
