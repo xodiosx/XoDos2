@@ -403,7 +403,8 @@ static VoidCallback? onExtractionComplete;
   
   static late final String dataPath;
   static Pty? audioPty;
-  static late WebViewController controller;
+    static WebViewController? controller;
+//  static late WebViewController controller;
   static late BuildContext homePageStateContext;
   static late int currentContainer; // Currently running which container
   static late Map<int, TermPty> termPtys; // Store TermPty data for container<int>
@@ -940,32 +941,42 @@ static Future<void> launchGUIBackend() async {
   }
 
   static Future<void> launchBrowser() async {
-    G.controller.loadRequest(Uri.parse(Util.getCurrentProp("vncUrl")));
-    Navigator.push(G.homePageStateContext, MaterialPageRoute(builder: (context) {
-      return Focus(
-        onKeyEvent: (node, event) {
-          // Allow webview to handle cursor keys. Without this, the
-          // arrow keys seem to get "eaten" by Flutter and therefore
-          // never reach the webview.
-          // (https://github.com/flutter/flutter/issues/102505).
-          if (!kIsWeb) {
-            if ({
-              LogicalKeyboardKey.arrowLeft,
-              LogicalKeyboardKey.arrowRight,
-              LogicalKeyboardKey.arrowUp,
-              LogicalKeyboardKey.arrowDown,
-              LogicalKeyboardKey.tab
-            }.contains(event.logicalKey)) {
-              return KeyEventResult.skipRemainingHandlers;
+  // 🔥 CREATE WebView HERE (not earlier)
+  G.controller ??= WebViewController()
+    ..setJavaScriptMode(JavaScriptMode.unrestricted);
+
+  await G.controller!.loadRequest(
+    Uri.parse(Util.getCurrentProp("vncUrl")),
+  );
+
+  Navigator.push(
+    G.homePageStateContext,
+    MaterialPageRoute(
+      builder: (context) {
+        return Focus(
+          onKeyEvent: (node, event) {
+            if (!kIsWeb) {
+              if ({
+                LogicalKeyboardKey.arrowLeft,
+                LogicalKeyboardKey.arrowRight,
+                LogicalKeyboardKey.arrowUp,
+                LogicalKeyboardKey.arrowDown,
+                LogicalKeyboardKey.tab,
+              }.contains(event.logicalKey)) {
+                return KeyEventResult.skipRemainingHandlers;
+              }
             }
-          }
-          return KeyEventResult.ignored;
-        },
-        child: GestureDetector(onSecondaryTap: () {
-        }, child: WebViewWidget(controller: G.controller))
-      );
-    }));
-  }
+            return KeyEventResult.ignored;
+          },
+          child: GestureDetector(
+            onSecondaryTap: () {},
+            child: WebViewWidget(controller: G.controller!),
+          ),
+        );
+      },
+    ),
+  );
+}
 
   static Future<void> launchAvnc() async {
     await AvncFlutter.launchUsingUri(Util.getCurrentProp("vncUri") as String, resizeRemoteDesktop: Util.getGlobal("avncResizeDesktop") as bool, resizeRemoteDesktopScaleFactor: pow(4, Util.getGlobal("avncScaleFactor") as double).toDouble());
