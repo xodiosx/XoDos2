@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/gestures.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:clipboard/clipboard.dart';
@@ -274,3 +274,184 @@ RawGestureDetector forceScaleGestureDetector({
     child: child,
   );
 }
+
+
+
+
+
+class ExtractionManager {
+  static const String _extractionCompleteKey = 'extraction_complete';
+  static const String _extractionProgressTKey = 'extraction_progress_t';
+
+  static Future<bool> isExtractionComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_extractionCompleteKey) ?? false;
+  }
+
+  static Future<void> setExtractionComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_extractionCompleteKey, true);
+  }
+
+  static Future<double> getExtractionProgressT() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_extractionProgressTKey) ?? 0.0;
+  }
+
+  static Future<void> setExtractionProgressT(double progressT) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_extractionProgressTKey, progressT);
+  }
+
+  static Future<double> getExtractionProgress() async {
+    if (await isExtractionComplete()) return 1.0;
+    
+    final progressT = await getExtractionProgressT();
+    final progress = 1 - pow(10, progressT / -300).toDouble();
+    
+    return progress.clamp(0.0, 1.0);
+  }
+}
+
+// In spirited_mini_games.dart - Updated ExtractionProgressCircle
+// Updated ExtractionProgressCircle 
+
+// Updated ExtractionProgressCircle in spirited_mini_games.dart
+class ExtractionProgressCircle extends StatefulWidget {
+  const ExtractionProgressCircle({super.key});
+
+  @override
+  State<ExtractionProgressCircle> createState() => _ExtractionProgressCircleState();
+}
+
+class _ExtractionProgressCircleState extends State<ExtractionProgressCircle> {
+  double _progress = 0;
+  Timer? _progressTimer;
+  bool _showCircle = false;
+  bool _extractionComplete = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeExtraction();
+  }
+
+  void _initializeExtraction() async {
+    // Check if extraction is already complete
+    _extractionComplete = await ExtractionManager.isExtractionComplete();
+    
+    if (_extractionComplete) {
+      // Don't show circle if already completed
+      return;
+    }
+
+    // Show circle and start progress updates
+    setState(() {
+      _showCircle = true;
+    });
+
+    // Start checking progress updates
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      final progress = await ExtractionManager.getExtractionProgress();
+      final complete = await ExtractionManager.isExtractionComplete();
+      
+      if (mounted) {
+        setState(() {
+          _progress = progress;
+          _extractionComplete = complete;
+        });
+        
+        // Hide circle when complete
+        if (complete && _showCircle) {
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                _showCircle = false;
+              });
+            }
+          });
+          _progressTimer?.cancel();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _progressTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_showCircle || _extractionComplete) {
+      return const SizedBox.shrink();
+    }
+
+    final percentage = (_progress * 100).toStringAsFixed(0);
+    
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 10,
+      right: 20,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.9),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.green, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.7),
+              blurRadius: 12,
+              spreadRadius: 3,
+            ),
+          ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CircularProgressIndicator(
+              value: _progress,
+              backgroundColor: Colors.grey[800],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                _progress > 0.8 ? Colors.green : 
+                _progress > 0.5 ? Colors.blue : 
+                Colors.orange
+              ),
+              strokeWidth: 3,
+            ),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$percentage%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      height: 1.1,
+                    ),
+                  ),
+                  const Text(
+                    'loading,,',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 6,
+                      fontWeight: FontWeight.bold,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
