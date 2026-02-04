@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tc_app_name">XoDos</string>
+    <string name="tc_app_name">XoDos:Re</string>
 
     <string name="tc_s9a_error_message">Terminal terminated abnormally with signal 9. This error is caused by Android 12+ system limiting the number of child processes and requires manual removal of the restriction.</string>
     <string name="tc_s9a_kaomoji">:(</string>

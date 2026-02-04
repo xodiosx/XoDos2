@@ -8,58 +8,28 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
-
-    private val CHANNEL = "android"
-    private var channel: MethodChannel? = null
+class MainActivity: FlutterActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-
-        channel = MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            CHANNEL
-        )
-
-        channel?.setMethodCallHandler { call, result ->
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "android").setMethodCallHandler {
+            // 
+            call, result ->
+            // 
             when (call.method) {
-
                 "launchSignal9Page" -> {
                     startActivity(Intent(this, Signal9Activity::class.java))
                     result.success(0)
                 }
-
                 "getNativeLibraryPath" -> {
-                    result.success(applicationInfo.nativeLibraryDir)
+                    result.success(getApplicationInfo().nativeLibraryDir)
                 }
-
-                else -> result.notImplemented()
+                else -> {
+                    // 
+                    result.notImplemented()
+                }
             }
         }
     }
 
-    // APP GOES BACKGROUND
-override fun onResume() {
-    super.onResume()
-    Log.d("XoDosLifecycle", "onResume → FOREGROUND")
-
-    flutterEngine?.dartExecutor?.binaryMessenger?.let {
-        MethodChannel(it, "app.lifecycle").invokeMethod(
-            "foreground",
-            true
-        )
-    }
-}
-
-override fun onPause() {
-    super.onPause()
-    Log.d("XoDosLifecycle", "onPause → BACKGROUND")
-
-    flutterEngine?.dartExecutor?.binaryMessenger?.let {
-        MethodChannel(it, "app.lifecycle").invokeMethod(
-            "foreground",
-            false
-        )
-    }
-}
 }
