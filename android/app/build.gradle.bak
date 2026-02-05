@@ -29,7 +29,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.com.xodos"
+    namespace "com.xodos"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion "27.0.12077973"  // flutter.ndkVersion
 
