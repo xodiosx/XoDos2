@@ -146,34 +146,13 @@ class Util {
 
 
 
-  static dynamic getCurrentProp(String key) {
-  dynamic m = jsonDecode(Util.getGlobal("containersInfo")[G.currentContainer]);
-  
-  // For language-dependent properties, always get fresh data
-  if (key == "groupedCommands" || key == "groupedWineCommands" || key == "commands") {
-    try {
-      final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
-      
-      switch (key) {
-        case "groupedCommands":
-          return LanguageManager.getGroupedCommandsForLanguage(languageCode);
-        case "groupedWineCommands":
-          return LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
-        case "commands":
-          return LanguageManager.getCommandsForLanguage(languageCode);
-      }
-    } catch (e) {
-      // Fallback to stored data
-      if (m.containsKey(key)) return m[key];
+ static dynamic getCurrentProp(String key) {
+    dynamic m = jsonDecode(Util.getGlobal("containersInfo")[G.currentContainer]);
+    if (m.containsKey(key)) {
+      return m[key];
     }
-  }
-  
-  if (m.containsKey(key)) {
-    return m[key];
-  }
-  
     switch (key) {
-      case "name" : return (value){addCurrentProp(key, value); return value;}("XoDos Rebrirh");
+      case "name" : return (value){addCurrentProp(key, value); return value;}("XoDos Debian");
       case "boot" : return (value){addCurrentProp(key, value); return value;}(D.boot);
       case "vnc" : return (value){addCurrentProp(key, value); return value;}("startnovnc &");
       case "vncUrl" : return (value){addCurrentProp(key, value); return value;}("http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678");
