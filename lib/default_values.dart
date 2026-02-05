@@ -18,39 +18,58 @@ class D {
   ];
 
   // Default quick commands
-  static const commands = [{"name":"Check for updates and upgrade", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"View system information", "command":"neofetch -L && neofetch --off"},
-    {"name":"Clear screen", "command":"clear"},
-    {"name":"Interrupt task", "command":"\x03"},
-    {"name":"Install graphics software Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"Uninstall Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"Install video editing software Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"Uninstall Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"Install scientific computing software Octave", "command":"sudo apt update && sudo apt install -y octave"},
-    {"name":"Uninstall Octave", "command":"sudo apt autoremove --purge -y octave"},
-    {"name":"Install WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+  static const commands = [
+    {"name":"检查更新并升级", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+    {"name":"显示系统信息", "command":"neofetch -L && neofetch --off"},
+    {"name":"清屏", "command":"clear"},
+    {"name":"中断任务", "command":"\x03"},
+    {"name":"安装图形软件 Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
+    {"name":"卸载 Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
+    {"name":"安装视频编辑软件 Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
+    {"name":"卸载 Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
+    {"name":"安装科学计算软件 Octave", "command":"sudo apt update && sudo apt install -y octave"},
+    {"name":"卸载 Octave", "command":"sudo apt autoremove --purge -y octave"},
+    {"name":"安装 WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
 wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
 EOF
 rm /tmp/wps.deb"""},
-    {"name":"Uninstall WPS", "command":"sudo apt autoremove --purge -y wps-office"},
-    {"name":"Install CAJViewer", "command":"wget https://download.cnki.net/net.cnki.cajviewer_1.3.20-1_arm64.deb -O /tmp/caj.deb && sudo apt update && sudo apt install -y /tmp/caj.deb && bash /home/tiny/.local/share/tiny/caj/postinst; rm /tmp/caj.deb"},
-    {"name":"Uninstall CAJViewer", "command":"sudo apt autoremove --purge -y net.cnki.cajviewer && bash /home/tiny/.local/share/tiny/caj/postrm"},
-    {"name":"Install EdrawMax", "command":"wget https://cc-download.wondershare.cc/business/prd/edrawmax_13.1.0-1_arm64_binner.deb -O /tmp/edraw.deb && sudo apt update && sudo apt install -y /tmp/edraw.deb && bash /home/tiny/.local/share/tiny/edraw/postinst; rm /tmp/edraw.deb"},
-    {"name":"Uninstall EdrawMax", "command":"sudo apt autoremove --purge -y edrawmax libldap-2.4-2"},
-    {"name":"Install QQ", "command":"""wget \$(curl -s https://im.qq.com/rainbow/linuxQQDownload | grep -oP '"armDownloadUrl":{[^}]*"deb":"\\K[^"]+') -O /tmp/qq.deb && sudo apt update && sudo apt install -y /tmp/qq.deb && sed -i 's#Exec=/opt/QQ/qq %U#Exec=/opt/QQ/qq --no-sandbox %U#g' /usr/share/applications/qq.desktop; rm /tmp/qq.deb"""},
-    {"name":"Uninstall QQ", "command":"sudo apt autoremove --purge -y linuxqq"},
-    {"name":"Install WeChat", "command":"wget https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb -O /tmp/wechat.deb && sudo apt update && sudo apt install -y /tmp/wechat.deb && echo 'Installation complete. If you only use WeChat for file transfer, consider using a file manager that supports SAF (e.g., Material Files) to directly access all files in xodos.'; rm /tmp/wechat.deb"},
-    {"name":"Uninstall WeChat", "command":"sudo apt autoremove --purge -y wechat"},
-    {"name":"Install DingTalk", "command":"""wget \$(curl -sw %{redirect_url} https://www.dingtalk.com/win/d/qd=linux_arm64) -O /tmp/dingtalk.deb && sudo apt update && sudo apt install -y /tmp/dingtalk.deb libglut3.12 libglu1-mesa && sed -i 's#\\./com.alibabainc.dingtalk#\\./com.alibabainc.dingtalk --no-sandbox#g' /opt/apps/com.alibabainc.dingtalk/files/Elevator.sh; rm /tmp/dingtalk.deb"""},
-    {"name":"Uninstall DingTalk", "command":"sudo apt autoremove --purge -y com.alibabainc.dingtalk"},
-    {"name":"Enable Recycle Bin", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Installation complete, restart the app to use Recycle Bin.'"},
-    {"name":"Clean package manager cache", "command":"sudo apt clean"},
-    {"name":"Shutdown", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"卸载 WPS", "command":"sudo apt autoremove --purge -y wps-office"},
+    {"name":"安装 Legcord (轻量级 Discord)", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/legcord.deb
+wget https://github.com/Legcord/Legcord/releases/download/v1.2.1/Legcord-1.2.1-linux-arm64.deb -O /tmp/legcord.deb
+EOF
+rm /tmp/legcord.deb"""},
+    {"name":"卸载 Legcord", "command":"sudo apt autoremove --purge -y legcord"},
+    {"name":"安装 Dorion (Discord Lite)", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/dorion.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/discord-lite-1.0.0/Dorion_6.12.0_arm64.deb -O /tmp/dorion.deb
+EOF
+rm /tmp/dorion.deb"""},
+    {"name":"卸载 Dorion", "command":"sudo apt autoremove --purge -y dorion"},
+    {"name":"安装 WhatsApp", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/whatsapp.deb
+wget https://github.com/cycool29/whatsapp-for-linux/releases/download/47.0/whatsapp_47.0_arm64.deb -O /tmp/whatsapp.deb
+EOF
+rm /tmp/whatsapp.deb"""},
+    {"name":"卸载 WhatsApp", "command":"sudo apt autoremove --purge -y whatsapp"},
+    {"name":"安装 Telegram Desktop", "command":"sudo apt update && sudo apt install -y telegram-desktop"},
+    {"name":"卸载 Telegram Desktop", "command":"sudo apt autoremove --purge -y telegram-desktop"},
+    {"name":"安装 CAJViewer", "command":"wget https://download.cnki.net/net.cnki.cajviewer_1.3.20-1_arm64.deb -O /tmp/caj.deb && sudo apt update && sudo apt install -y /tmp/caj.deb && bash /home/tiny/.local/share/tiny/caj/postinst; rm /tmp/caj.deb"},
+    {"name":"卸载 CAJViewer", "command":"sudo apt autoremove --purge -y net.cnki.cajviewer && bash /home/tiny/.local/share/tiny/caj/postrm"},
+    {"name":"安装 EdrawMax", "command":"wget https://cc-download.wondershare.cc/business/prd/edrawmax_13.1.0-1_arm64_binner.deb -O /tmp/edraw.deb && sudo apt update && sudo apt install -y /tmp/edraw.deb && bash /home/tiny/.local/share/tiny/edraw/postinst; rm /tmp/edraw.deb"},
+    {"name":"卸载 EdrawMax", "command":"sudo apt autoremove --purge -y edrawmax libldap-2.4-2"},
+    {"name":"安装 QQ", "command":"""wget \$(curl -s https://im.qq.com/rainbow/linuxQQDownload | grep -oP '"armDownloadUrl":{[^}]*"deb":"\\K[^"]+') -O /tmp/qq.deb && sudo apt update && sudo apt install -y /tmp/qq.deb && sed -i 's#Exec=/opt/QQ/qq %U#Exec=/opt/QQ/qq --no-sandbox %U#g' /usr/share/applications/qq.desktop; rm /tmp/qq.deb"""},
+    {"name":"卸载 QQ", "command":"sudo apt autoremove --purge -y linuxqq"},
+    {"name":"安装 WeChat", "command":"wget https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb -O /tmp/wechat.deb && sudo apt update && sudo apt install -y /tmp/wechat.deb && echo 'Installation complete. If you only use WeChat for file transfer, consider using a file manager that supports SAF (e.g., Material Files) to directly access all files in xodos.'; rm /tmp/wechat.deb"},
+    {"name":"卸载 WeChat", "command":"sudo apt autoremove --purge -y wechat"},
+    {"name":"安装 DingTalk", "command":"""wget \$(curl -sw %{redirect_url} https://www.dingtalk.com/win/d/qd=linux_arm64) -O /tmp/dingtalk.deb && sudo apt update && sudo apt install -y /tmp/dingtalk.deb libglut3.12 libglu1-mesa && sed -i 's#\\./com.alibabainc.dingtalk#\\./com.alibabainc.dingtalk --no-sandbox#g' /opt/apps/com.alibabainc.dingtalk/files/Elevator.sh; rm /tmp/dingtalk.deb"""},
+    {"name":"卸载 DingTalk", "command":"sudo apt autoremove --purge -y com.alibabainc.dingtalk"},
+    {"name":"启用回收站", "command":"sudo apt update && sudo apt install -y gvfs && echo '安装完成，重启应用以使用回收站。'"},
+    {"name":"清理包管理器缓存", "command":"sudo apt clean"},
+    {"name":"关机", "command":"stopvnc\nexit\nexit"},
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
   // Default quick commands, English version
-  static const commands4En = [{"name":"Update Packages", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
+  static const commands4En = [
+    {"name":"Update Packages", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
     {"name":"System Info", "command":"neofetch -L && neofetch --off"},
     {"name":"Clear", "command":"clear"},
     {"name":"Interrupt", "command":"\x03"},
@@ -65,42 +84,61 @@ wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.
 EOF
 rm /tmp/wps.deb"""},
     {"name":"Uninstall WPS", "command":"sudo apt autoremove --purge -y wps-office"},
+    {"name":"Install Legcord (Lightweight Discord)", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/legcord.deb
+wget https://github.com/Legcord/Legcord/releases/download/v1.2.1/Legcord-1.2.1-linux-arm64.deb -O /tmp/legcord.deb
+EOF
+rm /tmp/legcord.deb"""},
+    {"name":"Uninstall Legcord", "command":"sudo apt autoremove --purge -y legcord"},
+    {"name":"Install Dorion (Discord Lite)", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/dorion.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/discord-lite-1.0.0/Dorion_6.12.0_arm64.deb -O /tmp/dorion.deb
+EOF
+rm /tmp/dorion.deb"""},
+    {"name":"Uninstall Dorion", "command":"sudo apt autoremove --purge -y dorion"},
+    {"name":"Install WhatsApp", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/whatsapp.deb
+wget https://github.com/cycool29/whatsapp-for-linux/releases/download/47.0/whatsapp_47.0_arm64.deb -O /tmp/whatsapp.deb
+EOF
+rm /tmp/whatsapp.deb"""},
+    {"name":"Uninstall WhatsApp", "command":"sudo apt autoremove --purge -y whatsapp"},
+    {"name":"Install Telegram Desktop", "command":"sudo apt update && sudo apt install -y telegram-desktop"},
+    {"name":"Uninstall Telegram Desktop", "command":"sudo apt autoremove --purge -y telegram-desktop"},
     {"name":"Install EdrawMax", "command":"""wget https://cc-download.wondershare.cc/business/prd/edrawmax_13.1.0-1_arm64_binner.deb -O /tmp/edraw.deb && sudo apt update && sudo apt install -y /tmp/edraw.deb && bash /home/tiny/.local/share/tiny/edraw/postinst && sudo sed -i 's/<Language V="cn"\\/>/<Language V="en"\\/>/g' /opt/apps/edrawmax/config/settings.xml; rm /tmp/edraw.deb"""},
     {"name":"Uninstall EdrawMax", "command":"sudo apt autoremove --purge -y edrawmax libldap-2.4-2"},
     {"name":"Enable Recycle Bin", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Restart the app to use Recycle Bin.'"},
     {"name":"Clean Package Cache", "command":"sudo apt clean"},
     {"name":"Power Off", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
-  // Default wine  quick commands
-  static const wineCommands = [{"name":"wine Configuration", "command":"winecfg"},
-    {"name":"Fix square characters", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine  reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"Start Menu folder", "command":"wine  explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
-    {"name":"Enable DXVK", "command":"""WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d native /f >/dev/null 2>&1
+  // Default wine quick commands
+  static const wineCommands = [
+    {"name":"wine 配置", "command":"winecfg"},
+    {"name":"修复方块字符", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine  reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
+    {"name":"开始菜单文件夹", "command":"wine  explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
+    {"name":"删除 Wine", "command":"rm -rf /opt/wine"},
+    {"name":"启用 DXVK", "command":"""WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d9 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d10core /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d11 /d native /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=n,d3d9=n,d3d10core=n,d3d11=n,dxgi=n" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v dxgi /d native /f >/dev/null 2>&1"""},
-    {"name":"Disable DXVK", "command":"""WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d builtin /f >/dev/null 2>&1
+    {"name":"禁用 DXVK", "command":"""WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d8 /d builtin /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d9 /d builtin /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d10core /d builtin /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v d3d11 /d builtin /f >/dev/null 2>&1
 WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine  reg add 'HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides' /v dxgi /d builtin /f >/dev/null 2>&1"""},
-    {"name":"My Computer", "command":"wine  explorer"},
-    {"name":"Notepad", "command":"notepad"},
-    {"name":"Minesweeper", "command":"winemine"},
-    {"name":"Registry Editor", "command":"regedit"},
-    {"name":"Control Panel", "command":"wine  control"},
-    {"name":"File Manager", "command":"winefile"},
-    {"name":"Task Manager", "command":"wine  taskmgr"},
-    {"name":"IE Browser", "command":"wine  iexplore"},
-    {"name":"Force close Wine", "command":"wine server -k"}
+    {"name":"我的电脑", "command":"wine  explorer"},
+    {"name":"记事本", "command":"notepad"},
+    {"name":"扫雷", "command":"winemine"},
+    {"name":"注册表编辑器", "command":"regedit"},
+    {"name":"控制面板", "command":"wine  control"},
+    {"name":"文件管理器", "command":"winefile"},
+    {"name":"任务管理器", "command":"wine  taskmgr"},
+    {"name":"IE 浏览器", "command":"wine  iexplore"},
+    {"name":"强制关闭 Wine", "command":"wine server -k"}
   ];
 
-  // Default box64 /wine vquick commands, English version
-  static const wineCommands4En = [{"name":"wine Configuration", "command":"winecfg"},
+  // Default box64 /wine quick commands, English version
+  static const wineCommands4En = [
+    {"name":"wine Configuration", "command":"winecfg"},
     {"name":"Fix CJK Characters", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine  reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
     {"name":"Start Menu Dir", "command":"wine  explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
     {"name":"Remove Wine", "command":"rm -rf /opt/wine"},

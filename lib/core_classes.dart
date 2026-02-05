@@ -144,13 +144,36 @@ class Util {
       }
   }
 
+
+
   static dynamic getCurrentProp(String key) {
-    dynamic m = jsonDecode(Util.getGlobal("containersInfo")[G.currentContainer]);
-    if (m.containsKey(key)) {
-      return m[key];
+  dynamic m = jsonDecode(Util.getGlobal("containersInfo")[G.currentContainer]);
+  
+  // For language-dependent properties, always get fresh data
+  if (key == "groupedCommands" || key == "groupedWineCommands" || key == "commands") {
+    try {
+      final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
+      
+      switch (key) {
+        case "groupedCommands":
+          return LanguageManager.getGroupedCommandsForLanguage(languageCode);
+        case "groupedWineCommands":
+          return LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
+        case "commands":
+          return LanguageManager.getCommandsForLanguage(languageCode);
+      }
+    } catch (e) {
+      // Fallback to stored data
+      if (m.containsKey(key)) return m[key];
     }
+  }
+  
+  if (m.containsKey(key)) {
+    return m[key];
+  }
+  
     switch (key) {
-      case "name" : return (value){addCurrentProp(key, value); return value;}("XoDos Debian");
+      case "name" : return (value){addCurrentProp(key, value); return value;}("XoDos Rebrirh");
       case "boot" : return (value){addCurrentProp(key, value); return value;}(D.boot);
       case "vnc" : return (value){addCurrentProp(key, value); return value;}("startnovnc &");
       case "vncUrl" : return (value){addCurrentProp(key, value); return value;}("http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678");
@@ -598,7 +621,7 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
         await G.prefs.setBool("isStickyKey", false);
         await G.prefs.setBool("wakelock", true);
       }
-      await G.prefs.setBool("getifaddrsBridge", (await DeviceInfoPlugin().androidInfo).version.sdkInt >= 31);
+    //  await G.prefs.setBool("getifaddrsBridge", (await DeviceInfoPlugin().androidInfo).version.sdkInt >= 31);
     }
     G.currentContainer = Util.getGlobal("defaultContainer") as int;
 
@@ -1064,3 +1087,4 @@ echo "Virgl server started in background"
   
   
 }
+

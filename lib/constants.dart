@@ -136,19 +136,156 @@ class LanguageManager {
       case 'zh':
         return D.commands;
       case 'ja':
-        return _japaneseCommands;
+        return _getFullCommandSet([
+          _japaneseCommands[0],  // Update and upgrade
+          _japaneseCommands[1],  // System info
+          _japaneseCommands[2],  // Clear screen
+          _japaneseCommands[3],  // Interrupt task
+          _japaneseCommands[4],  // Install Krita
+          _japaneseCommands[5],  // Uninstall Krita
+          _japaneseCommands[6],  // Install Kdenlive
+          _japaneseCommands[7],  // Uninstall Kdenlive
+          _japaneseCommands[8],  // Install LibreOffice
+          _japaneseCommands[9],  // Uninstall LibreOffice
+          _japaneseCommands[10], // Install WPS
+          _japaneseCommands[11], // Uninstall WPS
+          _japaneseCommands[12], // Enable recycle bin
+          _japaneseCommands[13], // Clean package cache
+          _japaneseCommands[14], // Shutdown
+          _japaneseCommands[15], // matrix
+        ]);
       case 'ar':
-        return _arabicCommands;
+        return _getFullCommandSet([
+          _arabicCommands[0],    // Update and upgrade
+          _arabicCommands[1],    // System info
+          _arabicCommands[2],    // Clear screen
+          _arabicCommands[3],    // Interrupt task
+          _arabicCommands[4],    // Install Krita
+          _arabicCommands[5],    // Uninstall Krita
+          _arabicCommands[6],    // Install Kdenlive
+          _arabicCommands[7],    // Uninstall Kdenlive
+          _arabicCommands[8],    // Install LibreOffice
+          _arabicCommands[9],    // Uninstall LibreOffice
+          {"name":"تثبيت WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+EOF
+rm /tmp/wps.deb"""},
+          {"name":"إزالة WPS", "command":"sudo apt autoremove --purge -y wps-office"},
+          _arabicCommands[10],   // Enable recycle bin
+          _arabicCommands[11],   // Clean package cache
+          _arabicCommands[12],   // Shutdown
+          _arabicCommands[13],   // matrix
+        ]);
       case 'hi':
-        return _hindiCommands;
+        return _getFullCommandSet([
+          _hindiCommands[0],     // Update and upgrade
+          _hindiCommands[1],     // System info
+          _hindiCommands[2],     // Clear screen
+          _hindiCommands[3],     // Interrupt task
+          _hindiCommands[4],     // Install Krita
+          _hindiCommands[5],     // Uninstall Krita
+          _hindiCommands[6],     // Install Kdenlive
+          _hindiCommands[7],     // Uninstall Kdenlive
+          {"name":"LibreOffice इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y libreoffice"},
+          {"name":"LibreOffice अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y libreoffice"},
+          {"name":"WPS इंस्टॉल करें", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+EOF
+rm /tmp/wps.deb"""},
+          {"name":"WPS अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y wps-office"},
+          _hindiCommands[8],     // Enable recycle bin
+          _hindiCommands[9],     // Clean package cache
+          _hindiCommands[10],    // Shutdown
+          _hindiCommands[11],    // matrix
+        ]);
       case 'es':
-        return _spanishCommands;
+        return _getFullCommandSet([
+          _spanishCommands[0],   // Update and upgrade
+          _spanishCommands[1],   // System info
+          _spanishCommands[2],   // Clear screen
+          _spanishCommands[3],   // Interrupt task
+          _spanishCommands[4],   // Install Krita
+          _spanishCommands[5],   // Uninstall Krita
+          _spanishCommands[6],   // Install Kdenlive
+          _spanishCommands[7],   // Uninstall Kdenlive
+          {"name":"Instalar LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
+          {"name":"Desinstalar LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
+          {"name":"Instalar WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+EOF
+rm /tmp/wps.deb"""},
+          {"name":"Desinstalar WPS", "command":"sudo apt autoremove --purge -y wps-office"},
+          _spanishCommands[8],   // Enable recycle bin
+          _spanishCommands[9],   // Clean package cache
+          _spanishCommands[10],  // Shutdown
+          _spanishCommands[11],  // matrix
+        ]);
       case 'pt':
-        return _portugueseCommands;
+        return _getFullCommandSet([
+          _portugueseCommands[0], // Update and upgrade
+          _portugueseCommands[1], // System info
+          _portugueseCommands[2], // Clear screen
+          _portugueseCommands[3], // Interrupt task
+          _portugueseCommands[4], // Install Krita
+          _portugueseCommands[5], // Uninstall Krita
+          _portugueseCommands[6], // Install Kdenlive
+          _portugueseCommands[7], // Uninstall Kdenlive
+          {"name":"Instalar LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
+          {"name":"Desinstalar LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
+          {"name":"Instalar WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+EOF
+rm /tmp/wps.deb"""},
+          {"name":"Desinstalar WPS", "command":"sudo apt autoremove --purge -y wps-office"},
+          _portugueseCommands[8], // Enable recycle bin
+          _portugueseCommands[9], // Clean package cache
+          _portugueseCommands[10], // Shutdown
+          _portugueseCommands[11], // matrix
+        ]);
       case 'fr':
-        return _frenchCommands;
+        return _getFullCommandSet([
+          _frenchCommands[0],    // Update and upgrade
+          _frenchCommands[1],    // System info
+          _frenchCommands[2],    // Clear screen
+          _frenchCommands[3],    // Interrupt task
+          _frenchCommands[4],    // Install Krita
+          _frenchCommands[5],    // Uninstall Krita
+          _frenchCommands[6],    // Install Kdenlive
+          _frenchCommands[7],    // Uninstall Kdenlive
+          {"name":"Installer LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
+          {"name":"Désinstaller LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
+          {"name":"Installer WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+EOF
+rm /tmp/wps.deb"""},
+          {"name":"Désinstaller WPS", "command":"sudo apt autoremove --purge -y wps-office"},
+          _frenchCommands[8],    // Enable recycle bin
+          _frenchCommands[9],    // Clean package cache
+          _frenchCommands[10],   // Shutdown
+          _frenchCommands[11],   // matrix
+        ]);
       case 'ru':
-        return _russianCommands;
+        return _getFullCommandSet([
+          _russianCommands[0],   // Update and upgrade
+          _russianCommands[1],   // System info
+          _russianCommands[2],   // Clear screen
+          _russianCommands[3],   // Interrupt task
+          _russianCommands[4],   // Install Krita
+          _russianCommands[5],   // Uninstall Krita
+          _russianCommands[6],   // Install Kdenlive
+          _russianCommands[7],   // Uninstall Kdenlive
+          {"name":"Установить LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
+          {"name":"Удалить LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
+          {"name":"Установить WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
+wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
+EOF
+rm /tmp/wps.deb"""},
+          {"name":"Удалить WPS", "command":"sudo apt autoremove --purge -y wps-office"},
+          _russianCommands[8],   // Enable recycle bin
+          _russianCommands[9],   // Clean package cache
+          _russianCommands[10],  // Shutdown
+          _russianCommands[11],  // matrix
+        ]);
       default:
         return D.commands4En;
     }
@@ -177,6 +314,16 @@ class LanguageManager {
     }
   }
 
+  // Helper method to ensure all commands are present
+  static List<Map<String, String>> _getFullCommandSet(List<Map<String, String>> commands) {
+    // Ensure we have exactly 16 commands like the English version
+    if (commands.length == 16) {
+      return commands;
+    }
+    // If not, return the English commands as fallback
+    return D.commands4En;
+  }
+
   static Map<String, dynamic> getGroupedCommandsForLanguage(String languageCode) {
     final commands = getCommandsForLanguage(languageCode);
     
@@ -195,13 +342,13 @@ class LanguageManager {
       return !name.contains("install") && 
              !command.contains("install") && 
              !name.contains("enable") &&
-             name != "???" &&
+             name != "matrix" &&
              !name.contains("shutdown");
     }).toList();
     
     final systemCommands = commands.where((cmd) {
       final name = cmd["name"]?.toLowerCase() ?? "";
-      return name.contains("shutdown") || name == "???";
+      return name.contains("shutdown") || name == "matrix";
     }).toList();
     
     return {
@@ -253,7 +400,7 @@ rm /tmp/wps.deb"""},
     {"name":"ごみ箱を有効にする", "command":"sudo apt update && sudo apt install -y gvfs && echo 'インストール完了、アプリを再起動してごみ箱を使用してください。'"},
     {"name":"パッケージキャッシュをクリーン", "command":"sudo apt clean"},
     {"name":"シャットダウン", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
   // Arabic commands
@@ -271,7 +418,7 @@ rm /tmp/wps.deb"""},
     {"name":"تفعيل سلة المهملات", "command":"sudo apt update && sudo apt install -y gvfs && echo 'تم التثبيت، أعد تشغيل التطبيق لاستخدام سلة المهملات.'"},
     {"name":"تنظيف ذاكرة التخزين المؤقت", "command":"sudo apt clean"},
     {"name":"إيقاف التشغيل", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
   // Hindi commands
@@ -287,7 +434,7 @@ rm /tmp/wps.deb"""},
     {"name":"रीसाइकिल बिन सक्षम करें", "command":"sudo apt update && sudo apt install -y gvfs && echo 'इंस्टॉलेशन पूर्ण, रीसाइकिल बिन का उपयोग करने के लिए ऐप को पुनरारंभ करें।'"},
     {"name":"पैकेज कैश साफ करें", "command":"sudo apt clean"},
     {"name":"शटडाउन", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
   // Spanish commands
@@ -303,7 +450,7 @@ rm /tmp/wps.deb"""},
     {"name":"Habilitar papelera de reciclaje", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Instalación completa, reinicie la aplicación para usar la papelera de reciclaje.'"},
     {"name":"Limpiar caché de paquetes", "command":"sudo apt clean"},
     {"name":"Apagar", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
   // Portuguese commands
@@ -319,7 +466,7 @@ rm /tmp/wps.deb"""},
     {"name":"Habilitar lixeira", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Instalação completa, reinicie o aplicativo para usar a lixeira.'"},
     {"name":"Limpar cache de pacotes", "command":"sudo apt clean"},
     {"name":"Desligar", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
   // French commands
@@ -335,7 +482,7 @@ rm /tmp/wps.deb"""},
     {"name":"Activer la corbeille", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Installation terminée, redémarrez l\\'application pour utiliser la corbeille.'"},
     {"name":"Nettoyer le cache des paquets", "command":"sudo apt clean"},
     {"name":"Éteindre", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
   // Russian commands
@@ -351,7 +498,7 @@ rm /tmp/wps.deb"""},
     {"name":"Включить корзину", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Установка завершена, перезапустите приложение для использования корзины.'"},
     {"name":"Очистить кэш пакетов", "command":"sudo apt clean"},
     {"name":"Выключить", "command":"stopvnc\nexit\nexit"},
-    {"name":"???", "command":"timeout 8 cmatrix"}
+    {"name":"matrix", "command":"timeout 8 cmatrix"}
   ];
 
   // Wine commands for different languages (simplified versions)
