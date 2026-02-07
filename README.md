@@ -114,5 +114,9 @@ XoDos is being developed with passion and dedication by the XoDos developer team
 **support ❤️ and buy me ☕**
 https://buymeacoffee.com/karysdev?new=1
 
+For crypto currency donations we accept USDT here,,
+```
+0x96e8c405d10da473f5afbe02b514d405131a3804
+```
 ---
 *XoDos - Bringing Linux to Your Android Device*
