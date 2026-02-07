@@ -111,7 +111,8 @@ XoDos is being developed with passion and dedication by the XoDos developer team
 
 ---
 
-**Stay tuned for more updates! More information coming soon...**
+**support ❤️ and buy me ☕**
+https://buymeacoffee.com/karysdev?new=1
 
 ---
 *XoDos - Bringing Linux to Your Android Device*
