@@ -6,7 +6,7 @@ on:
       version_tag:
         description: 'Version tag (e.g., 1.0.0)'
         required: true
-        default: '1.0.4'
+        default: '1.0.5'
 
 permissions:
   contents: write
@@ -44,7 +44,7 @@ jobs:
           from googleapiclient.discovery import build
           from googleapiclient.http import MediaIoBaseDownload
 
-          FILE_ID = "11h5Q68fb8BX_p2YVmuW7BwPtsoY4duUs"
+          FILE_ID = "1LS12JqY0_wuBhoJcEMYc5_CIauHvKbZ-"
           OUTPUT_FILE = f"XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk"
 
           # Authenticate
