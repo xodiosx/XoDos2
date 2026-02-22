@@ -928,7 +928,7 @@ static Future<void> launchGUIBackend() async {
   }
 
   static Future<void> launchXServer() async {
-    await X11Flutter.launchXServer("${G.dataPath}/containers/${G.currentContainer}/tmp", "${G.dataPath}/containers/${G.currentContainer}/usr/share/X11/xkb", [":4"]);
+    await X11Flutter.launchXServer("${G.dataPath}/usr/tmp", "${G.dataPath}/usr/share/X11/xkb", [":4"]);
   }
 
   static Future<void> launchX11() async {
