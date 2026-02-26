@@ -1022,6 +1022,29 @@ ExpansionPanel(
           setState(() {});
         },
       ),
+      
+      //  NEW SWITCH FOR GL4ES
+SwitchListTile(
+  title: const Text('Enable gl4es'),
+  subtitle: const Text('Use gl4es OpenGL wrapper (requires X11)'),
+  value: Util.getGlobal("gl4es") as bool,
+  onChanged: (value) async {
+    final bool useX11 = Util.getGlobal("useX11") == true;
+    // Optional: enforce X11 requirement (gl4es works best with X11)
+    if (value && !useX11) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('gl4es requires X11 to be enabled')),
+      );
+      return;
+    }
+    await G.prefs.setBool("gl4es", value);
+    setState(() {});
+  },
+),
+//
+            
       const SizedBox.square(dimension: 16),
     ]),
   ),
@@ -3947,3 +3970,6 @@ echo "\\n=== Test Complete ==="
     );
   }
 }
+
+
+

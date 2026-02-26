@@ -126,6 +126,7 @@ class Util {
       case "androidVenus" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
       case "turnip" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "dri3" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
+      case "gl4es" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "wakelock" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "isHidpiEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "isJpEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
@@ -825,6 +826,9 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
     extraOpt += "MESA_VK_WSI_DEBUG=sw ";
     extraOpt += "MESA_VK_WSI_PRESENT_MODE=mailbox ";
   }
+  if (!(Util.getGlobal("gl4es"))) {
+    extraOpt += " LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib/aarch64-linux-gnu/gl4es/ ";    
+  }
 }
 
 if (Util.getGlobal("turnip")) {
@@ -836,6 +840,9 @@ echo "turnip driver"
   if (!(Util.getGlobal("dri3"))) {
     extraOpt += "MESA_VK_WSI_DEBUG=sw ";
     extraOpt += "MESA_VK_WSI_PRESENT_MODE=mailbox ";
+  }
+  if (!(Util.getGlobal("gl4es"))) {
+    extraOpt += " LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib/aarch64-linux-gnu/gl4es/ ";    
   }
 }
     if (Util.getGlobal("isJpEnabled")) {
