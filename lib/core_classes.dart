@@ -828,7 +828,7 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
     
   }
   if ((Util.getGlobal("gl4es"))) {
-    extraOpt += " LD_LIBRARY_PATH='\$LD_LIBRARY_PATH:/lib/aarch64-linux-gnu/gl4es/' ";    
+    extraOpt += " LD_LIBRARY_PATH=/lib/aarch64-linux-gnu/gl4es/ ";    
   }
 }
 
@@ -844,7 +844,7 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
     
   }
   if ((Util.getGlobal("gl4es"))) {
-    extraOpt += " LD_LIBRARY_PATH='\$LD_LIBRARY_PATH:/lib/aarch64-linux-gnu/gl4es/' ";    
+    extraOpt += " LD_LIBRARY_PATH=/lib/aarch64-linux-gnu/gl4es/ ";    
   }
 }
     if (Util.getGlobal("isJpEnabled")) {
