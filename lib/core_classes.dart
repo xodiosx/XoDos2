@@ -822,11 +822,12 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 """);
   
   extraOpt += "$venusOpt ";
+  extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
     if (!(Util.getGlobal("dri3"))) {
     extraOpt += "MESA_VK_WSI_DEBUG=sw ";
-    extraOpt += "MESA_VK_WSI_PRESENT_MODE=mailbox ";
+    
   }
-  if (!(Util.getGlobal("gl4es"))) {
+  if ((Util.getGlobal("gl4es"))) {
     extraOpt += " LD_LIBRARY_PATH='\$LD_LIBRARY_PATH:/lib/aarch64-linux-gnu/gl4es/' ";    
   }
 }
@@ -836,12 +837,13 @@ if (Util.getGlobal("turnip")) {
 #. /data/data/com.xodos/files/usr/opt/drv
 echo "turnip driver"
 """);
+extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
   extraOpt += "${Util.getGlobal("defaultTurnipOpt")} ";
   if (!(Util.getGlobal("dri3"))) {
     extraOpt += "MESA_VK_WSI_DEBUG=sw ";
-    extraOpt += "MESA_VK_WSI_PRESENT_MODE=mailbox ";
+    
   }
-  if (!(Util.getGlobal("gl4es"))) {
+  if ((Util.getGlobal("gl4es"))) {
     extraOpt += " LD_LIBRARY_PATH='\$LD_LIBRARY_PATH:/lib/aarch64-linux-gnu/gl4es/' ";    
   }
 }
