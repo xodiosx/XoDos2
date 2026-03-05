@@ -227,7 +227,7 @@ if (mounted) {
       Util.termWrite('chmod +x /opt/wine/bin/* 2>/dev/null || true');
       
       Util.termWrite('echo "cleaning wine archive..."');
-      Util.termWrite('rm -rf "$escapedPath"');
+      Util.termWrite('rm -rf "/data/data/com.xodos/cache/file_picker" ');;
       
       Util.termWrite('echo "=== WINE INSTALLATION COMPLETE ==="');
       Util.termWrite('echo "Wine installed to /opt/wine"');
@@ -287,28 +287,34 @@ if (mounted) {
         Util.termWrite('if command -v tar >/dev/null 2>&1; then');
         Util.termWrite('  echo "Using system tar command"');
         Util.termWrite('  tar -xJv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "Restarting terminal..." && exit');
+        Util.termWrite('exit');
         Util.termWrite('else');
         Util.termWrite('  echo "Using busybox tar command"');
-        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xJv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "cleaning and Restarting terminal..." && rm -rf "$escapedPath" && exit');
+        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xJv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "cleaning and Restarting terminal..." && rm -rf "/data/data/com.xodos/cache/file_picker" && exit');
         Util.termWrite('fi');
-      } else if (fileName.endsWith('.tar.gz')) {
+        Util.termWrite('exit');
+       } else if (fileName.endsWith('.tar.gz')) {
         Util.termWrite('echo "Checking for tar command..."');
         Util.termWrite('if command -v tar >/dev/null 2>&1; then');
         Util.termWrite('  echo "Using system tar command"');
         Util.termWrite('  tar -xzv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "Restarting terminal..." && exit');
+        Util.termWrite('exit');
         Util.termWrite('else');
         Util.termWrite('  echo "Using busybox tar command"');
-        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xzv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "cleaning and Restarting terminal..." && rm -rf "$escapedPath" && exit');
+        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xzv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "cleaning and Restarting terminal..." && rm -rf "/data/data/com.xodos/cache/file_picker" && exit');
         Util.termWrite('fi');
+        Util.termWrite('exit');
       } else if (fileName.endsWith('.tar')) {
         Util.termWrite('echo "Checking for tar command..."');
         Util.termWrite('if command -v tar >/dev/null 2>&1; then');
         Util.termWrite('  echo "Using system tar command"');
-        Util.termWrite('  tar -xv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "cleaning and Restarting terminal..." && rm -rf "$escapedPath" && exit');
-        Util.termWrite('else');
+        Util.termWrite('  tar -xv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "cleaning and Restarting terminal..." && rm -rf "/data/data/com.xodos/cache/file_picker" && exit');
+        Util.termWrite('exit');
+         Util.termWrite('else');
         Util.termWrite('  echo "Using busybox tar command"');
-        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "cleaning and Restarting terminal..." && rm -rf "$escapedPath" && exit');
+        Util.termWrite('  /data/data/com.xodos/files/bin/busybox tar -xv --delay-directory-restore --preserve-permissions -f "$escapedPath" -C /data/data/com.xodos/files/containers/0/ && echo "" && echo "=== SYSTEM RESTORE COMPLETE ===" && echo "cleaning and Restarting terminal..." && rm -rf "/data/data/com.xodos/cache/file_picker" && exit');
         Util.termWrite('fi');
+        Util.termWrite('exit');
       } else {
         Util.termWrite('echo "${AppLocalizations.of(context)!.unsupportedFormat}: $fileName"');
         Util.termWrite('exit');

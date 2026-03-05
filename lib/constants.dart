@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'default_values.dart';
 import 'core_classes.dart';
+
 // Modern color scheme with dark purple theme
 class AppColors {
   static const Color primaryPurple = Color(0xFFBB86FC);
@@ -131,226 +132,521 @@ class LanguageManager {
     return baseBoot;
   }
 
+  /// Returns the full list of quick commands for the given language.
+  /// The list contains exactly the same commands as the English version,
+  /// with names translated where available; missing translations fall back to English.
   static List<Map<String, String>> getCommandsForLanguage(String languageCode) {
-    switch (languageCode) {
-      case 'zh':
-        return D.commands;
-      case 'ja':
-        return _getFullCommandSet([
-          _japaneseCommands[0],  // Update and upgrade
-          _japaneseCommands[1],  // System info
-          _japaneseCommands[2],  // Clear screen
-          _japaneseCommands[3],  // Interrupt task
-          _japaneseCommands[4],  // Install Krita
-          _japaneseCommands[5],  // Uninstall Krita
-          _japaneseCommands[6],  // Install Kdenlive
-          _japaneseCommands[7],  // Uninstall Kdenlive
-          _japaneseCommands[8],  // Install Blender
-          _japaneseCommands[9],  // Uninstall Blender
-          _japaneseCommands[10], // Install VS Code
-          _japaneseCommands[11], // Uninstall VS Code
-          _japaneseCommands[12], // Install LibreOffice
-          _japaneseCommands[13], // Uninstall LibreOffice
-          _japaneseCommands[14], // Install WPS
-          _japaneseCommands[15], // Uninstall WPS
-          _japaneseCommands[16], // Enable recycle bin
-          _japaneseCommands[17], // Clean package cache
-          _japaneseCommands[18], // Shutdown
-          _japaneseCommands[19], // matrix
-        ]);
-      case 'ar':
-        return _getFullCommandSet([
-          _arabicCommands[0],    // Update and upgrade
-          _arabicCommands[1],    // System info
-          _arabicCommands[2],    // Clear screen
-          _arabicCommands[3],    // Interrupt task
-          _arabicCommands[4],    // Install Krita
-          _arabicCommands[5],    // Uninstall Krita
-          _arabicCommands[6],    // Install Kdenlive
-          _arabicCommands[7],    // Uninstall Kdenlive
-          _arabicCommands[8],    // Install Blender
-          _arabicCommands[9],    // Uninstall Blender
-          _arabicCommands[10],   // Install VS Code
-          _arabicCommands[11],   // Uninstall VS Code
-          _arabicCommands[12],   // Install LibreOffice
-          _arabicCommands[13],   // Uninstall LibreOffice
-          {"name":"تثبيت WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
-EOF
-rm /tmp/wps.deb"""},
-          {"name":"إزالة WPS", "command":"sudo apt autoremove --purge -y wps-office"},
-          _arabicCommands[14],   // Enable recycle bin
-          _arabicCommands[15],   // Clean package cache
-          _arabicCommands[16],   // Shutdown
-          _arabicCommands[17],   // matrix
-        ]);
-      case 'hi':
-        return _getFullCommandSet([
-          _hindiCommands[0],     // Update and upgrade
-          _hindiCommands[1],     // System info
-          _hindiCommands[2],     // Clear screen
-          _hindiCommands[3],     // Interrupt task
-          _hindiCommands[4],     // Install Krita
-          _hindiCommands[5],     // Uninstall Krita
-          _hindiCommands[6],     // Install Kdenlive
-          _hindiCommands[7],     // Uninstall Kdenlive
-          _hindiCommands[8],     // Install Blender
-          _hindiCommands[9],     // Uninstall Blender
-          _hindiCommands[10],    // Install VS Code
-          _hindiCommands[11],    // Uninstall VS Code
-          {"name":"LibreOffice इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y libreoffice"},
-          {"name":"LibreOffice अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y libreoffice"},
-          {"name":"WPS इंस्टॉल करें", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
-EOF
-rm /tmp/wps.deb"""},
-          {"name":"WPS अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y wps-office"},
-          _hindiCommands[12],    // Enable recycle bin
-          _hindiCommands[13],    // Clean package cache
-          _hindiCommands[14],    // Shutdown
-          _hindiCommands[15],    // matrix
-        ]);
-      case 'es':
-        return _getFullCommandSet([
-          _spanishCommands[0],   // Update and upgrade
-          _spanishCommands[1],   // System info
-          _spanishCommands[2],   // Clear screen
-          _spanishCommands[3],   // Interrupt task
-          _spanishCommands[4],   // Install Krita
-          _spanishCommands[5],   // Uninstall Krita
-          _spanishCommands[6],   // Install Kdenlive
-          _spanishCommands[7],   // Uninstall Kdenlive
-          _spanishCommands[8],   // Install Blender
-          _spanishCommands[9],   // Uninstall Blender
-          _spanishCommands[10],  // Install VS Code
-          _spanishCommands[11],  // Uninstall VS Code
-          {"name":"Instalar LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
-          {"name":"Desinstalar LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
-          {"name":"Instalar WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
-EOF
-rm /tmp/wps.deb"""},
-          {"name":"Desinstalar WPS", "command":"sudo apt autoremove --purge -y wps-office"},
-          _spanishCommands[12],  // Enable recycle bin
-          _spanishCommands[13],  // Clean package cache
-          _spanishCommands[14],  // Shutdown
-          _spanishCommands[15],  // matrix
-        ]);
-      case 'pt':
-        return _getFullCommandSet([
-          _portugueseCommands[0], // Update and upgrade
-          _portugueseCommands[1], // System info
-          _portugueseCommands[2], // Clear screen
-          _portugueseCommands[3], // Interrupt task
-          _portugueseCommands[4], // Install Krita
-          _portugueseCommands[5], // Uninstall Krita
-          _portugueseCommands[6], // Install Kdenlive
-          _portugueseCommands[7], // Uninstall Kdenlive
-          _portugueseCommands[8], // Install Blender
-          _portugueseCommands[9], // Uninstall Blender
-          _portugueseCommands[10], // Install VS Code
-          _portugueseCommands[11], // Uninstall VS Code
-          {"name":"Instalar LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
-          {"name":"Desinstalar LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
-          {"name":"Instalar WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
-EOF
-rm /tmp/wps.deb"""},
-          {"name":"Desinstalar WPS", "command":"sudo apt autoremove --purge -y wps-office"},
-          _portugueseCommands[12], // Enable recycle bin
-          _portugueseCommands[13], // Clean package cache
-          _portugueseCommands[14], // Shutdown
-          _portugueseCommands[15], // matrix
-        ]);
-      case 'fr':
-        return _getFullCommandSet([
-          _frenchCommands[0],    // Update and upgrade
-          _frenchCommands[1],    // System info
-          _frenchCommands[2],    // Clear screen
-          _frenchCommands[3],    // Interrupt task
-          _frenchCommands[4],    // Install Krita
-          _frenchCommands[5],    // Uninstall Krita
-          _frenchCommands[6],    // Install Kdenlive
-          _frenchCommands[7],    // Uninstall Kdenlive
-          _frenchCommands[8],    // Install Blender
-          _frenchCommands[9],    // Uninstall Blender
-          _frenchCommands[10],   // Install VS Code
-          _frenchCommands[11],   // Uninstall VS Code
-          {"name":"Installer LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
-          {"name":"Désinstaller LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
-          {"name":"Installer WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
-EOF
-rm /tmp/wps.deb"""},
-          {"name":"Désinstaller WPS", "command":"sudo apt autoremove --purge -y wps-office"},
-          _frenchCommands[12],   // Enable recycle bin
-          _frenchCommands[13],   // Clean package cache
-          _frenchCommands[14],   // Shutdown
-          _frenchCommands[15],   // matrix
-        ]);
-      case 'ru':
-        return _getFullCommandSet([
-          _russianCommands[0],   // Update and upgrade
-          _russianCommands[1],   // System info
-          _russianCommands[2],   // Clear screen
-          _russianCommands[3],   // Interrupt task
-          _russianCommands[4],   // Install Krita
-          _russianCommands[5],   // Uninstall Krita
-          _russianCommands[6],   // Install Kdenlive
-          _russianCommands[7],   // Uninstall Kdenlive
-          _russianCommands[8],   // Install Blender
-          _russianCommands[9],   // Uninstall Blender
-          _russianCommands[10],  // Install VS Code
-          _russianCommands[11],  // Uninstall VS Code
-          {"name":"Установить LibreOffice", "command":"sudo apt update && sudo apt install -y libreoffice"},
-          {"name":"Удалить LibreOffice", "command":"sudo apt autoremove --purge -y libreoffice"},
-          {"name":"Установить WPS", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
-EOF
-rm /tmp/wps.deb"""},
-          {"name":"Удалить WPS", "command":"sudo apt autoremove --purge -y wps-office"},
-          _russianCommands[12],  // Enable recycle bin
-          _russianCommands[13],  // Clean package cache
-          _russianCommands[14],  // Shutdown
-          _russianCommands[15],  // matrix
-        ]);
-      default:
-        return D.commands4En;
+    // Start with the English command list (full set)
+    final List<Map<String, String>> englishCommands = D.commands4En;
+
+    // If language is English, return as is
+    if (languageCode == 'en') {
+      return englishCommands;
     }
+
+    // Get the translation map for this language (or empty if none)
+    final Map<String, String> translationMap = _getTranslationMap(languageCode);
+
+    // Build the translated list
+    return englishCommands.map((cmd) {
+      final String englishName = cmd['name']!;
+      final String translatedName = translationMap[englishName] ?? englishName;
+      return {
+        'name': translatedName,
+        'command': cmd['command']!,
+      };
+    }).toList();
   }
 
+  /// Returns the full list of Wine commands for the given language.
+  /// The list contains exactly the same commands as the English version,
+  /// with names translated where available; missing translations fall back to English.
   static List<Map<String, String>> getWineCommandsForLanguage(String languageCode) {
+    // Start with the English Wine command list (full set)
+    final List<Map<String, String>> englishWineCommands = D.wineCommands4En;
+
+    // If language is English, return as is
+    if (languageCode == 'en') {
+      return englishWineCommands;
+    }
+
+    // Get the translation map for Wine commands for this language
+    final Map<String, String> wineTranslationMap = _getWineTranslationMap(languageCode);
+
+    // Build the translated list
+    return englishWineCommands.map((cmd) {
+      final String englishName = cmd['name']!;
+      final String translatedName = wineTranslationMap[englishName] ?? englishName;
+      return {
+        'name': translatedName,
+        'command': cmd['command']!,
+      };
+    }).toList();
+  }
+
+  // ==================== Translation Maps ====================
+
+  /// Returns a map from English command name to translated name for quick commands.
+  static Map<String, String> _getTranslationMap(String languageCode) {
     switch (languageCode) {
       case 'zh':
-        return D.wineCommands;
+        return _chineseTranslations;
       case 'ja':
-        return _japaneseWineCommands;
+        return _japaneseTranslations;
       case 'ar':
-        return _arabicWineCommands;
+        return _arabicTranslations;
       case 'hi':
-        return _hindiWineCommands;
+        return _hindiTranslations;
       case 'es':
-        return _spanishWineCommands;
+        return _spanishTranslations;
       case 'pt':
-        return _portugueseWineCommands;
+        return _portugueseTranslations;
       case 'fr':
-        return _frenchWineCommands;
+        return _frenchTranslations;
       case 'ru':
-        return _russianWineCommands;
+        return _russianTranslations;
       default:
-        return D.wineCommands4En;
+        return {};
     }
   }
 
-  // Helper method to ensure all commands are present
-  static List<Map<String, String>> _getFullCommandSet(List<Map<String, String>> commands) {
-    // Ensure we have exactly 20 commands like the updated version
-    if (commands.length >= 16) {
-      return commands;
+  /// Returns a map from English Wine command name to translated name.
+  static Map<String, String> _getWineTranslationMap(String languageCode) {
+    switch (languageCode) {
+      case 'zh':
+        return _chineseWineTranslations;
+      case 'ja':
+        return _japaneseWineTranslations;
+      case 'ar':
+        return _arabicWineTranslations;
+      case 'hi':
+        return _hindiWineTranslations;
+      case 'es':
+        return _spanishWineTranslations;
+      case 'pt':
+        return _portugueseWineTranslations;
+      case 'fr':
+        return _frenchWineTranslations;
+      case 'ru':
+        return _russianWineTranslations;
+      default:
+        return {};
     }
-    // If not, return the English commands as fallback
-    return D.commands4En;
   }
+
+  // ----- Quick Command Translations -----
+
+  static const Map<String, String> _chineseTranslations = {
+    'Update Packages': '检查更新并升级',
+    'System Info': '显示系统信息',
+    'Clear': '清屏',
+    'Interrupt': '中断任务',
+    'Install Painting Program Krita': '安装图形软件 Krita',
+    'Uninstall Krita': '卸载 Krita',
+    'Install KDE Non-Linear Video Editor': '安装视频编辑软件 Kdenlive',
+    'Uninstall Kdenlive': '卸载 Kdenlive',
+    'Install 3D Modeling Software Blender': '安装 3D 建模软件 Blender',
+    'Uninstall Blender': '卸载 Blender',
+    'Install Code Editor Visual Studio Code': '安装代码编辑器 Visual Studio Code',
+    'Uninstall Visual Studio Code': '卸载 Visual Studio Code',
+    'Install LibreOffice': '安装 LibreOffice',
+    'Uninstall LibreOffice': '卸载 LibreOffice',
+    'Install WPS': '安装 WPS',
+    'Uninstall WPS': '卸载 WPS',
+    'Install Legcord (Lightweight Discord)': '安装 Legcord (轻量级 Discord)',
+    'Uninstall Legcord': '卸载 Legcord',
+    'Install Dorion (Discord Lite)': '安装 Dorion (Discord Lite)',
+    'Uninstall Dorion': '卸载 Dorion',
+    'Install WhatsApp': '安装 WhatsApp',
+    'Uninstall WhatsApp': '卸载 WhatsApp',
+    'Install Telegram Desktop': '安装 Telegram Desktop',
+    'Uninstall Telegram Desktop': '卸载 Telegram Desktop',
+    'Install EdrawMax': '安装 EdrawMax',
+    'Uninstall EdrawMax': '卸载 EdrawMax',
+    'Enable Recycle Bin': '启用回收站',
+    'Clean Package Cache': '清理包管理器缓存',
+    'Power Off': '关机',
+    'matrix': 'matrix',
+  };
+
+  static const Map<String, String> _japaneseTranslations = {
+    'Update Packages': 'パッケージの更新とアップグレード',
+    'System Info': 'システム情報を表示',
+    'Clear': '画面をクリア',
+    'Interrupt': 'タスクを中断',
+    'Install Painting Program Krita': 'グラフィックソフトKritaをインストール',
+    'Uninstall Krita': 'Kritaをアンインストール',
+    'Install KDE Non-Linear Video Editor': '動画編集ソフトKdenliveをインストール',
+    'Uninstall Kdenlive': 'Kdenliveをアンインストール',
+    'Install 3D Modeling Software Blender': '3DモデリングソフトBlenderをインストール',
+    'Uninstall Blender': 'Blenderをアンインストール',
+    'Install Code Editor Visual Studio Code': 'コードエディタVisual Studio Codeをインストール',
+    'Uninstall Visual Studio Code': 'Visual Studio Codeをアンインストール',
+    'Install LibreOffice': 'LibreOfficeをインストール',
+    'Uninstall LibreOffice': 'LibreOfficeをアンインストール',
+    'Install WPS': 'WPSをインストール',
+    'Uninstall WPS': 'WPSをアンインストール',
+    'Install Legcord (Lightweight Discord)': 'Legcordをインストール',
+    'Uninstall Legcord': 'Legcordをアンインストール',
+    'Install Dorion (Discord Lite)': 'Dorionをインストール',
+    'Uninstall Dorion': 'Dorionをアンインストール',
+    'Install WhatsApp': 'WhatsAppをインストール',
+    'Uninstall WhatsApp': 'WhatsAppをアンインストール',
+    'Install Telegram Desktop': 'Telegram Desktopをインストール',
+    'Uninstall Telegram Desktop': 'Telegram Desktopをアンインストール',
+    'Install EdrawMax': 'EdrawMaxをインストール',
+    'Uninstall EdrawMax': 'EdrawMaxをアンインストール',
+    'Enable Recycle Bin': 'ごみ箱を有効にする',
+    'Clean Package Cache': 'パッケージキャッシュをクリーン',
+    'Power Off': 'シャットダウン',
+    'matrix': 'matrix',
+  };
+
+  static const Map<String, String> _arabicTranslations = {
+    'Update Packages': 'تحديث الحزم والترقية',
+    'System Info': 'معلومات النظام',
+    'Clear': 'مسح الشاشة',
+    'Interrupt': 'مقاطعة المهمة',
+    'Install Painting Program Krita': 'تثبيت برنامج الرسم كريتا',
+    'Uninstall Krita': 'إزالة كریتا',
+    'Install KDE Non-Linear Video Editor': 'تثبيت برنامج تحرير الفيديو كدينلايف',
+    'Uninstall Kdenlive': 'إزالة كدينلايف',
+    'Install 3D Modeling Software Blender': 'تثبيت برنامج النمذجة ثلاثية الأبعاد بلندر',
+    'Uninstall Blender': 'إزالة بلندر',
+    'Install Code Editor Visual Studio Code': 'تثبيت محرر الأكواد فيجوال ستوديو كود',
+    'Uninstall Visual Studio Code': 'إزالة فيجوال ستوديو كود',
+    'Install LibreOffice': 'تثبيت ليبر أوفيس',
+    'Uninstall LibreOffice': 'إزالة ليبر أوفيس',
+    'Install WPS': 'تثبيت WPS',
+    'Uninstall WPS': 'إزالة WPS',
+    'Install Legcord (Lightweight Discord)': 'تثبيت Legcord',
+    'Uninstall Legcord': 'إزالة Legcord',
+    'Install Dorion (Discord Lite)': 'تثبيت Dorion',
+    'Uninstall Dorion': 'إزالة Dorion',
+    'Install WhatsApp': 'تثبيت WhatsApp',
+    'Uninstall WhatsApp': 'إزالة WhatsApp',
+    'Install Telegram Desktop': 'تثبيت Telegram Desktop',
+    'Uninstall Telegram Desktop': 'إزالة Telegram Desktop',
+    'Install EdrawMax': 'تثبيت EdrawMax',
+    'Uninstall EdrawMax': 'إزالة EdrawMax',
+    'Enable Recycle Bin': 'تفعيل سلة المهملات',
+    'Clean Package Cache': 'تنظيف ذاكرة التخزين المؤقت',
+    'Power Off': 'إيقاف التشغيل',
+    'matrix': 'matrix',
+  };
+
+  static const Map<String, String> _hindiTranslations = {
+    'Update Packages': 'पैकेज अपडेट और अपग्रेड',
+    'System Info': 'सिस्टम जानकारी',
+    'Clear': 'स्क्रीन साफ करें',
+    'Interrupt': 'कार्य बाधित करें',
+    'Install Painting Program Krita': 'ग्राफिक सॉफ्टवेयर क्रिता इंस्टॉल करें',
+    'Uninstall Krita': 'क्रिता अनइंस्टॉल करें',
+    'Install KDE Non-Linear Video Editor': 'वीडियो एडिटिंग सॉफ्टवेयर केडेनलाइव इंस्टॉल करें',
+    'Uninstall Kdenlive': 'केडेनलाइव अनइंस्टॉल करें',
+    'Install 3D Modeling Software Blender': '3D मॉडलिंग सॉफ्टवेयर ब्लेंडर इंस्टॉल करें',
+    'Uninstall Blender': 'ब्लेंडर अनइंस्टॉल करें',
+    'Install Code Editor Visual Studio Code': 'कोड एडिटर विजुअल स्टूडियो कोड इंस्टॉल करें',
+    'Uninstall Visual Studio Code': 'विजुअल स्टूडियो कोड अनइंस्टॉल करें',
+    'Install LibreOffice': 'LibreOffice इंस्टॉल करें',
+    'Uninstall LibreOffice': 'LibreOffice अनइंस्टॉल करें',
+    'Install WPS': 'WPS इंस्टॉल करें',
+    'Uninstall WPS': 'WPS अनइंस्टॉल करें',
+    'Install Legcord (Lightweight Discord)': 'Legcord इंस्टॉल करें',
+    'Uninstall Legcord': 'Legcord अनइंस्टॉल करें',
+    'Install Dorion (Discord Lite)': 'Dorion इंस्टॉल करें',
+    'Uninstall Dorion': 'Dorion अनइंस्टॉल करें',
+    'Install WhatsApp': 'WhatsApp इंस्टॉल करें',
+    'Uninstall WhatsApp': 'WhatsApp अनइंस्टॉल करें',
+    'Install Telegram Desktop': 'Telegram Desktop इंस्टॉल करें',
+    'Uninstall Telegram Desktop': 'Telegram Desktop अनइंस्टॉल करें',
+    'Install EdrawMax': 'EdrawMax इंस्टॉल करें',
+    'Uninstall EdrawMax': 'EdrawMax अनइंस्टॉल करें',
+    'Enable Recycle Bin': 'रीसाइकिल बिन सक्षम करें',
+    'Clean Package Cache': 'पैकेज कैश साफ करें',
+    'Power Off': 'शटडाउन',
+    'matrix': 'matrix',
+  };
+
+  static const Map<String, String> _spanishTranslations = {
+    'Update Packages': 'Actualizar y mejorar paquetes',
+    'System Info': 'Información del sistema',
+    'Clear': 'Limpiar pantalla',
+    'Interrupt': 'Interrumpir tarea',
+    'Install Painting Program Krita': 'Instalar software gráfico Krita',
+    'Uninstall Krita': 'Desinstalar Krita',
+    'Install KDE Non-Linear Video Editor': 'Instalar editor de video Kdenlive',
+    'Uninstall Kdenlive': 'Desinstalar Kdenlive',
+    'Install 3D Modeling Software Blender': 'Instalar software de modelado 3D Blender',
+    'Uninstall Blender': 'Desinstalar Blender',
+    'Install Code Editor Visual Studio Code': 'Instalar editor de código Visual Studio Code',
+    'Uninstall Visual Studio Code': 'Desinstalar Visual Studio Code',
+    'Install LibreOffice': 'Instalar LibreOffice',
+    'Uninstall LibreOffice': 'Desinstalar LibreOffice',
+    'Install WPS': 'Instalar WPS',
+    'Uninstall WPS': 'Desinstalar WPS',
+    'Install Legcord (Lightweight Discord)': 'Instalar Legcord',
+    'Uninstall Legcord': 'Desinstalar Legcord',
+    'Install Dorion (Discord Lite)': 'Instalar Dorion',
+    'Uninstall Dorion': 'Desinstalar Dorion',
+    'Install WhatsApp': 'Instalar WhatsApp',
+    'Uninstall WhatsApp': 'Desinstalar WhatsApp',
+    'Install Telegram Desktop': 'Instalar Telegram Desktop',
+    'Uninstall Telegram Desktop': 'Desinstalar Telegram Desktop',
+    'Install EdrawMax': 'Instalar EdrawMax',
+    'Uninstall EdrawMax': 'Desinstalar EdrawMax',
+    'Enable Recycle Bin': 'Habilitar papelera de reciclaje',
+    'Clean Package Cache': 'Limpiar caché de paquetes',
+    'Power Off': 'Apagar',
+    'matrix': 'matrix',
+  };
+
+  static const Map<String, String> _portugueseTranslations = {
+    'Update Packages': 'Atualizar e melhorar pacotes',
+    'System Info': 'Informações do sistema',
+    'Clear': 'Limpar tela',
+    'Interrupt': 'Interromper tarefa',
+    'Install Painting Program Krita': 'Instalar software gráfico Krita',
+    'Uninstall Krita': 'Desinstalar Krita',
+    'Install KDE Non-Linear Video Editor': 'Instalar editor de vídeo Kdenlive',
+    'Uninstall Kdenlive': 'Desinstalar Kdenlive',
+    'Install 3D Modeling Software Blender': 'Instalar software de modelagem 3D Blender',
+    'Uninstall Blender': 'Desinstalar Blender',
+    'Install Code Editor Visual Studio Code': 'Instalar editor de código Visual Studio Code',
+    'Uninstall Visual Studio Code': 'Desinstalar Visual Studio Code',
+    'Install LibreOffice': 'Instalar LibreOffice',
+    'Uninstall LibreOffice': 'Desinstalar LibreOffice',
+    'Install WPS': 'Instalar WPS',
+    'Uninstall WPS': 'Desinstalar WPS',
+    'Install Legcord (Lightweight Discord)': 'Instalar Legcord',
+    'Uninstall Legcord': 'Desinstalar Legcord',
+    'Install Dorion (Discord Lite)': 'Instalar Dorion',
+    'Uninstall Dorion': 'Desinstalar Dorion',
+    'Install WhatsApp': 'Instalar WhatsApp',
+    'Uninstall WhatsApp': 'Desinstalar WhatsApp',
+    'Install Telegram Desktop': 'Instalar Telegram Desktop',
+    'Uninstall Telegram Desktop': 'Desinstalar Telegram Desktop',
+    'Install EdrawMax': 'Instalar EdrawMax',
+    'Uninstall EdrawMax': 'Desinstalar EdrawMax',
+    'Enable Recycle Bin': 'Habilitar lixeira',
+    'Clean Package Cache': 'Limpar cache de pacotes',
+    'Power Off': 'Desligar',
+    'matrix': 'matrix',
+  };
+
+  static const Map<String, String> _frenchTranslations = {
+    'Update Packages': 'Mettre à jour et améliorer les paquets',
+    'System Info': 'Informations système',
+    'Clear': 'Effacer l\'écran',
+    'Interrupt': 'Interrompre la tâche',
+    'Install Painting Program Krita': 'Installer le logiciel graphique Krita',
+    'Uninstall Krita': 'Désinstaller Krita',
+    'Install KDE Non-Linear Video Editor': 'Installer l\'éditeur vidéo Kdenlive',
+    'Uninstall Kdenlive': 'Désinstaller Kdenlive',
+    'Install 3D Modeling Software Blender': 'Installer le logiciel de modélisation 3D Blender',
+    'Uninstall Blender': 'Désinstaller Blender',
+    'Install Code Editor Visual Studio Code': 'Installer l\'éditeur de code Visual Studio Code',
+    'Uninstall Visual Studio Code': 'Désinstaller Visual Studio Code',
+    'Install LibreOffice': 'Installer LibreOffice',
+    'Uninstall LibreOffice': 'Désinstaller LibreOffice',
+    'Install WPS': 'Installer WPS',
+    'Uninstall WPS': 'Désinstaller WPS',
+    'Install Legcord (Lightweight Discord)': 'Installer Legcord',
+    'Uninstall Legcord': 'Désinstaller Legcord',
+    'Install Dorion (Discord Lite)': 'Installer Dorion',
+    'Uninstall Dorion': 'Désinstaller Dorion',
+    'Install WhatsApp': 'Installer WhatsApp',
+    'Uninstall WhatsApp': 'Désinstaller WhatsApp',
+    'Install Telegram Desktop': 'Installer Telegram Desktop',
+    'Uninstall Telegram Desktop': 'Désinstaller Telegram Desktop',
+    'Install EdrawMax': 'Installer EdrawMax',
+    'Uninstall EdrawMax': 'Désinstaller EdrawMax',
+    'Enable Recycle Bin': 'Activer la corbeille',
+    'Clean Package Cache': 'Nettoyer le cache des paquets',
+    'Power Off': 'Éteindre',
+    'matrix': 'matrix',
+  };
+
+  static const Map<String, String> _russianTranslations = {
+    'Update Packages': 'Обновить и улучшить пакеты',
+    'System Info': 'Информация о системе',
+    'Clear': 'Очистить экран',
+    'Interrupt': 'Прервать задачу',
+    'Install Painting Program Krita': 'Установить графическое ПО Krita',
+    'Uninstall Krita': 'Удалить Krita',
+    'Install KDE Non-Linear Video Editor': 'Установить видеоредактор Kdenlive',
+    'Uninstall Kdenlive': 'Удалить Kdenlive',
+    'Install 3D Modeling Software Blender': 'Установить 3D-моделирование Blender',
+    'Uninstall Blender': 'Удалить Blender',
+    'Install Code Editor Visual Studio Code': 'Установить редактор кода Visual Studio Code',
+    'Uninstall Visual Studio Code': 'Удалить Visual Studio Code',
+    'Install LibreOffice': 'Установить LibreOffice',
+    'Uninstall LibreOffice': 'Удалить LibreOffice',
+    'Install WPS': 'Установить WPS',
+    'Uninstall WPS': 'Удалить WPS',
+    'Install Legcord (Lightweight Discord)': 'Установить Legcord',
+    'Uninstall Legcord': 'Удалить Legcord',
+    'Install Dorion (Discord Lite)': 'Установить Dorion',
+    'Uninstall Dorion': 'Удалить Dorion',
+    'Install WhatsApp': 'Установить WhatsApp',
+    'Uninstall WhatsApp': 'Удалить WhatsApp',
+    'Install Telegram Desktop': 'Установить Telegram Desktop',
+    'Uninstall Telegram Desktop': 'Удалить Telegram Desktop',
+    'Install EdrawMax': 'Установить EdrawMax',
+    'Uninstall EdrawMax': 'Удалить EdrawMax',
+    'Enable Recycle Bin': 'Включить корзину',
+    'Clean Package Cache': 'Очистить кэш пакетов',
+    'Power Off': 'Выключить',
+    'matrix': 'matrix',
+  };
+
+  // ----- Wine Command Translations -----
+
+  static const Map<String, String> _chineseWineTranslations = {
+    'wine Configuration': 'wine 配置',
+    'Fix CJK Characters': '修复方块字符',
+    'Start Menu Dir': '开始菜单文件夹',
+    'Remove Wine': '删除 Wine',
+    'Enable DXVK': '启用 DXVK',
+    'Disable DXVK': '禁用 DXVK',
+    'Explorer': '我的电脑',
+    'Notepad': '记事本',
+    'Minesweeper': '扫雷',
+    'Regedit': '注册表编辑器',
+    'Control Panel': '控制面板',
+    'File Manager': '文件管理器',
+    'Task Manager': '任务管理器',
+    'Internet Explorer': 'IE 浏览器',
+    'Kill wine Process': '强制关闭 Wine',
+  };
+
+  static const Map<String, String> _japaneseWineTranslations = {
+    'wine Configuration': 'Wine設定',
+    'Fix CJK Characters': '文字化け修正',
+    'Start Menu Dir': 'スタートメニューフォルダ',
+    'Remove Wine': 'Wineを削除',
+    'Enable DXVK': 'DXVKを有効',
+    'Disable DXVK': 'DXVKを無効',
+    'Explorer': 'エクスプローラ',
+    'Notepad': 'メモ帳',
+    'Minesweeper': 'マインスイーパ',
+    'Regedit': 'レジストリエディタ',
+    'Control Panel': 'コントロールパネル',
+    'File Manager': 'ファイルマネージャ',
+    'Task Manager': 'タスクマネージャ',
+    'Internet Explorer': 'インターネットエクスプローラ',
+    'Kill wine Process': 'Wineプロセスを強制終了',
+  };
+
+  static const Map<String, String> _arabicWineTranslations = {
+    'wine Configuration': 'إعدادات Wine',
+    'Fix CJK Characters': 'إصلاح الأحرف',
+    'Start Menu Dir': 'مجلد قائمة ابدأ',
+    'Remove Wine': 'إزالة Wine',
+    'Enable DXVK': 'تمكين DXVK',
+    'Disable DXVK': 'تعطيل DXVK',
+    'Explorer': 'المستكشف',
+    'Notepad': 'المفكرة',
+    'Minesweeper': 'الكانسة ألغام',
+    'Regedit': 'محرر التسجيل',
+    'Control Panel': 'لوحة التحكم',
+    'File Manager': 'مدير الملفات',
+    'Task Manager': 'مدير المهام',
+    'Internet Explorer': 'إنترنت إكسبلورر',
+    'Kill wine Process': 'إنهاء عملية Wine',
+  };
+
+  static const Map<String, String> _hindiWineTranslations = {
+    'wine Configuration': 'Wine सेटिंग्स',
+    'Fix CJK Characters': 'वर्ण सुधार',
+    'Start Menu Dir': 'स्टार्ट मेनू फोल्डर',
+    'Remove Wine': 'Wine हटाएं',
+    'Enable DXVK': 'DXVK सक्षम करें',
+    'Disable DXVK': 'DXVK अक्षम करें',
+    'Explorer': 'एक्सप्लोरर',
+    'Notepad': 'नोटपैड',
+    'Minesweeper': 'माइनस्वीपर',
+    'Regedit': 'रजिस्ट्री संपादक',
+    'Control Panel': 'नियंत्रण कक्ष',
+    'File Manager': 'फ़ाइल प्रबंधक',
+    'Task Manager': 'कार्य प्रबंधक',
+    'Internet Explorer': 'इंटरनेट एक्सप्लोरर',
+    'Kill wine Process': 'Wine प्रक्रिया समाप्त करें',
+  };
+
+  static const Map<String, String> _spanishWineTranslations = {
+    'wine Configuration': 'Configuración de Wine',
+    'Fix CJK Characters': 'Reparar caracteres',
+    'Start Menu Dir': 'Carpeta del menú Inicio',
+    'Remove Wine': 'Eliminar Wine',
+    'Enable DXVK': 'Habilitar DXVK',
+    'Disable DXVK': 'Deshabilitar DXVK',
+    'Explorer': 'Explorador',
+    'Notepad': 'Bloc de notas',
+    'Minesweeper': 'Buscaminas',
+    'Regedit': 'Editor de registro',
+    'Control Panel': 'Panel de control',
+    'File Manager': 'Administrador de archivos',
+    'Task Manager': 'Administrador de tareas',
+    'Internet Explorer': 'Internet Explorer',
+    'Kill wine Process': 'Matar proceso de Wine',
+  };
+
+  static const Map<String, String> _portugueseWineTranslations = {
+    'wine Configuration': 'Configurações do Wine',
+    'Fix CJK Characters': 'Reparar caracteres',
+    'Start Menu Dir': 'Pasta do menu Iniciar',
+    'Remove Wine': 'Remover Wine',
+    'Enable DXVK': 'Habilitar DXVK',
+    'Disable DXVK': 'Desabilitar DXVK',
+    'Explorer': 'Explorador',
+    'Notepad': 'Bloco de notas',
+    'Minesweeper': 'Campo minado',
+    'Regedit': 'Editor de registro',
+    'Control Panel': 'Painel de controle',
+    'File Manager': 'Gerenciador de arquivos',
+    'Task Manager': 'Gerenciador de tarefas',
+    'Internet Explorer': 'Internet Explorer',
+    'Kill wine Process': 'Matar processo do Wine',
+  };
+
+  static const Map<String, String> _frenchWineTranslations = {
+    'wine Configuration': 'Paramètres Wine',
+    'Fix CJK Characters': 'Réparer les caractères',
+    'Start Menu Dir': 'Dossier du menu Démarrer',
+    'Remove Wine': 'Supprimer Wine',
+    'Enable DXVK': 'Activer DXVK',
+    'Disable DXVK': 'Désactiver DXVK',
+    'Explorer': 'Explorateur',
+    'Notepad': 'Bloc-notes',
+    'Minesweeper': 'Démineur',
+    'Regedit': 'Éditeur de registre',
+    'Control Panel': 'Panneau de configuration',
+    'File Manager': 'Gestionnaire de fichiers',
+    'Task Manager': 'Gestionnaire de tâches',
+    'Internet Explorer': 'Internet Explorer',
+    'Kill wine Process': 'Tuer le processus Wine',
+  };
+
+  static const Map<String, String> _russianWineTranslations = {
+    'wine Configuration': 'Настройки Wine',
+    'Fix CJK Characters': 'Исправить символы',
+    'Start Menu Dir': 'Папка меню Пуск',
+    'Remove Wine': 'Удалить Wine',
+    'Enable DXVK': 'Включить DXVK',
+    'Disable DXVK': 'Отключить DXVK',
+    'Explorer': 'Проводник',
+    'Notepad': 'Блокнот',
+    'Minesweeper': 'Сапёр',
+    'Regedit': 'Редактор реестра',
+    'Control Panel': 'Панель управления',
+    'File Manager': 'Файловый менеджер',
+    'Task Manager': 'Диспетчер задач',
+    'Internet Explorer': 'Internet Explorer',
+    'Kill wine Process': 'Завершить процесс Wine',
+  };
+
+  // ==================== Grouping Methods (unchanged except using new command sources) ====================
 
   static Map<String, dynamic> getGroupedCommandsForLanguage(String languageCode) {
     final commands = getCommandsForLanguage(languageCode);
@@ -371,12 +667,12 @@ rm /tmp/wps.deb"""},
              !command.contains("install") && 
              !name.contains("enable") &&
              name != "matrix" &&
-             !name.contains("shutdown");
+             !name.contains("shutdown") && !name.contains("power off") && !name.contains("关机");
     }).toList();
     
     final systemCommands = commands.where((cmd) {
       final name = cmd["name"]?.toLowerCase() ?? "";
-      return name.contains("shutdown") || name == "matrix";
+      return name.contains("shutdown") || name.contains("power off") || name == "matrix" || name.contains("关机") || name.contains("シャットダウン") || name.contains("إيقاف التشغيل") || name.contains("शटडाउन") || name.contains("apagar") || name.contains("éteindre") || name.contains("выключить");
     }).toList();
     
     return {
@@ -393,13 +689,25 @@ rm /tmp/wps.deb"""},
     final installCommands = commands.where((cmd) {
       final name = cmd["name"]?.toLowerCase() ?? "";
       return name.contains("remove wine") || 
-             name.contains("remove");
+             name.contains("удалить wine") ||
+             name.contains("إزالة wine") ||
+             name.contains("wine हटाएं") ||
+             name.contains("eliminar wine") ||
+             name.contains("remover wine") ||
+             name.contains("supprimer wine") ||
+             name.contains("削除");
     }).toList();
     
     final configCommands = commands.where((cmd) {
       final name = cmd["name"]?.toLowerCase() ?? "";
       return !name.contains("remove wine") && 
-             !name.contains("remove");
+             !name.contains("удалить wine") &&
+             !name.contains("إزالة wine") &&
+             !name.contains("wine हटाएं") &&
+             !name.contains("eliminar wine") &&
+             !name.contains("remover wine") &&
+             !name.contains("supprimer wine") &&
+             !name.contains("削除");
     }).toList();
     
     return {
@@ -407,231 +715,10 @@ rm /tmp/wps.deb"""},
       "config": configCommands,
     };
   }
-
-  // Japanese commands - Updated with Blender and VS Code
-  static const List<Map<String, String>> _japaneseCommands = [
-    {"name":"パッケージの更新とアップグレード", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"システム情報を表示", "command":"neofetch -L && neofetch --off"},
-    {"name":"画面をクリア", "command":"clear"},
-    {"name":"タスクを中断", "command":"\x03"},
-    {"name":"グラフィックソフトKritaをインストール", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"Kritaをアンインストール", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"動画編集ソフトKdenliveをインストール", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"Kdenliveをアンインストール", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"3DモデリングソフトBlenderをインストール", "command":"sudo apt update && sudo apt install -y blender"},
-    {"name":"Blenderをアンインストール", "command":"sudo apt autoremove --purge -y blender"},
-    {"name":"コードエディタVisual Studio Codeをインストール", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/vscode.deb
-wget https://update.code.visualstudio.com/latest/linux-deb-arm64/stable -O /tmp/vscode.deb
-EOF
-rm /tmp/vscode.deb"""},
-    {"name":"Visual Studio Codeをアンインストール", "command":"sudo apt autoremove --purge -y code"},
-    {"name":"LibreOfficeをインストール", "command":"sudo apt update && sudo apt install -y libreoffice"},
-    {"name":"LibreOfficeをアンインストール", "command":"sudo apt autoremove --purge -y libreoffice"},
-    {"name":"WPSをインストール", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/wps.deb
-wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.1/wps-office_11.1.0.11720_arm64.deb -O /tmp/wps.deb
-EOF
-rm /tmp/wps.deb"""},
-    {"name":"WPSをアンインストール", "command":"sudo apt autoremove --purge -y wps-office"},
-    {"name":"ごみ箱を有効にする", "command":"sudo apt update && sudo apt install -y gvfs && echo 'インストール完了、アプリを再起動してごみ箱を使用してください。'"},
-    {"name":"パッケージキャッシュをクリーン", "command":"sudo apt clean"},
-    {"name":"シャットダウン", "command":"stopvnc\nexit\nexit"},
-    {"name":"matrix", "command":"timeout 8 cmatrix"}
-  ];
-
-  // Arabic commands - Updated with Blender and VS Code
-  static const List<Map<String, String>> _arabicCommands = [
-    {"name":"تحديث الحزم والترقية", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"معلومات النظام", "command":"neofetch -L && neofetch --off"},
-    {"name":"مسح الشاشة", "command":"clear"},
-    {"name":"مقاطعة المهمة", "command":"\x03"},
-    {"name":"تثبيت برنامج الرسم كريتا", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"إزالة كریتا", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"تثبيت برنامج تحرير الفيديو كدينلايف", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"إزالة كدينلايف", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"تثبيت برنامج النمذجة ثلاثية الأبعاد بلندر", "command":"sudo apt update && sudo apt install -y blender"},
-    {"name":"إزالة بلندر", "command":"sudo apt autoremove --purge -y blender"},
-    {"name":"تثبيت محرر الأكواد فيجوال ستوديو كود", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/vscode.deb
-wget https://update.code.visualstudio.com/latest/linux-deb-arm64/stable -O /tmp/vscode.deb
-EOF
-rm /tmp/vscode.deb"""},
-    {"name":"إزالة فيجوال ستوديو كود", "command":"sudo apt autoremove --purge -y code"},
-    {"name":"تثبيت ليبر أوفيس", "command":"sudo apt update && sudo apt install -y libreoffice"},
-    {"name":"إزالة ليبر أوفيس", "command":"sudo apt autoremove --purge -y libreoffice"},
-    {"name":"تفعيل سلة المهملات", "command":"sudo apt update && sudo apt install -y gvfs && echo 'تم التثبيت، أعد تشغيل التطبيق لاستخدام سلة المهملات.'"},
-    {"name":"تنظيف ذاكرة التخزين المؤقت", "command":"sudo apt clean"},
-    {"name":"إيقاف التشغيل", "command":"stopvnc\nexit\nexit"},
-    {"name":"matrix", "command":"timeout 8 cmatrix"}
-  ];
-
-  // Hindi commands - Updated with Blender and VS Code
-  static const List<Map<String, String>> _hindiCommands = [
-    {"name":"पैकेज अपडेट और अपग्रेड", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"सिस्टम जानकारी", "command":"neofetch -L && neofetch --off"},
-    {"name":"स्क्रीन साफ करें", "command":"clear"},
-    {"name":"कार्य बाधित करें", "command":"\x03"},
-    {"name":"ग्राफिक सॉफ्टवेयर क्रिता इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"क्रिता अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"वीडियो एडिटिंग सॉफ्टवेयर केडेनलाइव इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"केडेनलाइव अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"3D मॉडलिंग सॉफ्टवेयर ब्लेंडर इंस्टॉल करें", "command":"sudo apt update && sudo apt install -y blender"},
-    {"name":"ब्लेंडर अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y blender"},
-    {"name":"कोड एडिटर विजुअल स्टूडियो कोड इंस्टॉल करें", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/vscode.deb
-wget https://update.code.visualstudio.com/latest/linux-deb-arm64/stable -O /tmp/vscode.deb
-EOF
-rm /tmp/vscode.deb"""},
-    {"name":"विजुअल स्टूडियो कोड अनइंस्टॉल करें", "command":"sudo apt autoremove --purge -y code"},
-    {"name":"रीसाइकिल बिन सक्षम करें", "command":"sudo apt update && sudo apt install -y gvfs && echo 'इंस्टॉलेशन पूर्ण, रीसाइकिल बिन का उपयोग करने के लिए ऐप को पुनरारंभ करें।'"},
-    {"name":"पैकेज कैश साफ करें", "command":"sudo apt clean"},
-    {"name":"शटडाउन", "command":"stopvnc\nexit\nexit"},
-    {"name":"matrix", "command":"timeout 8 cmatrix"}
-  ];
-
-  // Spanish commands - Updated with Blender and VS Code
-  static const List<Map<String, String>> _spanishCommands = [
-    {"name":"Actualizar y mejorar paquetes", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"Información del sistema", "command":"neofetch -L && neofetch --off"},
-    {"name":"Limpiar pantalla", "command":"clear"},
-    {"name":"Interrumpir tarea", "command":"\x03"},
-    {"name":"Instalar software gráfico Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"Desinstalar Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"Instalar editor de video Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"Desinstalar Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"Instalar software de modelado 3D Blender", "command":"sudo apt update && sudo apt install -y blender"},
-    {"name":"Desinstalar Blender", "command":"sudo apt autoremove --purge -y blender"},
-    {"name":"Instalar editor de código Visual Studio Code", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/vscode.deb
-wget https://update.code.visualstudio.com/latest/linux-deb-arm64/stable -O /tmp/vscode.deb
-EOF
-rm /tmp/vscode.deb"""},
-    {"name":"Desinstalar Visual Studio Code", "command":"sudo apt autoremove --purge -y code"},
-    {"name":"Habilitar papelera de reciclaje", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Instalación completa, reinicie la aplicación para usar la papelera de reciclaje.'"},
-    {"name":"Limpiar caché de paquetes", "command":"sudo apt clean"},
-    {"name":"Apagar", "command":"stopvnc\nexit\nexit"},
-    {"name":"matrix", "command":"timeout 8 cmatrix"}
-  ];
-
-  // Portuguese commands - Updated with Blender and VS Code
-  static const List<Map<String, String>> _portugueseCommands = [
-    {"name":"Atualizar y mejorar pacotes", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"Informações do sistema", "command":"neofetch -L && neofetch --off"},
-    {"name":"Limpar tela", "command":"clear"},
-    {"name":"Interromper tarefa", "command":"\x03"},
-    {"name":"Instalar software gráfico Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"Desinstalar Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"Instalar editor de vídeo Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"Desinstalar Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"Instalar software de modelagem 3D Blender", "command":"sudo apt update && sudo apt install -y blender"},
-    {"name":"Desinstalar Blender", "command":"sudo apt autoremove --purge -y blender"},
-    {"name":"Instalar editor de código Visual Studio Code", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/vscode.deb
-wget https://update.code.visualstudio.com/latest/linux-deb-arm64/stable -O /tmp/vscode.deb
-EOF
-rm /tmp/vscode.deb"""},
-    {"name":"Desinstalar Visual Studio Code", "command":"sudo apt autoremove --purge -y code"},
-    {"name":"Habilitar lixeira", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Instalação completa, reinicie o aplicativo para usar a lixeira.'"},
-    {"name":"Limpar cache de pacotes", "command":"sudo apt clean"},
-    {"name":"Desligar", "command":"stopvnc\nexit\nexit"},
-    {"name":"matrix", "command":"timeout 8 cmatrix"}
-  ];
-
-  // French commands - Updated with Blender and VS Code
-  static const List<Map<String, String>> _frenchCommands = [
-    {"name":"Mettre à jour et améliorer les paquets", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"Informations système", "command":"neofetch -L && neofetch --off"},
-    {"name":"Effacer l'écran", "command":"clear"},
-    {"name":"Interrompre la tâche", "command":"\x03"},
-    {"name":"Installer le logiciel graphique Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"Désinstaller Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"Installer l'éditeur vidéo Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"Désinstaller Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"Installer le logiciel de modélisation 3D Blender", "command":"sudo apt update && sudo apt install -y blender"},
-    {"name":"Désinstaller Blender", "command":"sudo apt autoremove --purge -y blender"},
-    {"name":"Installer l'éditeur de code Visual Studio Code", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/vscode.deb
-wget https://update.code.visualstudio.com/latest/linux-deb-arm64/stable -O /tmp/vscode.deb
-EOF
-rm /tmp/vscode.deb"""},
-    {"name":"Désinstaller Visual Studio Code", "command":"sudo apt autoremove --purge -y code"},
-    {"name":"Activer la corbeille", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Installation terminée, redémarrez l\\'application pour utiliser la corbeille.'"},
-    {"name":"Nettoyer le cache des paquets", "command":"sudo apt clean"},
-    {"name":"Éteindre", "command":"stopvnc\nexit\nexit"},
-    {"name":"matrix", "command":"timeout 8 cmatrix"}
-  ];
-
-  // Russian commands - Updated with Blender and VS Code
-  static const List<Map<String, String>> _russianCommands = [
-    {"name":"Обновить и улучшить пакеты", "command":"sudo dpkg --configure -a && sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y"},
-    {"name":"Информация о системе", "command":"neofetch -L && neofetch --off"},
-    {"name":"Очистить экран", "command":"clear"},
-    {"name":"Прервать задачу", "command":"\x03"},
-    {"name":"Установить графическое ПО Krita", "command":"sudo apt update && sudo apt install -y krita krita-l10n"},
-    {"name":"Удалить Krita", "command":"sudo apt autoremove --purge -y krita krita-l10n"},
-    {"name":"Установить видеоредактор Kdenlive", "command":"sudo apt update && sudo apt install -y kdenlive"},
-    {"name":"Удалить Kdenlive", "command":"sudo apt autoremove --purge -y kdenlive"},
-    {"name":"Установить 3D-моделирование Blender", "command":"sudo apt update && sudo apt install -y blender"},
-    {"name":"Удалить Blender", "command":"sudo apt autoremove --purge -y blender"},
-    {"name":"Установить редактор кода Visual Studio Code", "command":r"""cat << 'EOF' | sh && sudo dpkg --configure -a && sudo apt update && sudo apt install -y /tmp/vscode.deb
-wget https://update.code.visualstudio.com/latest/linux-deb-arm64/stable -O /tmp/vscode.deb
-EOF
-rm /tmp/vscode.deb"""},
-    {"name":"Удалить Visual Studio Code", "command":"sudo apt autoremove --purge -y code"},
-    {"name":"Включить корзину", "command":"sudo apt update && sudo apt install -y gvfs && echo 'Установка завершена, перезапустите приложение для использования корзины.'"},
-    {"name":"Очистить кэш пакетов", "command":"sudo apt clean"},
-    {"name":"Выключить", "command":"stopvnc\nexit\nexit"},
-    {"name":"matrix", "command":"timeout 8 cmatrix"}
-  ];
-
-  // Wine commands for different languages (simplified versions)
-  static const List<Map<String, String>> _japaneseWineCommands = [
-    {"name":"Wine設定", "command":"winecfg"},
-    {"name":"文字化け修正", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"スタートメニューフォルダ", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
-  ];
-
-  static const List<Map<String, String>> _arabicWineCommands = [
-    {"name":"إعدادات Wine", "command":"winecfg"},
-    {"name":"إصلاح الأحرف", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"مجلد قائمة ابدأ", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
-  ];
-
-  static const List<Map<String, String>> _hindiWineCommands = [
-    {"name":"Wine सेटिंग्स", "command":"winecfg"},
-    {"name":"वर्ण सुधार", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"स्टार्ट मेनू फोल्डर", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
-  ];
-
-  static const List<Map<String, String>> _spanishWineCommands = [
-    {"name":"Configuración de Wine", "command":"winecfg"},
-    {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"Carpeta del menú Inicio", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
-  ];
-
-  static const List<Map<String, String>> _portugueseWineCommands = [
-    {"name":"Configurações do Wine", "command":"winecfg"},
-    {"name":"Reparar caracteres", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"Pasta do menu Iniciar", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
-  ];
-
-  static const List<Map<String, String>> _frenchWineCommands = [
-    {"name":"Paramètres Wine", "command":"winecfg"},
-    {"name":"Réparer les caractères", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"Dossier du menu Démarrer", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
-  ];
-
-  static const List<Map<String, String>> _russianWineCommands = [
-    {"name":"Настройки Wine", "command":"winecfg"},
-    {"name":"Исправить символы", "command":"regedit Z:\\\\home\\\\tiny\\\\.local\\\\share\\\\tiny\\\\extra\\\\chn_fonts.reg && wine reg delete \"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes\" /va /f"},
-    {"name":"Папка меню Пуск", "command":"wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\""},
-    {"name":"Remove Wine", "command":"rm -rf /opt/wine"},
-  ];
 }
 
-// Android 10+ Modern Settings Button Styles
+// Android 10+ Modern Settings Button Styles (unchanged)
 class AppButtonStyles {
-  // Modern Android 10+ Settings Button Style (for command buttons)
   static final ButtonStyle modernSettingsButton = TextButton.styleFrom(
     backgroundColor: Colors.transparent,
     foregroundColor: AppColors.textPrimary,
@@ -663,7 +750,6 @@ class AppButtonStyles {
     ),
   );
 
-  // Compact Settings Button Style (for smaller buttons)
   static final ButtonStyle compactSettingsButton = TextButton.styleFrom(
     backgroundColor: Colors.transparent,
     foregroundColor: AppColors.textPrimary,
@@ -695,7 +781,6 @@ class AppButtonStyles {
     ),
   );
 
-  // Primary Action Button (for important actions)
   static final ButtonStyle primaryActionButton = ElevatedButton.styleFrom(
     backgroundColor: AppColors.primaryPurple,
     foregroundColor: Colors.white,
@@ -712,7 +797,6 @@ class AppButtonStyles {
     minimumSize: const Size(double.infinity, 56),
   );
 
-  // Danger Action Button (for destructive actions)
   static final ButtonStyle dangerActionButton = ElevatedButton.styleFrom(
     backgroundColor: Colors.red.withOpacity(0.1),
     foregroundColor: Colors.red,

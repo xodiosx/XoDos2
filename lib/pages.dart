@@ -1145,7 +1145,7 @@ OutlinedButton(
                     style: D.commandButtonStyle,
                     child: Text("${AppLocalizations.of(context)!.installHangoverStable}（10.14）"),
                     onPressed: () async {
-                      Util.termWrite("bash /home/tiny/.local/share/tiny/extra/install-hangover-stable");
+                      Util.termWrite("bash /extra/install-hangover-stable");
                       G.pageIndex.value = 0;
                     },
                   ),
@@ -1153,7 +1153,7 @@ OutlinedButton(
                 style: D.commandButtonStyle,
                 child: Text(AppLocalizations.of(context)!.installHangoverLatest),
                 onPressed: () async {
-                  Util.termWrite("bash //extra/install-hangover");
+                  Util.termWrite("bash /extra/install-hangover");
                   G.pageIndex.value = 0;
                 },
               ),
@@ -1827,8 +1827,8 @@ class _TerminalPageState extends State<TerminalPage> {
     Util.termWrite('stopvnc');
     Util.termWrite('pkill -f dbus');
     Util.termWrite('pkill -f wine');
-    Util.termWrite('pkill -f virgl*');
-    Util.termWrite('pkill -f lxqt');
+    Util.termWrite('pkill -f virgl_*');
+    Util.termWrite('pkill -f pulsea*');
     Util.termWrite('exit');
     Util.termWrite('exit');
     

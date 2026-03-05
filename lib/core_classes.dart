@@ -704,8 +704,6 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export DXVK_STATE_CACHE_PATH=/data/data/com.xodos/files/home/.cache
     export ANDROID_TZDATA_ROOT=/apex/com.android.tzdata
     export SHELL_CMD__PACKAGE_NAME=com.xodos
-    #export XCURSOR_THEME=gaming
-#    export PATH=/data/data/com.xodos/files/usr/bin:\$PATH
     export ANDROID_ASSETS=/system/app
     export _=/data/data/com.xodos/files/usr/bin/env
 #export XDG_DATA_DIRS=\$PREFIX/usr/share
@@ -716,9 +714,8 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
 unset VK_ICD_FILENAMES
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 #exec \$DATA_DIR/usr/bin/bash --login   
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$LD_LIBRARY_PATH
-unset PATH
-export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:\$LD_LIBRARY_PATH
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
      if [ -d "\$prefixsh" ]; then
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
@@ -790,7 +787,7 @@ if (Util.getGlobal("virgl")) {
 export DATA_DIR=${G.dataPath}
 
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-#export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 #${G.dataPath}/usr/bin/virgl_test_server ${Util.getGlobal("defaultVirglCommand")} &
 """);
@@ -813,8 +810,8 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
   
   Util.execute("""
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-#export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:/system/lib64
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 #$fullCommand
@@ -858,8 +855,8 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
         Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
@@ -1040,7 +1037,7 @@ echo "getifaddrs bridge disabled"
     Util.termWrite("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+#export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
@@ -1059,7 +1056,7 @@ echo "Venus server started in background"
     Util.termWrite("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:/data/data/com.xodos/files/usr/lib
+#export LD_LIBRARY_PATH=\$DATA_DIR/lib:/data/data/com.xodos/files/usr/lib
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
