@@ -106,10 +106,11 @@ class _DxvkDialogState extends State<DxvkDialog> {
       await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("echo '# DXVK HUD disabled' >> ${G.dataPath}/usr/opt/hud");
     }
-    
+    await Future.delayed(const Duration(milliseconds: 50));
+Util.termWrite("source ${G.dataPath}/usr/opt/hud");
     Util.termWrite("echo 'HUD settings saved to ${G.dataPath}/usr/opt/hud'");
     await Future.delayed(const Duration(milliseconds: 50));
-    Util.termWrite("echo '#================================'");
+    //Util.termWrite("echo '#================================'");
   }
 
   Future<void> _extractDxvk() async {
@@ -805,7 +806,7 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     
     Util.termWrite("echo '#================================'");
     Util.termWrite("echo 'Environment settings applied!'");
-    Util.termWrite("echo '#================================'");
+//    Util.termWrite("echo '#================================'");
   }
 
   void _showDynarecDialog() {
@@ -1337,7 +1338,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
   
   // Venus settings
   bool _androidVenusEnabled = true;
-  String _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+  String _defaultTurnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink TU_DEBUG=noconform';
   String _defaultVenusCommand = '--no-virgl --venus --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
   String _defaultVenusOpt = '';
   String _defaultVirglCommand = '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
@@ -1519,9 +1520,11 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       await _applyWrapperSettings();
     }
     
+    await Future.delayed(const Duration(milliseconds: 50));
+Util.termWrite("source ${G.dataPath}/usr/opt/drv");
     Util.termWrite("echo '#================================'");
     Util.termWrite("echo 'GPU driver settings applied!'");
-    Util.termWrite("echo '#================================'");
+   // Util.termWrite("echo '#================================'");
   }
 
   Future<void> _applyTurnipSettings() async {
