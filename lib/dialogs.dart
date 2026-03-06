@@ -88,6 +88,8 @@ class _DxvkDialogState extends State<DxvkDialog> {
       await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("echo 'export MANGOHUD_DLSYM=1' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("echo 'export MANGOHUD_CONFIG=fps,ram,gpu_name,horizontal,horizontal_stretch,no_small_font,background_alpha=0.2,alpha=0.9' >> ${G.dataPath}/usr/opt/hud");
+      await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("echo '# MANGOHUD enabled' >> ${G.dataPath}/usr/opt/hud");
     } else {
       Util.termWrite("echo 'export MANGOHUD=0' >> ${G.dataPath}/usr/opt/hud");
