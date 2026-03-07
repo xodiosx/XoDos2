@@ -887,9 +887,10 @@ ExpansionPanel(
         value: Util.getGlobal("virgl") as bool,
         onChanged: (value) {
           if (value) {
-            // If enabling virgl, disable venus and turnip
+            // If enabling virgl, disable venus, turnip, and angle
             G.prefs.setBool("venus", false);
             G.prefs.setBool("turnip", false);
+            G.prefs.setBool("angle", false);
             // Also disable DRI3 if it was enabled
             if (Util.getGlobal("dri3")) {
               G.prefs.setBool("dri3", false);
@@ -940,10 +941,10 @@ ExpansionPanel(
         value: Util.getGlobal("venus") as bool,
         onChanged: (value) {
           if (value) {
-            // If enabling venus, disable virgl and turnip
+            // If enabling venus, disable virgl, turnip, and angle
             G.prefs.setBool("virgl", false);
             G.prefs.setBool("turnip", false);
-
+            G.prefs.setBool("angle", false);
           }
           G.prefs.setBool("venus", value);
           
@@ -990,9 +991,10 @@ ExpansionPanel(
         value: Util.getGlobal("turnip") as bool,
         onChanged: (value) async {
           if (value) {
-            // If enabling turnip, disable virgl and venus
+            // If enabling turnip, disable virgl, venus, and angle
             G.prefs.setBool("virgl", false);
             G.prefs.setBool("venus", false);
+            G.prefs.setBool("angle", false);
           }
           G.prefs.setBool("turnip", value);
           if (!value && Util.getGlobal("dri3")) {
@@ -1007,10 +1009,10 @@ ExpansionPanel(
         subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
         value: Util.getGlobal("dri3") as bool,
         onChanged: (value) async {
-        final bool useX11 = Util.getGlobal("useX11") == true;
-  final bool turnip = Util.getGlobal("turnip") == true;
-  final bool venus  = Util.getGlobal("venus") == true;
-           if (value && !(useX11 && (turnip || venus))) {
+          final bool useX11 = Util.getGlobal("useX11") == true;
+          final bool turnip = Util.getGlobal("turnip") == true;
+          final bool venus  = Util.getGlobal("venus") == true;
+          if (value && !(useX11 && (turnip || venus))) {
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1023,28 +1025,92 @@ ExpansionPanel(
         },
       ),
       
-      //  NEW SWITCH FOR GL4ES
-SwitchListTile(
-  title: const Text('Enable gl4es'),
-  subtitle: const Text('Use gl4es OpenGL wrapper (requires X11)'),
-  value: Util.getGlobal("gl4es") as bool,
-  onChanged: (value) async {
-    final bool useX11 = Util.getGlobal("useX11") == true;
-    // Optional: enforce X11 requirement (gl4es works best with X11)
-    if (value && !useX11) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('gl4es requires X11 to be enabled')),
-      );
-      return;
-    }
-    await G.prefs.setBool("gl4es", value);
-    setState(() {});
-  },
-),
-//
-            
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+      
+      // ANGLE section
+      Text(
+        // TODO: Add localization keys for ANGLE
+        'ANGLE (OpenGL ES to Vulkan)',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      const SizedBox.square(dimension: 8),
+      Text(
+        // TODO: Add localization
+        'ANGLE translates OpenGL ES calls to Vulkan for better compatibility and performance.',
+      ),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultAngleCommand") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: 'ANGLE Server Parameters',
+          hintText: 'Example: --angle-gl',
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultAngleCommand", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultAngleOpt") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: 'ANGLE Environment Variables',
+          hintText: 'Example: ANGLE_DEFAULT_PLATFORM=vulkan',
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultAngleOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text('Enable ANGLE'),
+        subtitle: Text('Use ANGLE hardware acceleration (requires restart)'),
+        value: Util.getGlobal("angle") as bool,
+        onChanged: (value) {
+          if (value) {
+            // If enabling ANGLE, disable virgl, venus, and turnip
+            G.prefs.setBool("virgl", false);
+            G.prefs.setBool("venus", false);
+            G.prefs.setBool("turnip", false);
+            // Optionally disable DRI3 if it conflicts
+            if (Util.getGlobal("dri3")) {
+              G.prefs.setBool("dri3", false);
+            }
+          }
+          G.prefs.setBool("angle", value);
+          setState(() {});
+        },
+      ),
+      
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+      
+      // gl4es switch
+      SwitchListTile(
+        title: const Text('Enable gl4es'),
+        subtitle: const Text('Use gl4es OpenGL wrapper (requires X11)'),
+        value: Util.getGlobal("gl4es") as bool,
+        onChanged: (value) async {
+          final bool useX11 = Util.getGlobal("useX11") == true;
+          if (value && !useX11) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('gl4es requires X11 to be enabled')),
+            );
+            return;
+          }
+          await G.prefs.setBool("gl4es", value);
+          setState(() {});
+        },
+      ),
+      
       const SizedBox.square(dimension: 16),
     ]),
   ),

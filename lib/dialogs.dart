@@ -2107,7 +2107,7 @@ Future<void> _startAngleServer() async {
                         IconButton(
                           icon: const Icon(Icons.refresh),
                           onPressed: () {
-                            _startVirglServer();
+                            _startAngleServer();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Restarting Angle server...'),
