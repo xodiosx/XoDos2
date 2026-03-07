@@ -1337,6 +1337,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
   bool _wrapperDri3Enabled = false;
   bool _venusDri3Enabled = false;
   bool _virglEnabled = false;
+  bool _angleEnabled = false;
   
   // Venus settings
   bool _androidVenusEnabled = true;
@@ -1345,11 +1346,14 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
   String _defaultVenusOpt = '';
   String _defaultVirglCommand = '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
   String _defaultVirglOpt = 'GALLIUM_DRIVER=virpipe';
+  String _defaultAngleCommand = '--angle-gl';
+String _defaultAngleOpt = 'GALLIUM_DRIVER=virpipe';
   bool _isX11Enabled = false;
   
   // Server status
   bool _virglServerRunning = false;
   bool _venusServerRunning = false;
+  bool _angleServerRunning = false;
 
   @override
   void initState() {
@@ -1364,7 +1368,35 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
   Future<void> _checkServerStatus() async {
     await _updateVirglServerStatus();
     await _updateVenusServerStatus();
+    await _updateAngleServerStatus();
   }
+  
+Future<void> _updateAngleServerStatus() async {
+    try {
+      final result = await Process.run(
+        '${G.dataPath}/usr/bin/sh',
+        [
+          '-c',
+          '${G.dataPath}/usr/bin/pgrep -a virgl_ |'
+          ' grep angle'
+        ],
+      );
+
+      final output = result.stdout.toString().trim();
+      print('Angle check output: "$output"');
+
+      setState(() {
+        _angleServerRunning = output.isNotEmpty;
+      });
+    } catch (e) {
+      print('Error checking Angle server status: $e');
+      setState(() {
+        _angleServerRunning = false;
+      });
+    }
+  }
+
+
 
   Future<void> _updateVirglServerStatus() async {
     try {
@@ -1422,6 +1454,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       _wrapperDri3Enabled = G.prefs.getBool('wrapper_dri3') ?? false;
       _venusDri3Enabled = G.prefs.getBool('venus_dri3') ?? false;
       _virglEnabled = G.prefs.getBool('virgl') ?? false;
+      _angleEnabled = G.prefs.getBool('angle') ?? false;
       _isX11Enabled = G.prefs.getBool('useX11') ?? false;
       _androidVenusEnabled = G.prefs.getBool('androidVenus') ?? true;
       
@@ -1436,6 +1469,8 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       _defaultVenusOpt = G.prefs.getString('defaultVenusOpt') ?? ' ANDROID_VENUS=1';
       _defaultVirglCommand = G.prefs.getString('defaultVirglCommand') ?? '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
       _defaultVirglOpt = G.prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
+      _defaultAngleCommand = G.prefs.getString('defaultAngleCommand') ?? '--angle-gl';
+      _defaultAngleOpt = G.prefs.getString('defaultAngleOpt') ?? 'GALLIUM_DRIVER=virpipe';
       
       _selectedDriverType = G.prefs.getString('gpu_driver_type') ?? 'wrapper';
       _selectedDriverFile = G.prefs.getString('selected_gpu_driver');
@@ -1463,6 +1498,7 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       await G.prefs.setBool('wrapper_dri3', _wrapperDri3Enabled);
       await G.prefs.setBool('venus_dri3', _venusDri3Enabled);
       await G.prefs.setBool('virgl', _virglEnabled);
+      await G.prefs.setBool('angle', _angleEnabled);
       await G.prefs.setBool('androidVenus', _androidVenusEnabled);
       
       String cleanTurnipOpt = _removeVkIcdFromEnvString(_defaultTurnipOpt);
@@ -1475,6 +1511,9 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       await G.prefs.setString('defaultVenusOpt', _defaultVenusOpt);
       await G.prefs.setString('defaultVirglCommand', _defaultVirglCommand);
       await G.prefs.setString('defaultVirglOpt', _defaultVirglOpt);
+      await G.prefs.setBool('angle', _selectedDriverType == 'angle');
+      await G.prefs.setString('defaultAngleCommand', _defaultAngleCommand);
+      await G.prefs.setString('defaultAngleOpt', _defaultAngleOpt);
       
       G.pageIndex.value = 0;
       await Future.delayed(const Duration(milliseconds: 300));
@@ -1518,6 +1557,8 @@ class _GpuDriversDialogState extends State<GpuDriversDialog> {
       await _applyVenusSettings();
     } else if (_selectedDriverType == 'virgl') {
       await _applyVirglSettings();
+        } else if (_selectedDriverType == 'angle') {
+      await _applyAngleSettings();
     } else if (_selectedDriverType == 'wrapper') {
       await _applyWrapperSettings();
     }
@@ -1565,6 +1606,9 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
   Future<void> _applyVirglSettings() async {
     Util.termWrite("echo 'export $_defaultVirglOpt' >> ${G.dataPath}/usr/opt/drv");
     await Future.delayed(const Duration(milliseconds: 50));
+  }Future<void> _applyAngleSettings() async {
+    Util.termWrite("echo 'export $_defaultAngleOpt' >> ${G.dataPath}/usr/opt/drv");
+    await Future.delayed(const Duration(milliseconds: 50));
   }
 
   Future<void> _applyWrapperSettings() async {
@@ -1607,7 +1651,7 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
     Util.termWrite("echo 'Starting VirGL server...'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/.virgl_test");
+    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/");
     await Future.delayed(const Duration(milliseconds: 50));
     
     String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
@@ -1632,6 +1676,48 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
     await Future.delayed(const Duration(seconds: 1));
     await _updateVirglServerStatus();
   }
+
+
+Future<void> _startAngleServer() async {
+    G.pageIndex.value = 0;
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    Util.termWrite("pkill -f virgl_*");
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    Util.termWrite("echo '#================================'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("echo 'Starting VirGL server...'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
+    
+    String processedCommand = _defaultAngleCommand.replaceAll('\$CONTAINER_DIR', containerDir);
+    
+    Util.termWrite("echo 'Container directory: $containerDir'");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("${G.dataPath}/usr/bin/virgl_test_server_android $processedCommand &");    
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("export GALLIUM_DRIVER=virpipe ");
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    Util.termWrite("sleep 1 && if pgrep -f virgl_test_server > /dev/null; then echo 'VirGL angle server started successfully'; else echo 'Failed to start VirGL server'; fi");
+    
+    await Future.delayed(const Duration(milliseconds: 50));
+    Util.termWrite("echo '#================================'");
+    
+    // Update status after starting
+    await Future.delayed(const Duration(seconds: 1));
+    await _updateVirglServerStatus();
+  }
+
+
 
   Future<void> _startVenusServer() async {
     G.pageIndex.value = 0;
@@ -1870,6 +1956,16 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
                             ),
                           ),
                           DropdownMenuItem(
+  value: 'angle',
+  child: Row(
+    children: [
+      Icon(Icons.hardware, color: Colors.teal),
+      SizedBox(width: 8),
+      Text('ANGLE (OpenGL ES to Vulkan)'),
+    ],
+  ),
+),
+                          DropdownMenuItem(
                             value: 'turnip',
                             child: Row(
                               children: [
@@ -1980,9 +2076,52 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
                         IconButton(
                           icon: const Icon(Icons.stop),
                           onPressed: _virglServerRunning ? () async {
-                            Util.termWrite("pkill -f virgl_test_server");
+                            Util.termWrite("pkill -f virgl_*");
                             await Future.delayed(const Duration(seconds: 1));
                             await _updateVirglServerStatus();
+                          } : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              
+                 if (_selectedDriverType == 'angle')
+                Card(
+                  color: _angleServerRunning ? Colors.green[50] : Colors.red[50],
+                  child: ListTile(
+                    leading: Icon(
+                      _angleServerRunning ? Icons.check_circle : Icons.error,
+                      color: _angleServerRunning ? Colors.green : Colors.red,
+                    ),
+                    title: const Text('Angle Server'),
+                    subtitle: Text(
+                      _angleServerRunning ? 'Running' : 'Not running',
+                      style: TextStyle(
+                        color: _angleServerRunning ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: () {
+                            _startVirglServer();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Restarting Angle server...'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.stop),
+                          onPressed: _angleServerRunning ? () async {
+                            Util.termWrite("pkill -f virgl_*");
+                            await Future.delayed(const Duration(seconds: 1));
+                            await _updateAngleServerStatus();
                           } : null,
                         ),
                       ],
@@ -2041,6 +2180,7 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
               
               if (_selectedDriverType == 'turnip') _buildTurnipSettings(),
               if (_selectedDriverType == 'virgl') _buildVirglSettings(),
+              if (_selectedDriverType == 'angle') _buildAngleSettings(),
               if (_selectedDriverType == 'venus') _buildVenusSettings(),
               if (_selectedDriverType == 'wrapper') _buildWrapperSettings(),
               
@@ -2291,7 +2431,52 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
       ),
     );
   }
-
+Widget _buildAngleSettings() {
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ANGLE Settings',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            maxLines: 2,
+            initialValue: _defaultAngleCommand,
+            decoration: const InputDecoration(
+              labelText: 'ANGLE Server Parameters',
+              hintText: 'Example: --angle-gl',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _defaultAngleCommand = value;
+              });
+            },
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            maxLines: 2,
+            initialValue: _defaultAngleOpt,
+            decoration: const InputDecoration(
+              labelText: 'ANGLE Environment Variables',
+              hintText: 'Example: ANGLE_DEFAULT_PLATFORM=vulkan',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _defaultAngleOpt = value;
+              });
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
   Widget _buildWrapperSettings() {
     return Card(
       child: Padding(

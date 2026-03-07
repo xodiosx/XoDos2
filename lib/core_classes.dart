@@ -124,6 +124,9 @@ class Util {
       case "defaultVenusCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--no-virgl --venus --socket-path=/data/data/com.xodos/files/containers/0/tmp/.virgl_test");
       case "defaultVenusOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}(" VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/virtio_icd.json VN_DEBUG=vtest ");
       case "androidVenus" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
+      case "angle": return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
+      case "defaultAngleOpt": return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}(" GALLIUM_DRIVER=virpipe ");
+      case "defaultAngleCommand": return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--angle-gl");
       case "turnip" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "dri3" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "gl4es" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
@@ -678,14 +681,14 @@ prefixsh="/data/data/com.xodos/files/usr/bin"
     export TERMUX_APP__VERSION_CODE=$versionCode
     export TERMUX_VERSION=$versionName
     export EXTERNAL_STORAGE=/sdcard
-    export LD_PRELOAD=/data/data/com.xodos/files/usr/lib/libtermux-exec-ld-preload.so
+    #export LD_PRELOAD=/data/data/com.xodos/files/usr/lib/libtermux-exec-ld-preload.so
     export HOME=/data/data/com.xodos/files/home
     export LANG=en_US.UTF-8
     export SHELL_CMD__TERMINAL_SESSION_NUMBER_SINCE_BOOT=0    
     export ANDROID_RUNTIME_ROOT=/apex/com.android.runtime
     export TERMUX_APP__PACKAGE_MANAGER=apt
     export DEX2OATBOOTCLASSPATH=/apex/com.android.runtime/javalib/core-oj.jar:/apex/com.android.runtime/javalib/core-libart.jar:/apex/com.android.runtime/javalib/okhttp.jar:/apex/com.android.runtime/javalib/bouncycastle.jar:/apex/com.android.runtime/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/system/framework/knoxsdk.jar:/system/framework/knoxanalyticssdk.jar:/system/framework/smartbondingservice.jar:/system/framework/securetimersdk.jar:/system/framework/fipstimakeystore.jar:/system/framework/timakeystore.jar:/system/framework/sec_sdp_sdk.jar:/system/framework/sec_sdp_hidden_sdk.jar:/system/framework/drutils.jar:/system/framework/android.test.base.jar:/system/framework/ucmopensslenginehelper.jar:/system/framework/esecomm.jar:/system/framework/tcmiface.jar:/system/framework/QPerformance.jar:/system/framework/UxPerformance.jar
-  #  export TMPDIR=/data/data/com.xodos/files/usr/tmp
+    export TMPDIR=/data/data/com.xodos/files/usr/tmp
     export ANDROID_DATA=/data
     export TERMUX_APP__AM_SOCKET_SERVER_ENABLED=true
     export SHELL_CMD__SHELL_ID=0    
@@ -780,6 +783,7 @@ TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$
 bool virglEnabled = Util.getGlobal("virgl") as bool;
 bool venusEnabled = Util.getGlobal("venus") as bool;
 bool turnipEnabled = Util.getGlobal("turnip") as bool;
+bool angleEnabled = Util.getGlobal("angle") as bool;
 
 // Update the hardware acceleration section in Workflow.launchCurrentContainer():
 if (Util.getGlobal("virgl")) {
@@ -793,6 +797,26 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 """);
   extraOpt += "${Util.getGlobal("defaultVirglOpt")} ";
 } 
+
+// Update the angle hardware acceleration section in Workflow.launchCurrentContainer():
+if (Util.getGlobal("angle")) {
+  Util.execute("""
+export DATA_DIR=${G.dataPath}
+pkill -f virgl_* 2>/dev/null || true
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
+unset LD_LIBRARY_PATH
+export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+#${G.dataPath}/usr/bin/virgl_test_server_android --angle-gl & 
+${G.dataPath}/usr/bin/virgl_test_server_android ${Util.getGlobal("defaultAngleCommand")} > \${CONTAINER_DIR}/angle.log 2>&1 &
+
+echo "export GALLIUM_DRIVER=virpipe
+" > \$DATA_DIR/usr/opt/drv
+echo "angle server started in background"
+""");
+  extraOpt += "${Util.getGlobal("defaultAngleOpt")} ";
+} 
+
+
  if (Util.getGlobal("venus")) {
   // Venus hardware acceleration
   String venusCommand = Util.getGlobal("defaultVenusCommand") as String;
@@ -977,6 +1001,7 @@ static Future<void> workflow() async {
 // NEW METHOD: Send graphics server command to terminal
 static Future<void> startGraphicsServerInTerminal() async {
   bool virglEnabled = Util.getGlobal("virgl") as bool;
+  bool angleEnabled = Util.getGlobal("angle") as bool;
   bool venusEnabled = Util.getGlobal("venus") as bool;
   
 if (Util.getGlobal("getifaddrsBridge")) {
@@ -1044,9 +1069,10 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 pkill -f 'virgl_*'  2>/dev/null || true
 rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
 . /data/data/com.xodos/files/usr/opt/drv
-VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json $androidVenusEnv virgl_test_server $venusCommand > \${CONTAINER_DIR}/venus.log 2>&1 &
-export MESA_VK_WSI_PRESENT_MODE=mailbox
+echo "export MESA_VK_WSI_PRESENT_MODE=mailbox
 export VN_DEBUG=vtest
+VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json $androidVenusEnv virgl_test_server $venusCommand > \${CONTAINER_DIR}/venus.log 2>&1 &
+" > \$DATA_DIR/usr/opt/drv
 echo "Venus server started in background"
 """);
     
@@ -1065,6 +1091,9 @@ rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
 
 virgl_test_server ${Util.getGlobal("defaultVirglCommand")} > \${CONTAINER_DIR}/virgl.log 2>&1 &
 
+echo "export GALLIUM_DRIVER=virpipe
+unset VK_ICD_FILENAMES
+" > \$DATA_DIR/usr/opt/drv
 echo "Virgl server started in background"
 """);
   }
