@@ -1094,7 +1094,6 @@ rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
 virgl_test_server ${Util.getGlobal("defaultVirglCommand")} > \${CONTAINER_DIR}/virgl.log 2>&1 &
 
 echo "export GALLIUM_DRIVER=virpipe
-unset VK_ICD_FILENAMES
 " > \$DATA_DIR/usr/opt/drv
 echo "Virgl server started in background"
 """);
