@@ -1653,7 +1653,9 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
     
     Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/.virgl_test");
     await Future.delayed(const Duration(milliseconds: 50));
-    
+    Util.termWrite("rm -rf ${G.dataPath}/usr/tmp/.virgl_test");
+    await Future.delayed(const Duration(milliseconds: 50));
+ 
     String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
     
     String processedCommand = _defaultVirglCommand.replaceAll('\$CONTAINER_DIR', containerDir);
@@ -1693,6 +1695,9 @@ Future<void> _startAngleServer() async {
     
     Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/.virgl_test");
     await Future.delayed(const Duration(milliseconds: 50));
+    Util.termWrite("rm -rf ${G.dataPath}/usr/tmp/.virgl_test");
+    await Future.delayed(const Duration(milliseconds: 50));
+ 
     
     String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
     

@@ -650,6 +650,8 @@ export FONTCONFIG_PATH=\$PREFIX/etc/fonts
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
+#mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
+rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
 export DISPLAY=:4
 export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
 export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
