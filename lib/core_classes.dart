@@ -729,6 +729,8 @@ fi
      fi
 cd
 unset LD_LIBRARY_PATH
+unset EGL_PLATFORM
+unset ANGLE_DEFAULT_PLATFORM
 """;
     
     // Write the commands to the terminal
@@ -807,6 +809,8 @@ export DATA_DIR=${G.dataPath}
 pkill -f virgl_* 2>/dev/null || true
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 unset LD_LIBRARY_PATH
+unset EGL_PLATFORM
+unset ANGLE_DEFAULT_PLATFORM
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 #${G.dataPath}/usr/bin/virgl_test_server_android --angle-gl & 
 ${G.dataPath}/usr/bin/virgl_test_server_android ${Util.getGlobal("defaultAngleCommand")} > \${CONTAINER_DIR}/angle.log 2>&1 &

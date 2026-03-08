@@ -1690,7 +1690,7 @@ Future<void> _startAngleServer() async {
     Util.termWrite("echo '#================================'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("echo 'Starting VirGL server...'");
+    Util.termWrite("echo 'Starting VirGL angle server...'");
     await Future.delayed(const Duration(milliseconds: 50));
     
     Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/.virgl_test");
@@ -1698,6 +1698,13 @@ Future<void> _startAngleServer() async {
     Util.termWrite("rm -rf ${G.dataPath}/usr/tmp/.virgl_test");
     await Future.delayed(const Duration(milliseconds: 50));
  
+ 
+ Util.termWrite("unset EGL_PLATFORM");
+    await Future.delayed(const Duration(milliseconds: 50));
+Util.termWrite("unset ANGLE_DEFAULT_PLATFORM");
+    await Future.delayed(const Duration(milliseconds: 50));
+Util.termWrite("unset LD_LIBRARY_PATH");
+    await Future.delayed(const Duration(milliseconds: 50));
     
     String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
     
