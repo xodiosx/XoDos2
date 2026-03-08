@@ -1651,7 +1651,7 @@ Util.termWrite("source ${G.dataPath}/usr/opt/drv");
     Util.termWrite("echo 'Starting VirGL server...'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/");
+    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/.virgl_test");
     await Future.delayed(const Duration(milliseconds: 50));
     
     String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
@@ -1691,7 +1691,7 @@ Future<void> _startAngleServer() async {
     Util.termWrite("echo 'Starting VirGL server...'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/");
+    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/.virgl_test");
     await Future.delayed(const Duration(milliseconds: 50));
     
     String containerDir = "${G.dataPath}/containers/${G.currentContainer}";
@@ -1732,7 +1732,7 @@ Future<void> _startAngleServer() async {
     Util.termWrite("echo 'Starting Venus server...'");
     await Future.delayed(const Duration(milliseconds: 50));
     
-    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/");
+    Util.termWrite("mkdir -p ${G.dataPath}/usr/tmp/.virgl_test");
     await Future.delayed(const Duration(milliseconds: 50));
     
     Util.termWrite("rm -rf ${G.dataPath}/usr/tmp/.virgl_test");
