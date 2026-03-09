@@ -655,7 +655,7 @@ rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
 export DISPLAY=:4
 export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
 export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
-
+unset LD_LIBRARY_PATH
 export TMPDIR=\$DATA_DIR/usr/tmp
 export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 cd 
@@ -664,7 +664,7 @@ export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
 mkdir -p \$XDG_CACHE_HOME
 
   # Set environment variables
-prefixsh="/data/data/com.xodos/files/usr/bin"
+export prefixsh="/data/data/com.xodos/files/usr/bin/"
     
     if [ -d "\$prefixsh" ]; then
     export SHELL=/data/data/com.xodos/files/usr/bin/bash
@@ -722,15 +722,13 @@ ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:\$LD_LIBRARY_PATH
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
-     if [ -d "\$prefixsh" ]; then
-ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
-exec \$DATA_DIR/usr/bin/bash --login   
-fi
-     fi
+#ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 cd
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
 unset ANGLE_DEFAULT_PLATFORM
+exec \$DATA_DIR/usr/bin/bash --login   
+fi    
 """;
     
     // Write the commands to the terminal
@@ -887,6 +885,7 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
@@ -898,7 +897,7 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 ${Util.getCurrentProp("boot")}
 
 ${G.postCommand} > /dev/null 2>&1
-
+unset LD_LIBRARY_PATH
 """);
 
 
