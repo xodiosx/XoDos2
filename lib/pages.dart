@@ -1190,7 +1190,7 @@ ExpansionPanel(
         value: Util.getGlobal("gl4es") as bool,
         onChanged: (value) async {
           final bool useX11 = Util.getGlobal("useX11") == true;
-          if (value && !useX11) {
+         /* if (value && !useX11) {
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1198,6 +1198,7 @@ ExpansionPanel(
             );
             return;
           }
+          */
           await G.prefs.setBool("gl4es", value);
           setState(() {});
         },
@@ -4202,15 +4203,12 @@ class GpuDriverHelper {
         // Turnip client environment
         final selectedDriver = prefs.getString('selected_gpu_driver');
         String icdPath;
-        if (selectedDriver != null && selectedDriver.endsWith('.json')) {
-          icdPath = '${G.dataPath}/usr/share/vulkan/icd.d/$selectedDriver';
-        } else {
+
           icdPath = '${G.dataPath}/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json';
-        }
+        
         addExport('VK_ICD_FILENAMES', icdPath);
 
-        final turnipOpt = prefs.getString('defaultTurnipOpt') ??
-            'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+        final turnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform GALLIUM_DRIVER=zink MESA_VK_WSI_PRESENT_MODE=mailbox ';
         turnipOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
           final parts = assign.split('=');
           if (parts.length == 2) addExport(parts[0], parts[1]);
