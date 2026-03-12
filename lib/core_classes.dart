@@ -408,11 +408,11 @@ class Workflow {
     // Folder for sharing data files
     Util.createDirFromString("${G.dataPath}/share");
     // Folder for storing executable files
-    Util.createDirFromString("${G.dataPath}/bin");
+    Util.createDirFromString("${G.dataPath}/usr/bin");
     // Folder for storing libraries
-    Util.createDirFromString("${G.dataPath}/lib");
+    Util.createDirFromString("${G.dataPath}/usr/lib");
     // Folder to be mounted to /dev/shm
-    Util.createDirFromString("${G.dataPath}/tmp");
+    Util.createDirFromString("${G.dataPath}/usr/tmp");
     // tmp folder for proot, though I don't know why proot needs this
     Util.createDirFromString("${G.dataPath}/proot_tmp");
     // tmp folder for pulseaudio
@@ -443,13 +443,15 @@ class Workflow {
 export DATA_DIR=${G.dataPath}
 
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
-export PATH=\$DATA_DIR/bin:\$PATH
+export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/0
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 cd \$DATA_DIR
+
+ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/busybox
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/sh
 ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/cat
@@ -458,22 +460,22 @@ ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/gzip
 ln -sf ../applib/libexec_proot.so \$DATA_DIR/bin/proot
 ln -sf ../applib/libexec_tar.so \$DATA_DIR/bin/tar
 #ln -sf ../applib/libexec_virgl_test_server.so \$DATA_DIR/bin/virgl_test_servero
-ln -sf ../applib/libexec_getifaddrs_bridge_server.so \$DATA_DIR/bin/getifaddrs_bridge_server
-ln -sf ../applib/libexec_pulseaudio.so \$DATA_DIR/bin/pulseaudio
-ln -sf ../applib/libbusybox.so \$DATA_DIR/lib/libbusybox.so.1.37.0
-ln -sf ../applib/libtalloc.so \$DATA_DIR/lib/libtalloc.so.2
 #ln -sf ../applib/libvirglrenderer.so \$DATA_DIR/lib/libvirglrenderer.so
 #ln -sf ../applib/libepoxy.so \$DATA_DIR/lib/libepoxy.so
-ln -sf ../applib/libproot-loader32.so \$DATA_DIR/lib/loader32
-ln -sf ../applib/libproot-loader.so \$DATA_DIR/lib/loader
+ln -sf ../applib/libexec_getifaddrs_bridge_server.so \$DATA_DIR/bin/getifaddrs_bridge_server
+#ln -sf ../applib/libexec_pulseaudio.so \$DATA_DIR/bin/pulseaudio
+ln -sf ../applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
+ln -sf ../applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
+ln -sf ../applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
+ln -sf ../applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
 
 \$DATA_DIR/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
-chmod -R +x bin/*
-chmod 1777 tmp
+chmod -R +x usr/bin/*
+chmod 1777 usr/tmp
 sleep 1
-\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/ && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
-#\$DATA_DIR/bin/proot --link2symlink sh -c "\$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C  /data/data/com.xodos/files/" && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/ && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
 
 """);
 print("patch and assets extracted,,,");
@@ -512,7 +514,7 @@ print("patch and assets extracted,,,");
 """
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/0
 export EXTRA_OPT=""
 cd \$DATA_DIR
@@ -745,7 +747,7 @@ fi
     G.audioPty!.write(const Utf8Encoder().convert("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
@@ -885,7 +887,7 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
-unset LD_LIBRARY_PATH
+#unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
