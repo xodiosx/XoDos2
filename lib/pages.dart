@@ -838,7 +838,39 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
         ),
 
         // Panel 3: Graphics Acceleration
-// Panel 3: Graphics Acceleration
+
+// ============================================
+// Inside _SettingPageState – add these variables and methods
+// ============================================
+String _getCurrentDriverName() {
+  if (Util.getGlobal("virgl")) return "VirGL";
+  if (Util.getGlobal("venus")) return "Venus";
+  if (Util.getGlobal("turnip")) return "Turnip";
+  if (Util.getGlobal("angle")) return "ANGLE";
+  return "Wrapper"; // default
+}
+
+// Add this method to handle wrapper enabling/disabling
+void _setWrapperEnabled(bool enabled) async {
+  if (enabled) {
+    // Disable all other drivers
+    await G.prefs.setBool("virgl", false);
+    await G.prefs.setBool("venus", false);
+    await G.prefs.setBool("turnip", false);
+    await G.prefs.setBool("angle", false);
+    // No specific wrapper flag needed; it's the absence of others
+  } else {
+    // If disabling wrapper, we don't automatically enable anything else.
+    // User must select another driver.
+  }
+  await GpuDriverHelper.applySettingsDirectly();
+  setState(() {});
+}
+
+// ============================================
+// The complete ExpansionPanel body (index 3)
+// ============================================
+// Panel 3: Graphics Acceleration (with wrapper switch and helper integration)
 ExpansionPanel(
   isExpanded: _expandState[3],
   headerBuilder: (context, isExpanded) {
@@ -850,12 +882,42 @@ ExpansionPanel(
   body: Padding(
     padding: const EdgeInsets.all(12),
     child: Column(children: [
+      // Active driver indicator
+      Card(
+        color: Colors.blue[50],
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              Icon(Icons.settings_applications, color: Colors.blue[800]),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.activeGpuDriver,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      _getCurrentDriverName(),
+                      style: TextStyle(fontSize: 18, color: Colors.blue[900]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+
+      const SizedBox.square(dimension: 16),
       Text(AppLocalizations.of(context)!.graphicsAccelerationHint),
       const SizedBox.square(dimension: 16),
-      
+
       // Virgl section
       Text(AppLocalizations.of(context)!.virglServerParams,
-          style: TextStyle(fontWeight: FontWeight.bold)),
+          style: const TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox.square(dimension: 8),
       TextFormField(
         maxLines: null,
@@ -885,29 +947,28 @@ ExpansionPanel(
         title: Text(AppLocalizations.of(context)!.enableVirgl),
         subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
         value: Util.getGlobal("virgl") as bool,
-        onChanged: (value) {
+        onChanged: (value) async {
           if (value) {
-            // If enabling virgl, disable venus, turnip, and angle
-            G.prefs.setBool("venus", false);
-            G.prefs.setBool("turnip", false);
-            G.prefs.setBool("angle", false);
-            // Also disable DRI3 if it was enabled
-            if (Util.getGlobal("dri3")) {
-              G.prefs.setBool("dri3", false);
-            }
+            // If enabling virgl, disable all others
+            await G.prefs.setBool("venus", false);
+            await G.prefs.setBool("turnip", false);
+            await G.prefs.setBool("angle", false);
+            await G.prefs.setBool("virgl", true);
+          } else {
+            await G.prefs.setBool("virgl", false);
           }
-          G.prefs.setBool("virgl", value);
+          await GpuDriverHelper.applySettingsDirectly();
           setState(() {});
         },
       ),
-      
+
       const SizedBox.square(dimension: 16),
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
-      
+
       // Venus section
       Text(AppLocalizations.of(context)!.venusAdvantages,
-          style: TextStyle(fontWeight: FontWeight.bold)),
+          style: const TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox.square(dimension: 8),
       Text(AppLocalizations.of(context)!.venusAdvantages),
       const SizedBox.square(dimension: 8),
@@ -939,18 +1000,17 @@ ExpansionPanel(
         title: Text(AppLocalizations.of(context)!.enableVenus),
         subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
         value: Util.getGlobal("venus") as bool,
-        onChanged: (value) {
+        onChanged: (value) async {
           if (value) {
-            // If enabling venus, disable virgl, turnip, and angle
-            G.prefs.setBool("virgl", false);
-            G.prefs.setBool("turnip", false);
-            G.prefs.setBool("angle", false);
+            // If enabling venus, disable others
+            await G.prefs.setBool("virgl", false);
+            await G.prefs.setBool("turnip", false);
+            await G.prefs.setBool("angle", false);
+            await G.prefs.setBool("venus", true);
+          } else {
+            await G.prefs.setBool("venus", false);
           }
-          G.prefs.setBool("venus", value);
-          
-          if (!value && Util.getGlobal("dri3")) {
-            G.prefs.setBool("dri3", false);
-          }
+          await GpuDriverHelper.applySettingsDirectly();
           setState(() {});
         },
       ),
@@ -964,14 +1024,14 @@ ExpansionPanel(
           setState(() {});
         },
       ),
-      
+
       const SizedBox.square(dimension: 16),
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
-      
+
       // Turnip section
       Text(AppLocalizations.of(context)!.turnipAdvantages,
-          style: TextStyle(fontWeight: FontWeight.bold)),
+          style: const TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox.square(dimension: 8),
       TextFormField(
         maxLines: null,
@@ -991,15 +1051,15 @@ ExpansionPanel(
         value: Util.getGlobal("turnip") as bool,
         onChanged: (value) async {
           if (value) {
-            // If enabling turnip, disable virgl, venus, and angle
-            G.prefs.setBool("virgl", false);
-            G.prefs.setBool("venus", false);
-            G.prefs.setBool("angle", false);
+            // If enabling turnip, disable others
+            await G.prefs.setBool("virgl", false);
+            await G.prefs.setBool("venus", false);
+            await G.prefs.setBool("angle", false);
+            await G.prefs.setBool("turnip", true);
+          } else {
+            await G.prefs.setBool("turnip", false);
           }
-          G.prefs.setBool("turnip", value);
-          if (!value && Util.getGlobal("dri3")) {
-            G.prefs.setBool("dri3", false);
-          }
+          await GpuDriverHelper.applySettingsDirectly();
           setState(() {});
         },
       ),
@@ -1020,32 +1080,30 @@ ExpansionPanel(
             );
             return;
           }
-          G.prefs.setBool("dri3", value);
+          await G.prefs.setBool("dri3", value);
           setState(() {});
         },
       ),
-      
+
       const SizedBox.square(dimension: 16),
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
-      
+
       // ANGLE section
       Text(
-        // TODO: Add localization keys for ANGLE
         'ANGLE (OpenGL ES to Vulkan)',
-        style: TextStyle(fontWeight: FontWeight.bold),
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       const SizedBox.square(dimension: 8),
       Text(
-        // TODO: Add localization
         'ANGLE translates OpenGL ES calls to Vulkan for better compatibility and performance.',
       ),
       const SizedBox.square(dimension: 8),
       TextFormField(
         maxLines: null,
         initialValue: Util.getGlobal("defaultAngleCommand") as String,
-        decoration: InputDecoration(
-          border: const OutlineInputBorder(),
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
           labelText: 'ANGLE Server Parameters',
           hintText: 'Example: --angle-gl',
         ),
@@ -1057,8 +1115,8 @@ ExpansionPanel(
       TextFormField(
         maxLines: null,
         initialValue: Util.getGlobal("defaultAngleOpt") as String,
-        decoration: InputDecoration(
-          border: const OutlineInputBorder(),
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
           labelText: 'ANGLE Environment Variables',
           hintText: 'Example: ANGLE_DEFAULT_PLATFORM=vulkan',
         ),
@@ -1068,29 +1126,63 @@ ExpansionPanel(
       ),
       const SizedBox.square(dimension: 8),
       SwitchListTile(
-        title: Text('Enable ANGLE'),
-        subtitle: Text('Use ANGLE hardware acceleration (requires restart)'),
+        title: const Text('Enable ANGLE'),
+        subtitle: const Text('Use ANGLE hardware acceleration (requires restart)'),
         value: Util.getGlobal("angle") as bool,
-        onChanged: (value) {
+        onChanged: (value) async {
           if (value) {
-            // If enabling ANGLE, disable virgl, venus, and turnip
-            G.prefs.setBool("virgl", false);
-            G.prefs.setBool("venus", false);
-            G.prefs.setBool("turnip", false);
-            // Optionally disable DRI3 if it conflicts
-            if (Util.getGlobal("dri3")) {
-              G.prefs.setBool("dri3", false);
-            }
+            // If enabling ANGLE, disable others
+            await G.prefs.setBool("virgl", false);
+            await G.prefs.setBool("venus", false);
+            await G.prefs.setBool("turnip", false);
+            await G.prefs.setBool("angle", true);
+          } else {
+            await G.prefs.setBool("angle", false);
           }
-          G.prefs.setBool("angle", value);
+          await GpuDriverHelper.applySettingsDirectly();
           setState(() {});
         },
       ),
-      
+
       const SizedBox.square(dimension: 16),
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
-      
+
+      // Wrapper section (NEW)
+      Text(
+        'Wrapper Driver',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      const SizedBox.square(dimension: 8),
+      Text(
+        'Wrapper driver provides compatibility layer for specific GPU architectures. '
+        'This is the default when no other acceleration is selected.',
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: const Text('Enable Wrapper'),
+        subtitle: const Text('Fallback driver – disables all other acceleration'),
+        value: !(Util.getGlobal("virgl") ||
+                 Util.getGlobal("venus") ||
+                 Util.getGlobal("turnip") ||
+                 Util.getGlobal("angle")),
+        onChanged: (value) async {
+          if (value) {
+            // Enable wrapper means disable all others
+            await G.prefs.setBool("virgl", false);
+            await G.prefs.setBool("venus", false);
+            await G.prefs.setBool("turnip", false);
+            await G.prefs.setBool("angle", false);
+            await GpuDriverHelper.applySettingsDirectly();
+          } else {
+            // Disabling wrapper does nothing; user must enable another driver.
+          }
+          setState(() {});
+        },
+      ),
+
+      const SizedBox.square(dimension: 16),
+
       // gl4es switch
       SwitchListTile(
         title: const Text('Enable gl4es'),
@@ -1110,13 +1202,40 @@ ExpansionPanel(
           setState(() {});
         },
       ),
-      
+
+      const SizedBox.square(dimension: 16),
+
+      // Server control buttons (optional)
+      Wrap(
+        spacing: 8,
+        children: [
+          ElevatedButton.icon(
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Start Server'),
+            onPressed: () async {
+              await GpuDriverHelper.startServer();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Graphics server started')),
+              );
+            },
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.stop),
+            label: const Text('Stop Server'),
+            onPressed: () async {
+              await Process.run('pkill', ['-f', 'virgl_test_server']);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Graphics server stopped')),
+              );
+            },
+          ),
+        ],
+      ),
+
       const SizedBox.square(dimension: 16),
     ]),
   ),
 ),
-
-
 
         // Panel 4: Windows App Support (with backup/restore button added)
         ExpansionPanel(
@@ -4038,4 +4157,135 @@ echo "\\n=== Test Complete ==="
 }
 
 
+// ============================================
+// GPU Driver Helper – writes environment directly without PTY
+// ============================================
+class GpuDriverHelper {
+  /// Reads the current graphics settings and writes the corresponding
+  /// environment variables to [G.dataPath]/usr/opt/drv.
+  static Future<bool> applySettingsDirectly() async {
+    try {
+      final dir = Directory('${G.dataPath}/usr/opt');
+      if (!await dir.exists()) await dir.create(recursive: true);
+      final file = File('${dir.path}/drv');
+      final prefs = G.prefs;
 
+      final bool virgl   = prefs.getBool('virgl') ?? false;
+      final bool venus   = prefs.getBool('venus') ?? false;
+      final bool turnip  = prefs.getBool('turnip') ?? false;
+      final bool angle   = prefs.getBool('angle') ?? false;
+      final bool useX11  = prefs.getBool('useX11') ?? false;
+
+      final List<String> lines = [];
+
+      void addExport(String key, String value) {
+        lines.add('export $key="$value"');
+      }
+
+      if (virgl) {
+        // VirGL client environment
+        final virglOpt = prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
+        virglOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
+          final parts = assign.split('=');
+          if (parts.length == 2) addExport(parts[0], parts[1]);
+        });
+      } else if (venus) {
+        // Venus client environment
+        final venusOpt = prefs.getString('defaultVenusOpt') ?? 'ANDROID_VENUS=1';
+        venusOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
+          final parts = assign.split('=');
+          if (parts.length == 2) addExport(parts[0], parts[1]);
+        });
+        addExport('VK_ICD_FILENAMES',
+            '${G.dataPath}/usr/share/vulkan/icd.d/virtio_icd.aarch64.json');
+      } else if (turnip) {
+        // Turnip client environment
+        final selectedDriver = prefs.getString('selected_gpu_driver');
+        String icdPath;
+        if (selectedDriver != null && selectedDriver.endsWith('.json')) {
+          icdPath = '${G.dataPath}/usr/share/vulkan/icd.d/$selectedDriver';
+        } else {
+          icdPath = '${G.dataPath}/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json';
+        }
+        addExport('VK_ICD_FILENAMES', icdPath);
+
+        final turnipOpt = prefs.getString('defaultTurnipOpt') ??
+            'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform';
+        turnipOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
+          final parts = assign.split('=');
+          if (parts.length == 2) addExport(parts[0], parts[1]);
+        });
+
+        final turnipDri3 = prefs.getBool('turnip_dri3') ?? false;
+        if (!turnipDri3 && useX11) addExport('MESA_VK_WSI_DEBUG', 'sw');
+      } else if (angle) {
+        // ANGLE client environment
+        final angleOpt = prefs.getString('defaultAngleOpt') ??
+            'ANGLE_DEFAULT_PLATFORM=vulkan';
+        angleOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
+          final parts = assign.split('=');
+          if (parts.length == 2) addExport(parts[0], parts[1]);
+        });
+      } else {
+        // Wrapper / fallback
+        addExport('VK_ICD_FILENAMES',
+            '${G.dataPath}/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json');
+        addExport('TU_DEBUG', 'noconform');
+
+        final wrapperDri3 = prefs.getBool('wrapper_dri3') ?? false;
+        if (!wrapperDri3 && useX11) addExport('MESA_VK_WSI_DEBUG', 'sw');
+      }
+
+      await file.writeAsString(lines.join('\n'));
+      return true;
+    } catch (e) {
+      print('Error writing GPU driver settings: $e');
+      return false;
+    }
+  }
+
+  /// Starts the appropriate graphics server (VirGL, Venus, or ANGLE) in detached mode.
+  static Future<Process?> startServer() async {
+    final prefs = G.prefs;
+    final bool virgl = prefs.getBool('virgl') ?? false;
+    final bool venus = prefs.getBool('venus') ?? false;
+    final bool angle = prefs.getBool('angle') ?? false;
+
+    // Kill any existing server first
+    await Process.run('pkill', ['-f', 'virgl_test_server']);
+
+    String executable = '${G.dataPath}/usr/bin/virgl_test_server';
+    List<String> args = [];
+    Map<String, String> env = {};
+
+    if (virgl) {
+      final cmd = prefs.getString('defaultVirglCommand') ??
+          '--use-egl-surfaceless --use-gles --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+      final containerDir = '${G.dataPath}/containers/${G.currentContainer}';
+      final processed = cmd.replaceAll('\$CONTAINER_DIR', containerDir);
+      args = processed.split(' ');
+    } else if (venus) {
+      final cmd = prefs.getString('defaultVenusCommand') ??
+          '--no-virgl --venus --socket-path=\$CONTAINER_DIR/tmp/.virgl_test';
+      final containerDir = '${G.dataPath}/containers/${G.currentContainer}';
+      final processed = cmd.replaceAll('\$CONTAINER_DIR', containerDir);
+      args = processed.split(' ');
+      env['VK_ICD_FILENAMES'] =
+          '${G.dataPath}/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json';
+      if (prefs.getBool('androidVenus') ?? false) env['ANDROID_VENUS'] = '1';
+    } else if (angle) {
+      executable = '${G.dataPath}/usr/bin/virgl_test_server_android';
+      final cmd = prefs.getString('defaultAngleCommand') ?? '--angle-gl';
+      final containerDir = '${G.dataPath}/containers/${G.currentContainer}';
+      final processed = cmd.replaceAll('\$CONTAINER_DIR', containerDir);
+      args = processed.split(' ');
+    } else {
+      return null; // no server to start
+    }
+
+    return await Process.start(executable, args,
+        environment: env,
+        workingDirectory: G.dataPath,
+        mode: ProcessStartMode.detached);
+  }
+}
