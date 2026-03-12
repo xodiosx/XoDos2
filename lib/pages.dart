@@ -895,9 +895,9 @@ ExpansionPanel(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      AppLocalizations.of(context)!.activeGpuDriver,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    const Text(
+                      'Active GPU Driver',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       _getCurrentDriverName(),
