@@ -162,6 +162,34 @@ class _SettingPageState extends State<SettingPage> {
     );
   }
 
+
+String _getCurrentDriverName() {
+  if (Util.getGlobal("virgl")) return "VirGL";
+  if (Util.getGlobal("venus")) return "Venus";
+  if (Util.getGlobal("turnip")) return "Turnip";
+  if (Util.getGlobal("angle")) return "ANGLE";
+  return "Wrapper"; // default
+}
+
+// Add this method to handle wrapper enabling/disabling
+void _setWrapperEnabled(bool enabled) async {
+  if (enabled) {
+    // Disable all other drivers
+    await G.prefs.setBool("virgl", false);
+    await G.prefs.setBool("venus", false);
+    await G.prefs.setBool("turnip", false);
+    await G.prefs.setBool("angle", false);
+    // No specific wrapper flag needed; it's the absence of others
+  } else {
+    // If disabling wrapper, we don't automatically enable anything else.
+    // User must select another driver.
+  }
+  await GpuDriverHelper.applySettingsDirectly();
+  setState(() {});
+}
+
+
+
   @override
   Widget build(BuildContext context) {
     return ExpansionPanelList(
@@ -838,34 +866,6 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
         ),
 
         // Panel 3: Graphics Acceleration
-
-// ============================================
-// Inside _SettingPageState – add these variables and methods
-// ============================================
-String _getCurrentDriverName() {
-  if (Util.getGlobal("virgl")) return "VirGL";
-  if (Util.getGlobal("venus")) return "Venus";
-  if (Util.getGlobal("turnip")) return "Turnip";
-  if (Util.getGlobal("angle")) return "ANGLE";
-  return "Wrapper"; // default
-}
-
-// Add this method to handle wrapper enabling/disabling
-void _setWrapperEnabled(bool enabled) async {
-  if (enabled) {
-    // Disable all other drivers
-    await G.prefs.setBool("virgl", false);
-    await G.prefs.setBool("venus", false);
-    await G.prefs.setBool("turnip", false);
-    await G.prefs.setBool("angle", false);
-    // No specific wrapper flag needed; it's the absence of others
-  } else {
-    // If disabling wrapper, we don't automatically enable anything else.
-    // User must select another driver.
-  }
-  await GpuDriverHelper.applySettingsDirectly();
-  setState(() {});
-}
 
 // ============================================
 // The complete ExpansionPanel body (index 3)
