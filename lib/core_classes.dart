@@ -747,14 +747,15 @@ fi
     G.audioPty!.write(const Utf8Encoder().convert("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
+#export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
+unset LD_LIBRARY_PATH
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
 mkdir -p \$HOME
 mkdir -p \$TMPDIR
 export PATH=\$DATA_DIR/bin:\$PATH
-export LD_LIBRARY_PATH=\$DATA_DIR/lib
+
 \$DATA_DIR/bin/busybox sed "s/4713/${Util.getGlobal("defaultAudioPort") as int}/g" \$DATA_DIR/bin/pulseaudio.conf > \$DATA_DIR/bin/pulseaudio.conf.tmp
 rm -rf \$TMPDIR/*
 TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$DATA_DIR/bin:\$LD_LIBRARY_PATH \$DATA_DIR/bin/pulseaudio --daemonize=no --exit-idle-time=-1 -F \$DATA_DIR/bin/pulseaudio.conf.tmp
