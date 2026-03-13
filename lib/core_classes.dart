@@ -721,7 +721,6 @@ export prefixsh="/data/data/com.xodos/files/usr/bin/"
 unset VK_ICD_FILENAMES
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 #exec \$DATA_DIR/usr/bin/bash --login   
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib:\$LD_LIBRARY_PATH
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 #ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
@@ -747,19 +746,38 @@ fi
     G.audioPty!.write(const Utf8Encoder().convert("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/bin:\$PATH
-#export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
 unset LD_LIBRARY_PATH
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
 export TMPDIR=\$DATA_DIR/usr/tmp
+
 mkdir -p \$HOME
 mkdir -p \$TMPDIR
-export PATH=\$DATA_DIR/bin:\$PATH
 
-\$DATA_DIR/bin/busybox sed "s/4713/${Util.getGlobal("defaultAudioPort") as int}/g" \$DATA_DIR/bin/pulseaudio.conf > \$DATA_DIR/bin/pulseaudio.conf.tmp
+# Generate config files with the correct port
+PORT=${Util.getGlobal("defaultAudioPort") as int}
+
+# Try to use system sed; if busybox is missing, plain sed is usually available.
+# (You can also test for busybox explicitly, but this is simpler.)
+sed "s/4713/\$PORT/g" \$DATA_DIR/bin/pulseaudio.conf > \$DATA_DIR/bin/pulseaudio.conf.tmp
+sed "s/4713/\$PORT/g" \$DATA_DIR/usr/bin/pulseaudio.conf > \$DATA_DIR/usr/bin/pulseaudio.conf.tmp
+
+# Clean the temp directory
 rm -rf \$TMPDIR/*
-TMPDIR=\$TMPDIR HOME=\$DATA_DIR/home XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$DATA_DIR/bin:\$LD_LIBRARY_PATH \$DATA_DIR/bin/pulseaudio --daemonize=no --exit-idle-time=-1 -F \$DATA_DIR/bin/pulseaudio.conf.tmp
 
+# Start PulseAudio in the background (--daemonize=no prevents forking)
+TMPDIR=\$TMPDIR HOME=\$HOME XDG_CONFIG_HOME=\$TMPDIR LD_LIBRARY_PATH=\$DATA_DIR/bin:\$LD_LIBRARY_PATH \\
+    \$DATA_DIR/bin/pulseaudio --daemonize=no --exit-idle-time=-1 -F \$DATA_DIR/bin/pulseaudio.conf.tmp &
+PULSE_PID=\$!
+
+# Give it a moment to initialise (or fail)
+sleep 1
+
+# Check if the process is still alive
+if ! kill -0 \$PULSE_PID 2>/dev/null; then
+    echo "PulseAudio failed to start – running fallback script" >&2
+    \$DATA_DIR/usr/bin/startaudio
+fi
 """));
   //await G.audioPty?.exitCode;
   }
@@ -886,8 +904,7 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
         Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin 
 #unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
@@ -897,9 +914,9 @@ cd \$DATA_DIR
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-${Util.getCurrentProp("boot")}
+LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib ${Util.getCurrentProp("boot")}
 
-${G.postCommand} > /dev/null 2>&1
+LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib ${G.postCommand} > /dev/null 2>&1
 
 """);
 
@@ -1070,7 +1087,7 @@ echo "getifaddrs bridge disabled"
     Util.termWrite("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-#export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
+
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
@@ -1090,7 +1107,7 @@ echo "Venus server started in background"
     Util.termWrite("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-#export LD_LIBRARY_PATH=\$DATA_DIR/lib:/data/data/com.xodos/files/usr/lib
+
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
