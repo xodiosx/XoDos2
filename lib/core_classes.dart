@@ -904,19 +904,21 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
         Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin 
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
 #unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
+sleep 1
 #export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
 cd \$DATA_DIR
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib ${Util.getCurrentProp("boot")}
+${Util.getCurrentProp("boot")}
 
-LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib ${G.postCommand} > /dev/null 2>&1
+${G.postCommand} > /dev/null 2>&1
 
 """);
 
