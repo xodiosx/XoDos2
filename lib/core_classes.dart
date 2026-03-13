@@ -899,7 +899,7 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 ${Util.getCurrentProp("boot")}
 
 ${G.postCommand} > /dev/null 2>&1
-unset LD_LIBRARY_PATH
+
 """);
 
 
