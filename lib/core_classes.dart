@@ -996,32 +996,35 @@ static Future<void> workflow() async {
   grantPermissions();
   await initData();
   await initTerminalForCurrent();
-  
-      if (Util.getGlobal("logcatEnabled") as bool) {
+
+  if (Util.getGlobal("logcatEnabled") as bool) {
     LogcatManager().startCapture();
   }
 
-  
-  // Setup audio first
-  setupAudio();
-  
-  
-  
-  // Send virgl/venus server command to terminal BEFORE container starts
+  setupAudio();                       // audio PTY (native)
+
+  // Send graphics server commands to the terminal (native)
   await startGraphicsServerInTerminal();
-  
-  // Then launch container
-  launchCurrentContainer();
-  
-  if (Util.getGlobal("autoLaunchVnc") as bool) {
+
+  bool guiEnabled = Util.getGlobal("autoLaunchVnc") as bool;
+
+  // If GUI is enabled, run the GUI command now (native) and skip the container.
+  if (guiEnabled) {
+    launchGUIBackend();               // runs in native environment
+    // Container is NOT started.
+  } else {
+    // No GUI – start the container normally.
+    launchCurrentContainer();
+  }
+
+  // If GUI is enabled, also handle the viewer (VNC/X11).
+  if (guiEnabled) {
     if (G.wasX11Enabled) {
       await Util.waitForXServer();
-      launchGUIBackend();
       launchX11();
-      return;
+    } else {
+      waitForConnection().then((value) => G.wasAvncEnabled ? launchAvnc() : launchBrowser());
     }
-    launchGUIBackend();
-    waitForConnection().then((value) => G.wasAvncEnabled?launchAvnc():launchBrowser());
   }
 }
 
