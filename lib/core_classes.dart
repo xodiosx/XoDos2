@@ -930,7 +930,7 @@ static Future<void> launchGUIBackend() async {
   if (Util.getGlobal("autoLaunchVnc") as bool) {
     if (Util.getGlobal("useX11") as bool) {
       // X11 already redirects to log file, keep as is
-      Util.termWrite("""mkdir -p "\$HOME/.vnc" && bash /etc/X11/xinit/Xsession &> "\$HOME/.vnc/x.log" &""");
+      Util.termWrite("""mkdir -p "\$HOME/.vnc" && bash xodos &> "\$HOME/.vnc/x.log" &""");
     } else {
       // Redirect VNC command output to /dev/null
       String vncCmd = Util.getCurrentProp("vnc");
