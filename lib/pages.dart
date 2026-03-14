@@ -188,7 +188,70 @@ void _setWrapperEnabled(bool enabled) async {
   setState(() {});
 }
 
+Future<void> _installMesa({required bool zink}) async {
+  final package = zink ? 'mesa-zink' : 'mesa';
+  final removePackage = zink ? 'mesa' : 'mesa-zink';
+  final debFile = zink ? 'mesa-zink.deb' : 'mesa.deb';
+  final debPath = '/data/data/com.xodos/files/$debFile';
 
+  // Build environment (same as Wine launcher)
+  final env = _buildMesaEnvironment();
+
+  try {
+    // Start a new PTY with bash
+    final pty = Pty.start(
+      '${G.dataPath}/usr/bin/bash',
+      workingDirectory: G.dataPath,
+      environment: env,
+    );
+
+    // Listen to output (for debugging)
+    pty.output.cast<List<int>>().transform(Utf8Decoder()).listen((data) {
+      print('Mesa PTY: $data');
+    });
+
+    // Send the commands
+    pty.write(Utf8Encoder().convert('''
+echo "Installing $package..."
+apt remove -y $removePackage
+apt install -y $debPath
+echo "Installation finished."
+exit
+'''));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Installing $package... Check debug logs.')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to start installation: $e'), backgroundColor: Colors.red),
+    );
+  }
+}
+
+Map<String, String> _buildMesaEnvironment() {
+  final env = <String, String>{};
+  final dataPath = G.dataPath;
+  final home = '$dataPath/home';
+
+  env['PATH'] = '$dataPath/usr/bin';
+  env['LD_LIBRARY_PATH'] = '$dataPath/usr/lib';
+  env['HOME'] = home;
+  env['DATA_DIR'] = dataPath;
+  env['PREFIX'] = '$dataPath/usr';
+  env['TMPDIR'] = '$dataPath/usr/tmp';
+  env['XDG_RUNTIME_DIR'] = '$dataPath/usr/tmp/runtime';
+  env['XDG_CACHE_HOME'] = '$dataPath/usr/tmp/.cache';
+  env['TERM'] = 'xterm-256color';
+  env['LANG'] = 'en_US.UTF-8';
+  env['SHELL'] = '$dataPath/usr/bin/bash';
+  env['ANDROID_ROOT'] = '/system';
+  env['ANDROID_DATA'] = '/data';
+  env['ANDROID_STORAGE'] = '/storage';
+  env['EXTERNAL_STORAGE'] = '/sdcard';
+
+  return env;
+}
 
   @override
   Widget build(BuildContext context) {
@@ -1206,32 +1269,22 @@ ExpansionPanel(
 
       const SizedBox.square(dimension: 16),
 
-      // Server control buttons (optional)
+      // mesa control buttons (optional)
       Wrap(
-        spacing: 8,
-        children: [
-          ElevatedButton.icon(
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Start Server'),
-            onPressed: () async {
-              await GpuDriverHelper.startServer();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Graphics server started')),
-              );
-            },
-          ),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.stop),
-            label: const Text('Stop Server'),
-            onPressed: () async {
-              await Process.run('pkill', ['-f', 'virgl_test_server']);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Graphics server stopped')),
-              );
-            },
-          ),
-        ],
-      ),
+  spacing: 8,
+  children: [
+    ElevatedButton.icon(
+      icon: const Icon(Icons.build),
+      label: const Text('Install mesa'),
+      onPressed: () => _installMesa(zink: false),
+    ),
+    ElevatedButton.icon(
+      icon: const Icon(Icons.build),
+      label: const Text('Install mesa-zink'),
+      onPressed: () => _installMesa(zink: true),
+    ),
+  ],
+),
 
       const SizedBox.square(dimension: 16),
     ]),
