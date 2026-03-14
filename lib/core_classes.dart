@@ -905,8 +905,8 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
 """
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
-#unset LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
+unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
