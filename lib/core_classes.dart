@@ -830,6 +830,8 @@ export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
 unset ANGLE_DEFAULT_PLATFORM
+unset VK_ICD_FILENAMES
+unset MESA_LOADER_DRIVER_OVERRIDE  TU_DEBUG GALLIUM_DRIVER LIBGL_DRIVERS_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 #${G.dataPath}/usr/bin/virgl_test_server_android --angle-gl & 
 ${G.dataPath}/usr/bin/virgl_test_server_android ${Util.getGlobal("defaultAngleCommand")} > \${CONTAINER_DIR}/angle.log 2>&1 &
@@ -900,6 +902,8 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
     extraMount += "--mount=\$DATA_DIR/tmp:/dev/dri ";
     extraMount += "--mount=\$DATA_DIR/tiny/extra/cmatrix:/home/tiny/.local/bin/cmatrix ";
   
+  bool guiEnabled = Util.getGlobal("autoLaunchVnc") as bool;
+
       // If GUI is enabled, run the GUI command now (native) and skip the container.
   if (guiEnabled) {
     launchGUIBackend();  
@@ -1033,8 +1037,7 @@ static Future<void> workflow() async {
   // Send graphics server commands to the terminal (native)
   await startGraphicsServerInTerminal();
 
-  bool guiEnabled = Util.getGlobal("autoLaunchVnc") as bool;
-
+  
   
     launchCurrentContainer();
   
