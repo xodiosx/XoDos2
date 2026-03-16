@@ -463,9 +463,9 @@ ln -sf ../applib/libexec_tar.so \$DATA_DIR/bin/tar
 #ln -sf ../applib/libvirglrenderer.so \$DATA_DIR/lib/libvirglrenderer.so
 #ln -sf ../applib/libepoxy.so \$DATA_DIR/lib/libepoxy.so
 ln -sf ../applib/libexec_getifaddrs_bridge_server.so \$DATA_DIR/bin/getifaddrs_bridge_server
-#ln -sf ../applib/libexec_pulseaudio.so \$DATA_DIR/bin/pulseaudio
+ln -sf ../applib/libexec_pulseaudio.so \$DATA_DIR/bin/pulseaudio
 ln -sf ../applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
-ln -sf ../applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
+#ln -sf ../applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
 ln -sf ../applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
 ln -sf ../applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
 
@@ -1112,13 +1112,15 @@ echo "Venus server started in background"
     Util.termWrite("""
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:\$PATH
-
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$LD_LIBRARY_PATH
 unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'virgl_*' 2>/dev/null || true
 rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
-
+unset LD_LIBRARY_PATH
+unset VK_ICD_FILENAMES
+unset MESA_LOADER_DRIVER_OVERRIDE  TU_DEBUG GALLIUM_DRIVER LIBGL_DRIVERS_PATH
 virgl_test_server ${Util.getGlobal("defaultVirglCommand")} > \${CONTAINER_DIR}/virgl.log 2>&1 &
 
 echo "export GALLIUM_DRIVER=virpipe

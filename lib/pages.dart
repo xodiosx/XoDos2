@@ -188,45 +188,96 @@ void _setWrapperEnabled(bool enabled) async {
   setState(() {});
 }
 
-Future<void> _installMesa({required bool zink}) async {
+
+Future<bool> _installMesa({required bool zink}) async {
   final package = zink ? 'mesa-zink' : 'mesa';
   final removePackage = zink ? 'mesa' : 'mesa-zink';
   final debFile = zink ? 'mesa-zink.deb' : 'mesa.deb';
   final debPath = '/data/data/com.xodos/files/$debFile';
 
-  // Build environment (same as Wine launcher)
-  final env = _buildMesaEnvironment();
+  // Completer to track when the dialog is actually dismissed (optional)
+  final dialogCompleter = Completer<void>();
 
+  // Show a blocking loading dialog
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Prevent tap outside
+    builder: (BuildContext context) {
+      return WillPopScope(
+        onWillPop: () async => false, // Disable back button
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('Installing $package...\nPlease wait.'),
+            ],
+          ),
+        ),
+      );
+    },
+  ).then((_) => dialogCompleter.complete()); // Called when dialog is popped
+
+  bool success = false;
   try {
-    // Start a new PTY with bash
+    // Build environment (same as before)
+    final env = _buildMesaEnvironment();
+
+    // Start the PTY process
     final pty = Pty.start(
       '${G.dataPath}/usr/bin/bash',
       workingDirectory: G.dataPath,
       environment: env,
     );
 
-    // Listen to output (for debugging)
+    // Optional: listen to output for debugging
     pty.output.cast<List<int>>().transform(Utf8Decoder()).listen((data) {
       print('Mesa PTY: $data');
     });
 
-    // Send the commands
+    // Send installation commands
     pty.write(Utf8Encoder().convert('''
 echo "Installing $package..."
-apt remove -y $removePackage
-apt install -y $debPath
+rm -rf \${G.dataPath}/usr/lib/dri
+apt remove $removePackage
+apt install $debPath
 echo "Installation finished."
 exit
 '''));
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Installing $package... Check debug logs.')),
-    );
+    // Wait for the process to finish and get the exit code
+    final exitCode = await pty.exitCode;
+    success = exitCode == 0;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$package installed successfully.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Installation failed (exit code $exitCode).'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to start installation: $e'), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text('Error during installation: $e'),
+        backgroundColor: Colors.red,
+      ),
     );
+  } finally {
+    // Dismiss the loading dialog
+    Navigator.of(context, rootNavigator: true).pop();
+    // Wait for dialog to be fully removed (optional, for clean completion)
+    await dialogCompleter.future;
   }
+
+  // Optionally refresh UI if needed (e.g., call setState in the parent)
+  return success;
 }
 
 Map<String, String> _buildMesaEnvironment() {
