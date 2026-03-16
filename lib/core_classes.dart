@@ -900,8 +900,31 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
     extraMount += "--mount=\$DATA_DIR/tmp:/dev/dri ";
     extraMount += "--mount=\$DATA_DIR/tiny/extra/cmatrix:/home/tiny/.local/bin/cmatrix ";
   
-    
-        Util.termWrite(
+      // If GUI is enabled, run the GUI command now (native) and skip the container.
+  if (guiEnabled) {
+    launchGUIBackend();  
+    Util.termWrite(
+"""
+export DATA_DIR=${G.dataPath}
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
+#export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
+unset LD_LIBRARY_PATH
+export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
+export EXTRA_MOUNT="$extraMount"
+export EXTRA_OPT="$extraOpt"
+sleep 1
+#export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
+cd \$DATA_DIR
+export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
+export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
+export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
+xodos
+
+""");             // runs in native environment
+    // Container is NOT started.
+  } else {
+    // No GUI – start the container normally.
+    Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
@@ -921,6 +944,10 @@ ${Util.getCurrentProp("boot")}
 ${G.postCommand} > /dev/null 2>&1
 
 """);
+  }
+
+    
+        
 
 
 //
@@ -930,7 +957,7 @@ static Future<void> launchGUIBackend() async {
   if (Util.getGlobal("autoLaunchVnc") as bool) {
     if (Util.getGlobal("useX11") as bool) {
       // X11 already redirects to log file, keep as is
-      Util.termWrite("""mkdir -p "\$HOME/.vnc" && bash xodos """);
+      Util.termWrite("""ps -a""");
     } else {
       // Redirect VNC command output to /dev/null
       String vncCmd = Util.getCurrentProp("vnc");
@@ -1008,14 +1035,9 @@ static Future<void> workflow() async {
 
   bool guiEnabled = Util.getGlobal("autoLaunchVnc") as bool;
 
-  // If GUI is enabled, run the GUI command now (native) and skip the container.
-  if (guiEnabled) {
-    launchGUIBackend();               // runs in native environment
-    // Container is NOT started.
-  } else {
-    // No GUI – start the container normally.
+  
     launchCurrentContainer();
-  }
+  
 
   // If GUI is enabled, also handle the viewer (VNC/X11).
   if (guiEnabled) {
