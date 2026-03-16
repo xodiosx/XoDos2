@@ -3252,7 +3252,7 @@ echo "Wine environment initialized on ${_displayController.text}"
       }
       
       // Send taskmgr command to the existing Wine PTY
-      final taskMgrCommand = 'xod taskmgr\n';
+      final taskMgrCommand = 'xbio2  taskmgr\n';
       _winePty!.write(Utf8Encoder().convert(taskMgrCommand));
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3499,8 +3499,8 @@ ${_wineCommandController.text}
 
 
 # Run the Explorer command
-echo "Starting: xod explorer"
-xod $_dataPath/usr/opt/apps/wfm.exe
+echo "Starting: bionicexplorer"
+xbio2 $_dataPath/usr/opt/apps/wfm.exe
 ''';
       
       _winePty!.write(Utf8Encoder().convert(command));
@@ -3618,7 +3618,7 @@ echo "Wine processes stopped"
     try {
       final result = await Process.run(
         '/system/bin/sh',
-        ['-c', 'pgrep -x start.exe >/dev/null 2>&1 && echo RUNNING || echo STOPPED'],
+        ['-c', 'pgrep -x winedevice.exe >/dev/null 2>&1 && echo RUNNING || echo STOPPED'],
         environment: _buildEnvironment(),
       );
       
@@ -4041,7 +4041,7 @@ echo "\\n=== Test Complete ==="
                           labelText: 'Wine Command',
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.terminal),
-                          hintText: 'xod explorer.exe, xod notepad.exe, etc.',
+                          hintText: 'xbio2 explorer.exe, xbio2  notepad.exe, etc.',
                         ),
                       ),
                     ],
