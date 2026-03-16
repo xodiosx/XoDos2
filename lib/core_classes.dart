@@ -1038,7 +1038,8 @@ static Future<void> workflow() async {
   await startGraphicsServerInTerminal();
 
   
-  
+  bool guiEnabled = Util.getGlobal("autoLaunchVnc") as bool;
+
     launchCurrentContainer();
   
 
