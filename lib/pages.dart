@@ -193,7 +193,7 @@ Future<bool> _installMesa({required bool zink}) async {
   final package = zink ? 'mesa-zink' : 'mesa';
   final removePackage = zink ? 'mesa' : 'mesa-zink';
   final debFile = zink ? 'mesa-zink.deb' : 'mesa.deb';
-  final debPath = '/data/data/com.xodos/files/$debFile';
+  final debPath = '/data/data/com.xodos/files/usr/$debFile';
 
   // Completer to track when the dialog is actually dismissed (optional)
   final dialogCompleter = Completer<void>();
