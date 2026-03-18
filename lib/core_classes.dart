@@ -430,16 +430,8 @@ class Workflow {
     // patch.tar.xz contains the xodos folder with bionic rootfs
     // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
     await Util.copyAsset(
-    "assets/pxaa",
-    "${G.dataPath}/pxaa",
-    );
-      await Util.copyAsset(
-    "assets/pxab",
-    "${G.dataPath}/pxab",
-    );
-  await Util.copyAsset(
-    "assets/pxac",
-    "${G.dataPath}/pxac",
+    "assets/patch.tar.xz",
+    "${G.dataPath}/patch.tar.xz",
     );
     
   /*  */
@@ -480,20 +472,9 @@ ln -sf ../applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
 \$DATA_DIR/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
 chmod -R +x usr/bin/*
-chmod -R +x bin/*
 chmod 1777 usr/tmp
-export CONTAINER_DIR=\$DATA_DIR/containers/0
-export EXTRA_OPT=""
-cd \$DATA_DIR
-export PATH=\$DATA_DIR/bin:\$PATH
-export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
-export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
-export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-
 sleep 1
-\$DATA_DIR/bin/proot --link2symlink sh -c "cat pxa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v "
-
-#\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/ && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
+\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
 ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
 
 """);
@@ -542,7 +523,7 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
-\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C containers/0"
+\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/"
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
@@ -571,7 +552,7 @@ done
     final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
     
     await G.prefs.setStringList("containersInfo", ["""{
-"name":"XoDos Re",
+"name":"XoDos Rebirth",
 "boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
 "vnc":"startnovnc &",
 "vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
