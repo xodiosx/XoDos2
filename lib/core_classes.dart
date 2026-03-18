@@ -143,7 +143,7 @@ class Util {
       case "defaultTurnipOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("MESA_LOADER_DRIVER_OVERRIDE=zink VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json TU_DEBUG=noconform");
       case "defaultHidpiOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("GDK_SCALE=2 QT_FONT_DPI=192");
       case "containersInfo" : return G.prefs.getStringList(key)!;
-      case "logcatEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
+      case "logcatEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
  
       }
   }
@@ -451,8 +451,8 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 cd \$DATA_DIR
 
-export PATH=/system/bin:\$DATA_DIR/bin:\$DATA_DIR/usr/bin
-export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
+#export PATH=/system/bin:\$DATA_DIR/bin:\$DATA_DIR/usr/bin
+#export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
@@ -467,13 +467,13 @@ ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
 ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
 
 
-\$DATA_DIR/bin/busybox unzip -o assets.zip
+\$DATA_DIR/usr/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
 chmod -R +x usr/bin/*
 chmod 1777 usr/tmp
-sleep 1
-\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f patch.tar.xz -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/bin/busybox rm -rf assets.zip patch.tar.xz
-ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
+#sleep 1
+\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f \$DATA_DIR/patch.tar.xz -C \$DATA_DIR/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz
+#ln -sf \$DA TA_DIR/usr/bin \$DATA_DIR/bin
 
 """);
 print("patch and assets extracted,,,");
@@ -511,24 +511,24 @@ print("patch and assets extracted,,,");
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
-export PATH=\$DATA_DIR/bin:\$PATH
+export PATH=\$DATA_DIR/usr/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/0
 export EXTRA_OPT=""
 cd \$DATA_DIR
-export PATH=\$DATA_DIR/bin:\$PATH
+#export PATH=\$DATA_DIR/bin:\$PATH
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
-\$DATA_DIR/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/"
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
 echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
 id -Gn | tr ' ' '\\n' > tmp1
 id -G | tr ' ' '\\n' > tmp2
-\$DATA_DIR/bin/busybox paste tmp1 tmp2 > tmp3
+\$DATA_DIR/usr/bin/busybox paste tmp1 tmp2 > tmp3
 local group_name group_id
 cat tmp3 | while read -r group_name group_id; do
 	echo "aid_\${group_name}:x:\${group_id}:root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/group"
@@ -536,7 +536,7 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
-\$DATA_DIR/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
+\$DATA_DIR/usr/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
 
 """);
     // Some data initialization
