@@ -504,6 +504,7 @@ cat tmp3 | while read -r group_name group_id; do
 done
 \$DATA_DIR/usr/bin/busybox rm -rf patch.tar* tmp1 tmp2 tmp3
 
+
 """);
 print("patch proot and assets extracted,,,");
     
@@ -567,6 +568,9 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #done
 \$DATA_DIR/usr/bin/busybox rm -rf xa* 
 echo "" > /data/data/com.xodos/files/usr/opt/drv
+sed -i 's/xproot/#xproot/g' /data/data/com.xodos/files/usr/bin/xodos
+sed -i 's/xproot//g' /data/data/com.xodos/files/usr/bin/xodos
+sed -i 's/#xproot//g' /data/data/com.xodos/files/usr/bin/xodos
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
@@ -951,7 +955,10 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 xodos
-
+      echo 'opening Linux proot termial,,,'
+      echo ' press CTRL + D to logout Linux proot'      
+     sleep 1
+       xproot
 """);    
 
 }         // runs in native environment
@@ -998,6 +1005,12 @@ static Future<void> launchGUIBackend() async {
       // Remove any existing & and add redirection
       vncCmd = vncCmd.replaceAll(RegExp(r'\s*&\s*$'), '');
       Util.termWrite("$vncCmd > /dev/null 2>&1 &");
+      Util.termWrite("""
+      echo 'opening Linux proot termial,,,'
+      echo ' press CTRL + D to logout Linux proot'      
+     sleep 1
+       xproot
+""");
     }
   }
   // 
