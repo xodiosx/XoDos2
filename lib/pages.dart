@@ -168,8 +168,7 @@ String _getCurrentDriverName() {
   if (Util.getGlobal("venus")) return "Venus";
   if (Util.getGlobal("turnip")) return "Turnip";
   if (Util.getGlobal("angle")) return "ANGLE";
-  if (Util.getGlobal("wrapper")) return "Wrapper";
-  return "ANGLE"; // default
+  return "Wrapper"; // default
 }
 
 // Add this method to handle wrapper enabling/disabling

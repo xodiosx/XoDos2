@@ -143,7 +143,7 @@ class Util {
       case "defaultTurnipOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("MESA_LOADER_DRIVER_OVERRIDE=zink VK_ICD_FILENAMES=/home/tiny/.local/share/tiny/extra/freedreno_icd.aarch64.json TU_DEBUG=noconform");
       case "defaultHidpiOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("GDK_SCALE=2 QT_FONT_DPI=192");
       case "containersInfo" : return G.prefs.getStringList(key)!;
-      case "logcatEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
+      case "logcatEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
  
       }
   }
@@ -471,9 +471,11 @@ ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
 chmod -R +x libexec/proot/*
 chmod -R +x usr/bin/*
 chmod 1777 usr/tmp
-#sleep 1
-\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f \$DATA_DIR/patch.tar.xz -C \$DATA_DIR/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz
-#ln -sf \$DA TA_DIR/usr/bin \$DATA_DIR/bin
+sleep 1
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar -xJf \$DATA_DIR/patch.tar.xz --delay-directory-restore --preserve-permissions -v -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz"
+
+#\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f \$DATA_DIR/patch.tar.xz -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz
+#ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
 
 """);
 print("patch and assets extracted,,,");
@@ -590,10 +592,8 @@ done
       final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
       final String w = (max(s.width, s.height) * 0.75).round().toString();
       final String h = (min(s.width, s.height) * 0.75).round().toString();
-     // G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
-//sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
-G.postCommand = """sed -i -E "s@(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" /data/data/com.xodos/files/usr/bin/startvnc
-sed -i -E "s@^(VNC_RESOLUTION2)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
+      G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
+sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 
 """;
       
@@ -907,7 +907,7 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
       // If GUI is enabled, run the GUI command now (native) and skip the container.
   if (guiEnabled) {
     launchGUIBackend();  
-        if (G.wasX11Enabled) {
+            if (G.wasX11Enabled) {
     Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
@@ -926,8 +926,8 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 xodos
 
 """);    
-}
-         // runs in native environment
+
+}         // runs in native environment
     // Container is NOT started.
   } else {
     // No GUI – start the container normally.
