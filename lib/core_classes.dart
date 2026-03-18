@@ -590,8 +590,10 @@ done
       final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
       final String w = (max(s.width, s.height) * 0.75).round().toString();
       final String h = (min(s.width, s.height) * 0.75).round().toString();
-      G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
-sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
+     // G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
+//sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
+G.postCommand = """sed -i -E "s@(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" /data/data/com.xodos/files/usr/bin/startvnc
+sed -i -E "s@^(VNC_RESOLUTION2)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 
 """;
       
@@ -905,6 +907,7 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
       // If GUI is enabled, run the GUI command now (native) and skip the container.
   if (guiEnabled) {
     launchGUIBackend();  
+        if (G.wasX11Enabled) {
     Util.termWrite(
 """
 export DATA_DIR=${G.dataPath}
@@ -922,7 +925,9 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 xodos
 
-""");             // runs in native environment
+""");    
+}
+         // runs in native environment
     // Container is NOT started.
   } else {
     // No GUI – start the container normally.
