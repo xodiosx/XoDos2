@@ -164,13 +164,13 @@ class _SettingPageState extends State<SettingPage> {
 
 
 String _getCurrentDriverName() {
+  if (Util.getGlobal("wrapper")) return "Wrapper";
   if (Util.getGlobal("virgl")) return "VirGL";
   if (Util.getGlobal("venus")) return "Venus";
   if (Util.getGlobal("turnip")) return "Turnip";
   if (Util.getGlobal("angle")) return "ANGLE";
-  return "Wrapper"; // default
+  return "CPU"; // no driver selected
 }
-
 // Add this method to handle wrapper enabling/disabling
 void _setWrapperEnabled(bool enabled) async {
   if (enabled) {
@@ -1262,38 +1262,36 @@ ExpansionPanel(
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
 
-      // Wrapper section (NEW)
-      Text(
-        'Wrapper Driver',
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      const SizedBox.square(dimension: 8),
-      Text(
-        'Wrapper driver provides compatibility layer for specific GPU architectures. '
-        'This is the default when no other acceleration is selected.',
-      ),
-      const SizedBox.square(dimension: 8),
-      SwitchListTile(
-        title: const Text('Enable Wrapper'),
-        subtitle: const Text('Fallback driver – disables all other acceleration'),
-        value: !(Util.getGlobal("virgl") ||
-                 Util.getGlobal("venus") ||
-                 Util.getGlobal("turnip") ||
-                 Util.getGlobal("angle")),
-        onChanged: (value) async {
-          if (value) {
-            // Enable wrapper means disable all others
-            await G.prefs.setBool("virgl", false);
-            await G.prefs.setBool("venus", false);
-            await G.prefs.setBool("turnip", false);
-            await G.prefs.setBool("angle", false);
-            await GpuDriverHelper.applySettingsDirectly();
-          } else {
-            // Disabling wrapper does nothing; user must enable another driver.
-          }
-          setState(() {});
-        },
-      ),
+    // Wrapper section
+Text(
+  'Wrapper Driver',
+  style: const TextStyle(fontWeight: FontWeight.bold),
+),
+const SizedBox.square(dimension: 8),
+Text(
+  'Wrapper driver provides compatibility layer for specific GPU architectures.',
+),
+const SizedBox.square(dimension: 8),
+SwitchListTile(
+  title: const Text('Enable Wrapper'),
+  subtitle: const Text('Use wrapper driver (disables all other acceleration)'),
+  value: Util.getGlobal("wrapper") as bool,
+  onChanged: (value) async {
+    if (value) {
+      // Enable wrapper, disable others
+      await G.prefs.setBool("virgl", false);
+      await G.prefs.setBool("venus", false);
+      await G.prefs.setBool("turnip", false);
+      await G.prefs.setBool("angle", false);
+      await G.prefs.setBool("wrapper", true);
+    } else {
+      // Disable wrapper (CPU)
+      await G.prefs.setBool("wrapper", false);
+    }
+    await GpuDriverHelper.applySettingsDirectly();
+    setState(() {});
+  },
+),
 
       const SizedBox.square(dimension: 16),
 
@@ -4269,82 +4267,80 @@ class GpuDriverHelper {
   /// Reads the current graphics settings and writes the corresponding
   /// environment variables to [G.dataPath]/usr/opt/drv.
   static Future<bool> applySettingsDirectly() async {
-    try {
-      final dir = Directory('${G.dataPath}/usr/opt');
-      if (!await dir.exists()) await dir.create(recursive: true);
-      final file = File('${dir.path}/drv');
-      final prefs = G.prefs;
+  try {
+    final dir = Directory('${G.dataPath}/usr/opt');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    final file = File('${dir.path}/drv');
+    final prefs = G.prefs;
 
-      final bool virgl   = prefs.getBool('virgl') ?? false;
-      final bool venus   = prefs.getBool('venus') ?? false;
-      final bool turnip  = prefs.getBool('turnip') ?? false;
-      final bool angle   = prefs.getBool('angle') ?? false;
-      final bool useX11  = prefs.getBool('useX11') ?? false;
+    final bool wrapper = prefs.getBool('wrapper') ?? false;
+    final bool virgl   = prefs.getBool('virgl') ?? false;
+    final bool venus   = prefs.getBool('venus') ?? false;
+    final bool turnip  = prefs.getBool('turnip') ?? false;
+    final bool angle   = prefs.getBool('angle') ?? false;
+    final bool useX11  = prefs.getBool('useX11') ?? false;
 
-      final List<String> lines = [];
+    final List<String> lines = [];
 
-      void addExport(String key, String value) {
-        lines.add('export $key="$value"');
-      }
-
-      if (virgl) {
-        // VirGL client environment
-        final virglOpt = prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
-        virglOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
-          final parts = assign.split('=');
-          if (parts.length == 2) addExport(parts[0], parts[1]);
-        });
-      } else if (venus) {
-        // Venus client environment
-        final venusOpt = prefs.getString('defaultVenusOpt') ?? 'ANDROID_VENUS=1';
-        venusOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
-          final parts = assign.split('=');
-          if (parts.length == 2) addExport(parts[0], parts[1]);
-        });
-        addExport('VK_ICD_FILENAMES',
-            '${G.dataPath}/usr/share/vulkan/icd.d/virtio_icd.aarch64.json');
-      } else if (turnip) {
-        // Turnip client environment
-        final selectedDriver = prefs.getString('selected_gpu_driver');
-        String icdPath;
-
-          icdPath = '${G.dataPath}/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json';
-        
-        addExport('VK_ICD_FILENAMES', icdPath);
-
-        final turnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform GALLIUM_DRIVER=zink MESA_VK_WSI_PRESENT_MODE=mailbox ';
-        turnipOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
-          final parts = assign.split('=');
-          if (parts.length == 2) addExport(parts[0], parts[1]);
-        });
-
-        final turnipDri3 = prefs.getBool('turnip_dri3') ?? false;
-        if (!turnipDri3 && useX11) addExport('MESA_VK_WSI_DEBUG', 'sw');
-      } else if (angle) {
-        // ANGLE client environment
-        final angleOpt = prefs.getString('defaultAngleOpt') ??
-            'ANGLE_DEFAULT_PLATFORM=vulkan';
-        angleOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
-          final parts = assign.split('=');
-          if (parts.length == 2) addExport(parts[0], parts[1]);
-        });
-      } else {
-        // Wrapper / fallback
-        addExport('VK_ICD_FILENAMES',
-            '${G.dataPath}/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json');
-        addExport('TU_DEBUG', 'noconform');
-
-        final wrapperDri3 = prefs.getBool('wrapper_dri3') ?? false;
-        if (!wrapperDri3 && useX11) addExport('MESA_VK_WSI_DEBUG', 'sw');
-      }
-
-      await file.writeAsString(lines.join('\n'));
-      return true;
-    } catch (e) {
-      print('Error writing GPU driver settings: $e');
-      return false;
+    void addExport(String key, String value) {
+      lines.add('export $key="$value"');
     }
+
+    if (virgl) {
+      // VirGL client environment
+      final virglOpt = prefs.getString('defaultVirglOpt') ?? 'GALLIUM_DRIVER=virpipe';
+      virglOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
+        final parts = assign.split('=');
+        if (parts.length == 2) addExport(parts[0], parts[1]);
+      });
+    } else if (venus) {
+      // Venus client environment
+      final venusOpt = prefs.getString('defaultVenusOpt') ?? 'ANDROID_VENUS=1';
+      venusOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
+        final parts = assign.split('=');
+        if (parts.length == 2) addExport(parts[0], parts[1]);
+      });
+      addExport('VK_ICD_FILENAMES',
+          '${G.dataPath}/usr/share/vulkan/icd.d/virtio_icd.aarch64.json');
+    } else if (turnip) {
+      // Turnip client environment
+      String icdPath = '${G.dataPath}/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json';
+      addExport('VK_ICD_FILENAMES', icdPath);
+
+      final turnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform GALLIUM_DRIVER=zink MESA_VK_WSI_PRESENT_MODE=mailbox ';
+      turnipOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
+        final parts = assign.split('=');
+        if (parts.length == 2) addExport(parts[0], parts[1]);
+      });
+
+      final turnipDri3 = prefs.getBool('turnip_dri3') ?? false;
+      if (!turnipDri3 && useX11) addExport('MESA_VK_WSI_DEBUG', 'sw');
+    } else if (angle) {
+      // ANGLE client environment
+      final angleOpt = prefs.getString('defaultAngleOpt') ??
+          'ANGLE_DEFAULT_PLATFORM=vulkan';
+      angleOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
+        final parts = assign.split('=');
+        if (parts.length == 2) addExport(parts[0], parts[1]);
+      });
+    } else if (wrapper) {
+      // Wrapper driver environment (old fallback)
+      addExport('VK_ICD_FILENAMES',
+          '${G.dataPath}/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json');
+      addExport('TU_DEBUG', 'noconform');
+
+      final wrapperDri3 = prefs.getBool('wrapper_dri3') ?? false;
+      if (!wrapperDri3 && useX11) addExport('MESA_VK_WSI_DEBUG', 'sw');
+    }
+    // If none of the above, lines remains empty → CPU mode
+
+    await file.writeAsString(lines.join('\n'));
+    return true;
+  } catch (e) {
+    print('Error writing GPU driver settings: $e');
+    return false;
   }
+}
 
   /// Starts the appropriate graphics server (VirGL, Venus, or ANGLE) in detached mode.
   static Future<Process?> startServer() async {

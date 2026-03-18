@@ -121,6 +121,7 @@ class Util {
       case "uos" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "virgl" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "venus" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
+      case "wrapper" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "defaultVenusCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--no-virgl --venus --socket-path=/data/data/com.xodos/files/containers/0/tmp/.virgl_test");
       case "defaultVenusOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}(" VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/virtio_icd.json VN_DEBUG=vtest ");
       case "androidVenus" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
