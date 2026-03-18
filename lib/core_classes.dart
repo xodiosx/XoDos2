@@ -474,8 +474,6 @@ chmod -R +x usr/bin/*
 chmod 1777 usr/tmp
 sleep 1
 #\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar -xJf \$DATA_DIR/patch.tar.xz --delay-directory-restore --preserve-permissions -v -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz"
-
-#\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f \$DATA_DIR/patch.tar.xz -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz
 #ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
 
 export DATA_DIR=${G.dataPath}
@@ -504,10 +502,10 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
-
+\$DATA_DIR/usr/bin/busybox rm -rf patch.tar* tmp1 tmp2 tmp3
 
 """);
-print("patch and assets extracted,,,");
+print("patch proot and assets extracted,,,");
     
   }
 
@@ -554,20 +552,20 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/"
 #Script from proot-distro
-chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
-echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
-echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
-id -Gn | tr ' ' '\\n' > tmp1
-id -G | tr ' ' '\\n' > tmp2
-\$DATA_DIR/usr/bin/busybox paste tmp1 tmp2 > tmp3
-local group_name group_id
-cat tmp3 | while read -r group_name group_id; do
-	echo "aid_\${group_name}:x:\${group_id}:root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/group"
-	if [ -f "\$CONTAINER_DIR/etc/gshadow" ]; then
-		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
-	fi
-done
-\$DATA_DIR/usr/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
+#chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
+#echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
+#echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
+#id -Gn | tr ' ' '\\n' > tmp1
+#id -G | tr ' ' '\\n' > tmp2
+#\$DATA_DIR/usr/bin/busybox paste tmp1 tmp2 > tmp3
+#local group_name group_id
+#cat tmp3 | while read -r group_name group_id; do
+#	echo "aid_\${group_name}:x:\${group_id}:root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/group"
+#	if [ -f "\$CONTAINER_DIR/etc/gshadow" ]; then
+#		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
+#	fi
+#done
+\$DATA_DIR/usr/bin/busybox rm -rf xa* 
 echo "" > /data/data/com.xodos/files/usr/opt/drv
 """);
     // Some data initialization
