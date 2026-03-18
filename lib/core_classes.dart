@@ -540,7 +540,7 @@ cat tmp3 | while read -r group_name group_id; do
 	fi
 done
 \$DATA_DIR/usr/bin/busybox rm -rf xa* tmp1 tmp2 tmp3
-
+echo "" > /data/data/com.xodos/files/usr/opt/drv
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
