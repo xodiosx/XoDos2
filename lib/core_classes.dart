@@ -568,9 +568,8 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #done
 \$DATA_DIR/usr/bin/busybox rm -rf xa* 
 echo "" > /data/data/com.xodos/files/usr/opt/drv
-sed -i 's/xproot/#xproot/g' /data/data/com.xodos/files/usr/bin/xodos
 sed -i 's/xproot//g' /data/data/com.xodos/files/usr/bin/xodos
-sed -i 's/#xproot//g' /data/data/com.xodos/files/usr/bin/xodos
+sed -i 's/proot//g' /data/data/com.xodos/files/usr/bin/xodos
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
