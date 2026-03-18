@@ -451,23 +451,21 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 cd \$DATA_DIR
 
-ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
-ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/busybox
-ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/sh
-ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/cat
-ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/xz
-ln -sf ../applib/libexec_busybox.so \$DATA_DIR/bin/gzip
-ln -sf ../applib/libexec_proot.so \$DATA_DIR/bin/proot
-ln -sf ../applib/libexec_tar.so \$DATA_DIR/bin/tar
-#ln -sf ../applib/libexec_virgl_test_server.so \$DATA_DIR/bin/virgl_test_servero
-#ln -sf ../applib/libvirglrenderer.so \$DATA_DIR/lib/libvirglrenderer.so
-#ln -sf ../applib/libepoxy.so \$DATA_DIR/lib/libepoxy.so
-ln -sf ../applib/libexec_getifaddrs_bridge_server.so \$DATA_DIR/bin/getifaddrs_bridge_server
-ln -sf ../applib/libexec_pulseaudio.so \$DATA_DIR/bin/pulseaudio
-ln -sf ../applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
-#ln -sf ../applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
-ln -sf ../applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
-ln -sf ../applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
+export PATH=/system/bin:\$DATA_DIR/bin:\$DATA_DIR/usr/bin
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/xz
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/gzip
+ln -sf \$DATA_DIR/applib/libexec_proot.so \$DATA_DIR/usr/bin/proot
+ln -sf \$DATA_DIR/applib/libexec_tar.so \$DATA_DIR/usr/bin/tar
+ln -sf \$DATA_DIR/applib/libexec_pulseaudio.so \$DATA_DIR/usr/bin/pulseaudio
+ln -sf \$DATA_DIR/applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
+ln -sf \$DATA_DIR/applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
+ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
+ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
+
 
 \$DATA_DIR/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
