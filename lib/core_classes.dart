@@ -431,15 +431,15 @@ class Workflow {
     // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
     await Util.copyAsset(
     "assets/pxaa",
-    "${G.dataPath}/patch.tar.xz",
+    "${G.dataPath}/pxaa",
     );
       await Util.copyAsset(
     "assets/pxab",
-    "${G.dataPath}/patch.tar.xz",
+    "${G.dataPath}/pxab",
     );
   await Util.copyAsset(
     "assets/pxac",
-    "${G.dataPath}/patch.tar.xz",
+    "${G.dataPath}/pxac",
     );
     
   /*  */
