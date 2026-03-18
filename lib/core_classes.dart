@@ -136,7 +136,7 @@ class Util {
       case "isJpEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "useAvnc" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
       case "avncResizeDesktop" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
-      case "avncScaleFactor" : return b ? G.prefs.getDouble(key)!.clamp(-1.0, 1.0) : (value){G.prefs.setDouble(key, value); return value;}(-0.5);
+      case "avncScaleFactor" : return b ? G.prefs.getDouble(key)!.clamp(-1.0, 1.0) : (value){G.prefs.setDouble(key, value); return value;}(-0.9);
       case "useX11" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "defaultFFmpegCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("-hide_banner -an -max_delay 1000000 -r 30 -f android_camera -camera_index 0 -i 0:0 -vf scale=iw/2:-1 -rtsp_transport udp -f rtsp rtsp://127.0.0.1:8554/stream");
       case "defaultVirglCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--use-egl-surfaceless --use-gles --socket-path=/data/data/com.xodos/files/usr/tmp/.virgl_test");
@@ -473,8 +473,17 @@ chmod -R +x libexec/proot/*
 chmod -R +x usr/bin/*
 chmod 1777 usr/tmp
 sleep 1
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar -xJf \$DATA_DIR/patch.tar.xz --delay-directory-restore --preserve-permissions -v -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz"
+#\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar -xJf \$DATA_DIR/patch.tar.xz --delay-directory-restore --preserve-permissions -v -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz"
+export DATA_DIR=${G.dataPath}
+export PATH=\$DATA_DIR/usr/bin:\$PATH
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
+cd \$DATA_DIR
 
+# Extract patch.tar.xz directly into the container directory
+\$DATA_DIR/usr/bin/tar -xJf patch.tar.xz --delay-directory-restore --preserve-permissions -v -C containers/0/
+
+# Clean up
+\$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz
 #\$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -f \$DATA_DIR/patch.tar.xz -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz
 #ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
 
