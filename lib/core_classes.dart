@@ -414,6 +414,7 @@ class Workflow {
     Util.createDirFromString("${G.dataPath}/usr/lib");
     // Folder to be mounted to /dev/shm
     Util.createDirFromString("${G.dataPath}/usr/tmp");
+    Util.createDirFromString("${G.dataPath}/tmp");
     // tmp folder for proot, though I don't know why proot needs this
     Util.createDirFromString("${G.dataPath}/proot_tmp");
     // tmp folder for pulseaudio
