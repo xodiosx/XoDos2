@@ -429,11 +429,11 @@ class Workflow {
     "assets/assets.zip",
     "${G.dataPath}/assets.zip",
     );
-    // patch.tar.xz contains the xodos folder with bionic rootfs
+    // proot.tar.xz contains the xodos folder with bionic rootfs
     // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
     await Util.copyAsset(
-    "assets/patch.tar.xz",
-    "${G.dataPath}/patch.tar.xz",
+    "assets/proot.tar.xz",
+    "${G.dataPath}/proot.tar.xz",
     );
     
   /*  */
@@ -474,7 +474,9 @@ chmod -R +x libexec/proot/*
 chmod -R +x usr/bin/*
 chmod 1777 usr/tmp
 sleep 1
-#\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar -xJf \$DATA_DIR/patch.tar.xz --delay-directory-restore --preserve-permissions -v -C /data/data/com.xodos/files/containers/0 && \$DATA_DIR/usr/bin/busybox rm -rf assets.zip patch.tar.xz"
+export PREFIX=\$DATA_DIR/usr
+export HOME=\$DATA_DIR/home
+export TMPDIR=\$DATA_DIR/usr/tmp
 #ln -sf \$DATA_DIR/usr/bin \$DATA_DIR/bin
 
 export DATA_DIR=${G.dataPath}
@@ -488,7 +490,7 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat patch.* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/containers/0"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat proot.tar* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/containers/0"
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
@@ -503,8 +505,8 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
-\$DATA_DIR/usr/bin/busybox rm -rf patch.tar* tmp1 tmp2 tmp3 assets.zip
-
+\$DATA_DIR/usr/bin/busybox rm -rf proot.tar* tmp1 tmp2 tmp3 assets.zip
+sleep 1
 
 """);
 print("patch proot and assets extracted,,,");
@@ -542,35 +544,30 @@ print("patch proot and assets extracted,,,");
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
+export PREFIX=\$DATA_DIR/usr
+export HOME=\$DATA_DIR/home
+export TMPDIR=\$DATA_DIR/usr/tmp
 export PATH=\$DATA_DIR/usr/bin:\$PATH
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
 export CONTAINER_DIR=\$DATA_DIR/containers/0
 export EXTRA_OPT=""
 cd \$DATA_DIR
-#export PATH=\$DATA_DIR/bin:\$PATH
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/"
-#Script from proot-distro
-#chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
-#echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
-#echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
-#id -Gn | tr ' ' '\\n' > tmp1
-#id -G | tr ' ' '\\n' > tmp2
-#\$DATA_DIR/usr/bin/busybox paste tmp1 tmp2 > tmp3
-#local group_name group_id
-#cat tmp3 | while read -r group_name group_id; do
-#	echo "aid_\${group_name}:x:\${group_id}:root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/group"
-#	if [ -f "\$CONTAINER_DIR/etc/gshadow" ]; then
-#		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
-#	fi
-#done
+#Script to fix
+
+sleep 1
+
 \$DATA_DIR/usr/bin/busybox rm -rf xa* 
 echo "" > /data/data/com.xodos/files/usr/opt/drv
 sed -i 's/xproot//g' /data/data/com.xodos/files/usr/bin/xodos
-sed -i 's/proot//g' /data/data/com.xodos/files/usr/bin/xodos
+sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a chmod +x $PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\nsource $PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\nunset GALLIUM_DRIVER' "\$PREFIX/bin/xxx"
+sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a chmod +x $PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\nsource $PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\nunset GALLIUM_DRIVER' "\$PREFIX/bin/xodos"
+cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
+
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
