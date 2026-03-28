@@ -575,6 +575,7 @@ source \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
 unset GALLIUM_DRIVER' \"\$PREFIX/bin/xodos\"
 
 cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
+ln -sf $DATA_DIR/tiny/extra/ $DATA_DIR/containers/0/extra
 
 """);
     // Some data initialization
