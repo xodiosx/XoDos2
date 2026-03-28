@@ -564,8 +564,8 @@ sleep 1
 \$DATA_DIR/usr/bin/busybox rm -rf xa* 
 echo "" > /data/data/com.xodos/files/usr/opt/drv
 sed -i 's/xproot//g' /data/data/com.xodos/files/usr/bin/xodos
-sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a chmod +x $PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\nsource $PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\nunset GALLIUM_DRIVER' "\$PREFIX/bin/xxx"
-sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a chmod +x $PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\nsource $PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\nunset GALLIUM_DRIVER' "\$PREFIX/bin/xodos"
+sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a chmod +x \\$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\\nsource \\$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\\nunset GALLIUM_DRIVER' \"\\$PREFIX/bin/xxx\"
+sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a chmod +x \\$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\\nsource \\$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang\\nunset GALLIUM_DRIVER' \"\\$PREFIX/bin/xodos\"
 cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
 
 """);
