@@ -1173,15 +1173,15 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'virgl_*'  2>/dev/null || true
 rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
-. /data/data/com.xodos/files/usr/opt/drvVK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json $androidVenusEnv virgl_test_server $venusCommand > \${CONTAINER_DIR}/venus.log 2>&1 &
+. /data/data/com.xodos/files/usr/opt/drv
 VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json $androidVenusEnv virgl_test_server $venusCommand > \${CONTAINER_DIR}/venus.log 2>&1 &
 
 echo "export MESA_VK_WSI_PRESENT_MODE=mailbox
 export VN_DEBUG=vtest
+export VK_ICD_FILENAMES=/data/user/0/com.xodos/files/usr/share/vulkan/icd.d/virtio_icd.aarch64.json
 " > \$DATA_DIR/usr/opt/drv
 echo "Venus server started in background"
-""");VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json $androidVenusEnv virgl_test_server $venusCommand > \${CONTAINER_DIR}/venus.log 2>&1 &
-
+""");
     
   } else if (virglEnabled) {
     print("Sending Virgl server command to terminal");
