@@ -44,7 +44,7 @@ jobs:
           from googleapiclient.discovery import build
           from googleapiclient.http import MediaIoBaseDownload
 
-          FILE_ID = "1qPKuZ9UsDhGEcJwSHd3dVzzMTtXsvAt6"
+          FILE_ID = "1vChElTCWyNVmwUHsYc9_SOpQ4Ga4KUnB"
           OUTPUT_FILE = f"XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk"
 
           # Authenticate
@@ -73,8 +73,9 @@ jobs:
       # ✅ Step 4.6: Download Wine build and rename it
       - name: Download Wine Proot Build
         run: |
-          wget -O wine-9.17-proot-amd64-wow64.tar.xz \
-            https://github.com/Kron4ek/Wine-Builds/releases/download/9.17/wine-9.17-amd64-wow64.tar.xz
+             ls
+          #wget -O wine-9.17-proot-amd64-wow64.tar.xz \
+           # https://github.com/Kron4ek/Wine-Builds/releases/download/9.17/wine-9.17-amd64-wow64.tar.xz
 
       # ✅ Step 5: Create Git Tag
       - name: Create Git Tag
@@ -91,8 +92,7 @@ jobs:
           echo "### File Checksums:" > checksums.txt
           for f in \
             XoDos-${{ github.event.inputs.version_tag }}-full_arm64-v8a.apk \
-            xodos_steam-lite.tar.xz \
-            wine-9.17-proot-amd64-wow64.tar.xz
+            xodos_steam-lite.tar.xz \            
           do
             md5sum "$f" | awk '{print "- **"$2"** → `"$1"`"}' >> checksums.txt
           done
