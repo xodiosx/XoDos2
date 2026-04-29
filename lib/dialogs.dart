@@ -91,12 +91,15 @@ class _DxvkDialogState extends State<DxvkDialog> {
       Util.termWrite("echo 'export MANGOHUD_CONFIG=fps,ram,gpu_name,horizontal,horizontal_stretch,no_small_font,background_alpha=0.2,alpha=0.9' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("echo '# MANGOHUD enabled' >> ${G.dataPath}/usr/opt/hud");
+      await Future.delayed(const Duration(milliseconds: 50));
+      Util.termWrite("echo 'hud' >> ${G.dataPath}/usr/opt/hud");
     } else {
       Util.termWrite("echo 'export MANGOHUD=0' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("echo 'export MANGOHUD_DLSYM=0' >> ${G.dataPath}/usr/opt/hud");
       await Future.delayed(const Duration(milliseconds: 50));
       Util.termWrite("echo '# MANGOHUD disabled' >> ${G.dataPath}/usr/opt/hud");
+      
     }
     
     if (_currentDxvkHudEnabled) {
@@ -396,11 +399,11 @@ Util.termWrite("source ${G.dataPath}/usr/opt/hud");
                             dense: isLandscape,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                             title: const Text(
-                              'MANGOHUD',
+                              'MANGOHUD+Mebabohud',
                               style: TextStyle(fontSize: 14),
                             ),
                             subtitle: const Text(
-                              'Overlay for monitoring FPS, CPU, GPU, etc.',
+                              'Overlay for monitoring FPS, CPU, GPU, and python hud if mangohud fails .',
                               style: TextStyle(fontSize: 12),
                             ),
                             value: _currentMangohudEnabled,

@@ -4307,7 +4307,7 @@ class GpuDriverHelper {
       String icdPath = '${G.dataPath}/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json';
       addExport('VK_ICD_FILENAMES', icdPath);
 
-      final turnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink TU_DEBUG=noconform GALLIUM_DRIVER=zink MESA_VK_WSI_PRESENT_MODE=mailbox ';
+      final turnipOpt = 'MESA_LOADER_DRIVER_OVERRIDE=zink VKD3D_FEATURE_LEVEL=12_0 TU_DEBUG=noconform GALLIUM_DRIVER=zink MESA_VK_WSI_PRESENT_MODE=mailbox ';
       turnipOpt.split(' ').where((s) => s.contains('=')).forEach((assign) {
         final parts = assign.split('=');
         if (parts.length == 2) addExport(parts[0], parts[1]);

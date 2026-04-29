@@ -565,6 +565,7 @@ sleep 1
 echo "" > /data/data/com.xodos/files/usr/opt/drv
 sed -i 's/xproot//g' /data/data/com.xodos/files/usr/bin/xodos
 
+fixx(){
 sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a \\
 chmod +x \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
 source \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
@@ -573,9 +574,9 @@ sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a \\
 chmod +x \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
 source \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
 unset GALLIUM_DRIVER' \"\$PREFIX/bin/xodos\"
-
 cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
-ln -sf \$DATA_DIR/tiny/extra/ \$DATA_DIR/containers/0/extra
+}
+#ln -sf \$DATA_DIR/tiny/extra/ \$DATA_DIR/containers/0/extra
 
 """);
     // Some data initialization
@@ -756,6 +757,7 @@ export prefixsh="/data/data/com.xodos/files/usr/bin/"
 #export XDG_DATA_HOME=\$HOME/.local/share
 #export XDG_CACHE_HOME=\$HOME/.cache
 unset VK_ICD_FILENAMES
+rm -rf \$PREFIX/tmp/*
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 #exec \$DATA_DIR/usr/bin/bash --login   
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
@@ -960,7 +962,7 @@ cd \$DATA_DIR
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-xodos
+xodos > /dev/null 2>&1
       echo 'opening Linux proot termial,,,'
       echo ' press CTRL + D to logout Linux proot'      
      sleep 1
