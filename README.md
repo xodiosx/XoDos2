@@ -15,7 +15,8 @@
 > **"Awakening is not changing who you are, but discarding who you are not."** - Deepak Chopra
 
 ## Our website 🌐
-[XoDos:Re website](https://desarrolladorprimary.github.io/xodos2-Rebirth_Web)
+[XoDos:Re website](https://karysdeveloper.github.io/xodos2.Rebirth)
+Developed by @Karysdeveloper ©2026
 
 ## ✨ What is XoDos?
 **XoDos** is a revolutionary Linux desktop environment that runs seamlessly on Android devices, bringing the full power of Linux to your mobile device without conflicts with other applications.
