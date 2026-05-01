@@ -115,6 +115,9 @@
             android:screenOrientation="sensor"
             android:theme="@style/AppTheme" />
 
+ <meta-data
+        android:name="io.flutter.embedding.android.EnableImpeller"
+        android:value="false" />
         <!-- Flutter embedding metadata -->
         <meta-data
             android:name="flutterEmbedding"
