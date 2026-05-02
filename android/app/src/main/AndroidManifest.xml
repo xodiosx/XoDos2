@@ -151,8 +151,6 @@
 
     <!-- ================= QUERIES ================= -->
 
-    <queries>
-        <package android:name="com.xodos"/>
-    </queries>
+
 
 </manifest>
