@@ -124,9 +124,7 @@ jobs:
           flutter build apk \
             --release \
             --target-platform android-arm64 \
-            --split-per-abi \
-            --dart-define=FLUTTER_ENGINE_SWITCHES=--enable-software-rendering
-            --dart-define=FLUTTER_WEB_USE_SKIA=true
+            --split-per-abi 
 
       # -------------------------
       # Upload artifact
