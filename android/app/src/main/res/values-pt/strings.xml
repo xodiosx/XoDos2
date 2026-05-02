@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tc_app_name">XoDos:Re</string>
+    <string name="tc_s9a_error_message">O terminal foi encerrado de forma anormal com o sinal 9. Este erro é causado pela limitação do sistema Android 12+ no número de processos filhos e requer a remoção manual da restrição.</string>
+    <string name="tc_s9a_kaomoji">:(</string>
+    <string name="tc_s9a_solution_intro">Você pode usar a ferramenta a seguir para corrigir:</string>
+    <string name="tc_s9a_solution_alternative">Se a ferramenta acima não resolver o problema, ou se o dispositivo for um dispositivo HarmonyOS, siga o tutorial abaixo (requer um computador e um cabo de dados):</string>
+    <string name="tc_s9a_tool_button">Ferramenta de reparo</string>
+    <string name="tc_s9a_tutorial_button">Link do tutorial</string>
+    <string name="tc_s9a_solution_android14">Ative as opções do desenvolvedor no aplicativo Configurações (geralmente acessando Sobre o dispositivo -> Versão do sistema -> toque em Versão do sistema 5 vezes continuamente) e, em seguida, encontre "Parar de restringir processos filhos" nas opções do desenvolvedor e ative a chave. As etapas para ativar as opções do desenvolvedor podem variar ligeiramente dependendo do modelo do dispositivo. Para métodos específicos, você pode pesquisar online.</string>
+</resources>

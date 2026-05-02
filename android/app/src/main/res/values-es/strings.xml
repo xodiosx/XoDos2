@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tc_app_name">XoDos:Re</string>
+    <string name="tc_s9a_error_message">La terminal terminó de forma anormal con la señal 9. Este error se debe a que el sistema Android 12+ limita el número de procesos secundarios y requiere la eliminación manual de la restricción.</string>
+    <string name="tc_s9a_kaomoji">:(</string>
+    <string name="tc_s9a_solution_intro">Puedes usar la siguiente herramienta para solucionarlo:</string>
+    <string name="tc_s9a_solution_alternative">Si la herramienta anterior no puede solucionar el problema, o si el dispositivo es un dispositivo HarmonyOS, sigue el tutorial a continuación (requiere un ordenador y un cable de datos):</string>
+    <string name="tc_s9a_tool_button">Herramienta de reparación</string>
+    <string name="tc_s9a_tutorial_button">Enlace del tutorial</string>
+    <string name="tc_s9a_solution_android14">Habilita las opciones de desarrollador en la aplicación Ajustes (normalmente yendo a Acerca del dispositivo -> Versión del sistema -> toca Versión del sistema 5 veces seguidas), luego busca "Restringir procesos secundarios" en las opciones de desarrollador y activa el interruptor. Los pasos para habilitar las opciones de desarrollador pueden variar ligeramente según el modelo del dispositivo. Para métodos específicos, puedes buscar en línea.</string>
+</resources>

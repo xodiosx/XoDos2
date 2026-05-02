@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tc_app_name">XoDos:Re</string>
+    <string name="tc_s9a_error_message">تم إنهاء الطرفية بشكل غير طبيعي بالإشارة 9. يحدث هذا الخطأ بسبب تحديد نظام أندرويد 12+ لعدد العمليات الفرعية ويتطلب إزالة القيد يدويًا.</string>
+    <string name="tc_s9a_kaomoji">:(</string>
+    <string name="tc_s9a_solution_intro">يمكنك استخدام الأداة التالية للإصلاح:</string>
+    <string name="tc_s9a_solution_alternative">إذا تعذّر على الأداة أعلاه إصلاح المشكلة، أو إذا كان الجهاز يعمل بنظام HarmonyOS، يرجى اتباع البرنامج التعليمي أدناه (يتطلب جهاز كمبيوتر وكابل بيانات):</string>
+    <string name="tc_s9a_tool_button">أداة الإصلاح</string>
+    <string name="tc_s9a_tutorial_button">رابط البرنامج التعليمي</string>
+    <string name="tc_s9a_solution_android14">يرجى تفعيل خيارات المطور في تطبيق الإعدادات (عادةً عبر الذهاب إلى حول الجهاز -> إصدار النظام -> النقر على إصدار النظام 5 مرات متتالية)، ثم ابحث عن "إيقاف تقييد العمليات الفرعية" في خيارات المطور وقم بتشغيل المفتاح. قد تختلف خطوات تفعيل خيارات المطور قليلاً حسب طراز الجهاز. للاطلاع على طرق محددة، يمكنك البحث عبر الإنترنت.</string>
+</resources>

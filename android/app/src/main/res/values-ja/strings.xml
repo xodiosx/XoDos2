@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tc_app_name">XoDos:Re</string>
+    <string name="tc_s9a_error_message">端末がシグナル9で異常終了しました。このエラーはAndroid 12以降のシステムが子プロセスの数を制限していることが原因で、手動で制限を解除する必要があります。</string>
+    <string name="tc_s9a_kaomoji">:(</string>
+    <string name="tc_s9a_solution_intro">次のツールを使用して修正できます：</string>
+    <string name="tc_s9a_solution_alternative">上記のツールで問題が解決しない場合、またはデバイスがHarmonyOSデバイスの場合は、以下のチュートリアルに従ってください（コンピューターとデータケーブルが必要です）：</string>
+    <string name="tc_s9a_tool_button">修復ツール</string>
+    <string name="tc_s9a_tutorial_button">チュートリアルリンク</string>
+    <string name="tc_s9a_solution_android14">設定アプリで開発者向けオプションを有効にし（通常は「端末について」→「システムバージョン」→「システムバージョン」を5回連続でタップ）、開発者向けオプションの中の「子プロセスの制限を停止」を見つけてスイッチをオンにしてください。開発者向けオプションを有効にする手順は端末の機種によって若干異なる場合があります。具体的な方法はオンラインで検索してください。</string>
+</resources>

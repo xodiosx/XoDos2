@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tc_app_name">XoDos:Re</string>
+    <string name="tc_s9a_error_message">Le terminal s’est arrêté anormalement avec le signal 9. Cette erreur est due à la limitation par le système Android 12+ du nombre de processus enfants et nécessite la suppression manuelle de la restriction.</string>
+    <string name="tc_s9a_kaomoji">:(</string>
+    <string name="tc_s9a_solution_intro">Vous pouvez utiliser l’outil suivant pour résoudre le problème :</string>
+    <string name="tc_s9a_solution_alternative">Si l’outil ci‑dessus ne peut pas résoudre le problème, ou si l’appareil est un appareil HarmonyOS, veuillez suivre le tutoriel ci‑dessous (nécessite un ordinateur et un câble de données) :</string>
+    <string name="tc_s9a_tool_button">Outil de réparation</string>
+    <string name="tc_s9a_tutorial_button">Lien du tutoriel</string>
+    <string name="tc_s9a_solution_android14">Veuillez activer les options de développement dans l’application Paramètres (généralement en allant dans À propos de l’appareil -> Version du système -> appuyez 5 fois de suite sur Version du système), puis trouvez « Empêcher la restriction des processus enfants » dans les options de développement et activez l’interrupteur. Les étapes pour activer les options de développement peuvent varier légèrement selon le modèle de l’appareil. Pour des méthodes spécifiques, vous pouvez effectuer une recherche en ligne.</string>
+</resources>

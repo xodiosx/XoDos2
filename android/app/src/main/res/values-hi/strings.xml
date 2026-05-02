@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tc_app_name">XoDos:Re</string>
+    <string name="tc_s9a_error_message">Terminal signal 9 ke saath asamany roop se samapt ho gaya. Yah error Android 12+ system dwara child processes ki sankhya ko seemit karne ke karan hota hai aur iske liye prabandh ko manuual roop se hataane ki aavashyakta hai.</string>
+    <string name="tc_s9a_kaomoji">:(</string>
+    <string name="tc_s9a_solution_intro">Aap theek karne ke liye nimnalikhit upakaran ka upayog kar sakte hain:</string>
+    <string name="tc_s9a_solution_alternative">Yadi upyukt upakaran samasya ka samadhaan nahin kar sakta, ya yadi device HarmonyOS device hai, to kripaya neeche diye tutorial ka palan karein (iske liye computer aur data cable ki aavashyakta hai):</string>
+    <string name="tc_s9a_tool_button">Marammat upakaran</string>
+    <string name="tc_s9a_tutorial_button">Tutorial link</string>
+    <string name="tc_s9a_solution_android14">Kripaya Settings app mein developer options saksham karein (aam taur par About device -> System version -> System version par lagataar 5 baar tap karein), phir developer options mein "Stop restricting child processes" dhoondhein aur switch ko on karein. Developer options saksham karne ke charan device model ke anusaar thode alag ho sakte hain. Vishesh tarikon ke liye aap online khoj kar sakte hain.</string>
+</resources>
