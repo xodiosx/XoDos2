@@ -739,6 +739,9 @@ export prefixsh="/data/data/com.xodos/files/usr/bin/"
     export TERMUX_APP__IS_DEBUGGABLE_BUILD=true
     export ASEC_MOUNTPOINT=/mnt/asec
     export DISPLAY=:4
+    export XKB_CONFIG_ROOT=$PREFIX/share/X11/xkb
+    pkill -f termux*
+    rm -rf $PREFIX/lib/libandroid.so
     export SHLVL=1
     export ANDROID_ROOT=/system
     export SHELL_CMD__TERMINAL_SESSION_NUMBER_SINCE_APP_START=0
