@@ -97,8 +97,24 @@
                 <action android:name="android.intent.action.MAIN"/>
             </intent-filter>
         </activity>
+  
+              <!-- ================= REQUIRED DATA PROVIDER (YOU WERE MISSING THIS) ================= -->
 
-        <!-- ================= RECEIVER ================= -->
+        <provider
+            android:name="bin.mt.file.content.MTDataFilesProvider"
+            android:authorities="com.xodos.MTDataFilesProvider"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER"/>
+            </intent-filter>
+
+        </provider>
+
+  
+              <!-- ================= RECEIVER ================= -->
 
         <receiver
             android:name="com.termux.x11.LoriePreferences$Receiver"
@@ -145,7 +161,7 @@
 
         <!-- Flutter -->
         <meta-data android:name="flutterEmbedding" android:value="2"/>
-        <meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false"/>
+        
 
     </application>
 
