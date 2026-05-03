@@ -576,13 +576,13 @@ source \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
 unset GALLIUM_DRIVER' \"\$PREFIX/bin/xodos\"
 cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
 }
-#ln -sf \$DATA_DIR/tiny/extra/ \$DATA_DIR/containers/0/extra
-
+ln -sf \$DATA_DIR/tiny/extra/ \$DATA_DIR/containers/0/extra
+for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DIR/usr/bin/"; done
 """);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
     // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of stuff code :P
-    print("xodos proot is ready");
+    print("xodos system is ready");
     
     // Use LanguageManager for proper language support
     final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
@@ -600,12 +600,11 @@ cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
 }"""]);
     
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
-    
+    final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('extractionProgressT');
        if (G.onExtractionComplete != null) {
       G.onExtractionComplete!();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('extractionProgressT');
-    
+          
     }
     
      
@@ -690,6 +689,7 @@ export FONTCONFIG_PATH=\$PREFIX/etc/fonts
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
+pkill -f termux*
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
 rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
 export DISPLAY=:4
@@ -698,7 +698,7 @@ export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
 unset LD_LIBRARY_PATH
 export TMPDIR=\$DATA_DIR/usr/tmp
 export XDG_RUNTIME_DIR=\$TMPDIR/runtime
-cd 
+l
 export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
 mkdir -p \$XDG_CACHE_HOME
@@ -740,7 +740,6 @@ export prefixsh="/data/data/com.xodos/files/usr/bin/"
     export ASEC_MOUNTPOINT=/mnt/asec
     export DISPLAY=:4
     export XKB_CONFIG_ROOT=\$PREFIX/share/X11/xkb
-    pkill -f termux*
     rm -rf \$PREFIX/lib/libandroid.so
     export SHLVL=1
     export ANDROID_ROOT=/system
@@ -762,16 +761,14 @@ export prefixsh="/data/data/com.xodos/files/usr/bin/"
 unset VK_ICD_FILENAMES
 rm -rf \$PREFIX/tmp/*
 ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
-#exec \$DATA_DIR/usr/bin/bash --login   
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
-#ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 cd
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
 unset ANGLE_DEFAULT_PLATFORM
 exec \$DATA_DIR/usr/bin/bash --login   
-fi    
+fi
 """;
     
     // Write the commands to the terminal

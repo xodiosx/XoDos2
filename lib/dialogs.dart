@@ -189,8 +189,18 @@ Util.termWrite("source ${G.dataPath}/usr/opt/hud");
         }
       }
     } else {
-      Util.termWrite("echo 'DXVK already installed: $_selectedDxvk'");
+      Util.termWrite("echo ' Reinstalling DXVK : $_selectedDxvk'");
       await Future.delayed(const Duration(milliseconds: 50));
+      final vkd3dFiles = await _findRelatedFiles('vkd3d');
+        for (final vkd3dFile in vkd3dFiles) {
+          await _extractSingleFile(vkd3dFile, 'VKD3D');
+        }
+        
+        final d8vkFiles = await _findRelatedFiles('d8vk');
+        for (final d8vkFile in d8vkFiles) {
+          await _extractSingleFile(d8vkFile, 'D8VK');
+        }
+      
       Util.termWrite("echo '#================================'");
     }
   }
@@ -598,6 +608,15 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     'WINEARCH',
      'DXVK_ASYNC',
      'adrenotool',
+     'HODLL64',
+     'HODLL',
+     'VKD3D_FEATURE_LEVEL',
+     'VKD3D_CONFIG',
+     'PREFIX',
+     'HOME',
+     'WINE_DISABLE_KERNEL_WRITEWATCH',
+     'mesa_glthread',
+     'VKD3D_DEBUG',
      'GALLIUM_DRIVER',
        'MESA_VK_WSI_PRESENT_MODE',
    'MESA_LOADER_DRIVER_OVERRIDE',

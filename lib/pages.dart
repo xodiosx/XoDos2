@@ -1477,7 +1477,7 @@ OutlinedButton(
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
                             Util.termWrite("sudo apt autoremove --purge -y hangover*");
-                            Util.termWrite("rm -rf ~/.wine");
+                            //Util.termWrite("rm -rf ~/.wine");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Wine hangover deleted'),
@@ -1524,7 +1524,7 @@ OutlinedButton(
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
                             Util.termWrite("rm -rf /opt/wine");
-                            Util.termWrite("rm -rf ~/.wine");
+                            //Util.termWrite("rm -rf ~/.wine");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Wine deleted'),
@@ -1541,7 +1541,7 @@ OutlinedButton(
               ),
               OutlinedButton(
                 style: D.commandButtonStyle,
-                child: Text('Delete Wine Bionic🍷'),
+                child: Text('Delete Wine Bionic and fex🍷'),
                 onPressed: () {
                   showDialog(
                     context: context,
@@ -1571,10 +1571,104 @@ OutlinedButton(
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
                             Util.termWrite("rm -rf ${G.dataPath}/usr/opt/wine");
-                            Util.termWrite("rm -rf ${G.dataPath}/home/.wine");
+                            Util.termWrite("rm -rf ${G.dataPath}/usr/opt/winece");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Wine deleted'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          },
+                          child: const Text('Delete Now'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              OutlinedButton(
+                style: D.commandButtonStyle,
+                child: Text('Delete Wine glibc with packages🍷'),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      icon: const Icon(Icons.warning, color: Colors.orange, size: 48),
+                      title: const Text('Delete Wine glibc with packages?'),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('This will delete:'),
+                          SizedBox(height: 8),
+                          Text('•❌Ful  Wine🍷 ', style: TextStyle(color: Colors.red)),
+                          Text('•with Windows support and glibc packages', style: TextStyle(color: Colors.red)),
+                          Text('• for wine glibc!', style: TextStyle(color: Colors.red)),
+                          SizedBox(height: 12),
+                          Text('This action cannot be undone!'),
+                        ],
+                      ),
+                      actions: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            G.pageIndex.value = 0;
+                            Util.termWrite("rm -rf ${G.dataPath}/usr/glibc");
+                            //Util.termWrite("rm -rf ~/.wine");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Wine glibc deleted'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          },
+                          child: const Text('Delete Now'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              OutlinedButton(
+                style: D.commandButtonStyle,
+                child: Text('Delete Proot environment🐧'),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      icon: const Icon(Icons.warning, color: Colors.orange, size: 48),
+                      title: const Text('Delete Proot system?'),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('This will delete:'),
+                          SizedBox(height: 8),
+                          Text('•❌Full XoDos Proot Linux Distro ', style: TextStyle(color: Colors.red)),
+                          Text('•with Linux proot support', style: TextStyle(color: Colors.red)),
+                          Text('• for arm64 Linux Apps!', style: TextStyle(color: Colors.red)),
+                          SizedBox(height: 12),
+                          Text('This action cannot be undone!'),
+                        ],
+                      ),
+                      actions: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            G.pageIndex.value = 0;
+                            Util.termWrite("[ -f /etc/bash.bashrc ] && exit && rm -rf ${G.dataPath}/containers/0/");
+                            Util.termWrite("rm -rf ${G.dataPath}/containers/0/");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('proot deleted'),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -1600,6 +1694,7 @@ OutlinedButton(
                         children: [
                           Text('This will delete:'),
                           SizedBox(height: 8),
+                          Text('• All bionic fex Wine Prefixes to including proot wine', style: TextStyle(color: Colors.red)),
                           Text('• All Wine configuration', style: TextStyle(color: Colors.red)),
                           Text('• Installed Windows apps', style: TextStyle(color: Colors.red)),
                           Text('• Registry and save games with settings', style: TextStyle(color: Colors.red)),
@@ -1618,6 +1713,7 @@ OutlinedButton(
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
                             Util.termWrite("rm -rf ~/.wine");
+                            Util.termWrite("rm -rf ${G.dataPath}/home/.wine");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Wine prefix deleted'),
