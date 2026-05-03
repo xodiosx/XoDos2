@@ -689,7 +689,8 @@ export FONTCONFIG_PATH=\$PREFIX/etc/fonts
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
-pkill -f termux*
+pkill -f com.termux*
+export TERMUX_X11_DEBUG=0
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
 rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
 export DISPLAY=:4
@@ -986,7 +987,7 @@ unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
-#pkill -f termux*
+#pkill -f com.termux*
 sleep 1
 #export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
 cd \$DATA_DIR
@@ -1013,7 +1014,7 @@ static Future<void> launchGUIBackend() async {
       // X11 already redirects to log file, keep as is
       Util.termWrite("""termux-x11 :4 -ac &""");
     } else {
-    Util.termWrite("""pkill -f termux*""");
+    Util.termWrite("""pkill -f com.termux*""");
       // Redirect VNC command output to /dev/null
       String vncCmd = Util.getCurrentProp("vnc");
       // Remove any existing & and add redirection

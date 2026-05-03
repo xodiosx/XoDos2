@@ -24,7 +24,11 @@ class _MyAppState extends State<MyApp> {
       // X服务器参数，可以自定义
       List<String> xserverArgs = [":4", "-ac", "-screen", "0", "800x600x24"];
       
-      await X11Flutter.launchXServer(tmpdir, xkb, xserverArgs);
+     // await X11Flutter.launchXServer(tmpdir, xkb, xserverArgs);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(' launch X11 Server:')),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
