@@ -764,6 +764,7 @@ ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 cd
+termux-x11 :4 -ac &
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
 unset ANGLE_DEFAULT_PLATFORM
@@ -956,6 +957,9 @@ unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
+export DISPLAY=:4
+export XKB_CONFIG_ROOT=\$PREFIX/share/X11/xkb
+#termux-x11 :4 -ac &
 sleep 1
 #export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
 cd \$DATA_DIR
@@ -982,6 +986,7 @@ unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
+#pkill -f termux*
 sleep 1
 #export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
 cd \$DATA_DIR
@@ -1006,8 +1011,9 @@ static Future<void> launchGUIBackend() async {
   if (Util.getGlobal("autoLaunchVnc") as bool) {
     if (Util.getGlobal("useX11") as bool) {
       // X11 already redirects to log file, keep as is
-      Util.termWrite("""ps -a""");
+      Util.termWrite("""termux-x11 :4 -ac &""");
     } else {
+    Util.termWrite("""pkill -f termux*""");
       // Redirect VNC command output to /dev/null
       String vncCmd = Util.getCurrentProp("vnc");
       // Remove any existing & and add redirection

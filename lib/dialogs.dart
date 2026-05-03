@@ -535,6 +535,42 @@ class EnvironmentDialog extends StatefulWidget {
 }
 
 class _EnvironmentDialogState extends State<EnvironmentDialog> {
+
+final List<Map<String, dynamic>> _fexcoreVariables = [
+  {"name": "FEX_TSOENABLED",              "type": "toggle", "values": ["0","1"], "defaultValue": "0"},
+  {"name": "FEX_HALFBARRIERTSOENABLED",  "type": "toggle", "values": ["0","1"], "defaultValue": "0"},
+  {"name": "FEX_VECTORTSOENABLED",        "type": "toggle", "values": ["0","1"], "defaultValue": "0"},
+  {"name": "FEX_MEMCPYSETTSOENABLED",     "type": "toggle", "values": ["0","1"], "defaultValue": "0"},
+  {"name": "FEX_X87REDUCEDPRECISION",     "type": "toggle", "values": ["0","1"], "defaultValue": "1"},
+  {"name": "FEX_MAXINST",                 "type": "dropdown", "values": ["1000","2000","3000","4000","5000","6000","8000","10000"], "defaultValue": "5000"},
+  {"name": "FEX_MULTIBLOCK",              "type": "toggle", "values": ["0","1"], "defaultValue": "1"},
+  {"name": "FEX_SMALLTSCSCALE",           "type": "toggle", "values": ["0","1"], "defaultValue": "1"},
+  {"name": "FEX_HOSTFEATURES",            "type": "dropdown", "values": ["off","on"], "defaultValue": "off"},
+  {"name": "FEX_DYNAMICL1CACHE",          "type": "toggle", "values": ["0","1"], "defaultValue": "0"},
+  {"name": "FEX_DISABLEL2CACHE",          "type": "toggle", "values": ["0","1"], "defaultValue": "0"},
+  {"name": "FEX_VOLATILEMETADATA",        "type": "toggle", "values": ["0","1"], "defaultValue": "1"},
+  {"name": "FEX_MONOHACKS",               "type": "toggle", "values": ["0","1"], "defaultValue": "1"},
+  {"name": "FEX_SMC_CHECKS",              "type": "dropdown", "values": ["none","strict","paranoid"], "defaultValue": "none"},
+];
+
+
+final Map<String, String> _fexcorePerformancePreset = {
+  "FEX_TSOENABLED":              "0",
+  "FEX_HALFBARRIERTSOENABLED":  "0",
+  "FEX_VECTORTSOENABLED":        "0",
+  "FEX_MEMCPYSETTSOENABLED":     "0",
+  "FEX_X87REDUCEDPRECISION":     "1",
+  "FEX_MAXINST":                 "5000",
+  "FEX_MULTIBLOCK":              "1",
+  "FEX_SMALLTSCSCALE":           "1",
+  "FEX_HOSTFEATURES":            "off",
+  "FEX_DYNAMICL1CACHE":          "0",
+  "FEX_DISABLEL2CACHE":          "0",
+  "FEX_VOLATILEMETADATA":        "1",
+  "FEX_MONOHACKS":               "1",
+  "FEX_SMC_CHECKS":              "none",
+};
+
   final List<Map<String, dynamic>> _dynarecVariables = [
     {"name": "BOX64_DYNAREC_SAFEFLAGS", "values": ["0", "1", "2"], "defaultValue": "2"},
     {"name": "BOX64_DYNAREC_FASTNAN", "values": ["0", "1"], "toggleSwitch": true, "defaultValue": "1"},
@@ -795,6 +831,22 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
       await Future.delayed(const Duration(milliseconds: 10));
     }
     
+    // Clear and write FEX environment variables
+Util.termWrite("echo '' > ${G.dataPath}/usr/opt/dyna");
+//Util.termWrite("mv ${G.dataPath}/home/.fex-emu/ ${G.dataPath}/home/.fex-emu.old");
+await Future.delayed(const Duration(milliseconds: 50));
+
+for (final variable in _fexcoreVariables) {
+  final name = variable['name'] as String;
+  final defaultValue = variable['defaultValue'] as String;
+  final savedValue = G.prefs.getString('fexcore_$name') ?? defaultValue;
+
+  Util.termWrite(
+    "echo 'export $name=$savedValue' >> ${G.dataPath}/usr/opt/dyna",
+  );
+  await Future.delayed(const Duration(milliseconds: 10));
+}
+    
     if (_wineEsyncEnabled) {
       Util.termWrite("echo 'export WINEFSYNC=1' >> ${G.dataPath}/usr/opt/sync");
       Util.termWrite("echo 'export WINEESYNC_TERMUX=1' >> ${G.dataPath}/usr/opt/sync");
@@ -832,6 +884,176 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     Util.termWrite("echo 'Environment settings applied!'");
 //    Util.termWrite("echo '#================================'");
   }
+
+
+void _showFexcoreDynarecDialog() {
+  showDialog(
+    context: context,
+    builder: (context) {
+      // Build local mutable copies of variables with saved values
+      final localVariables = _fexcoreVariables.map((varDef) {
+        final name = varDef['name'] as String;
+        final defaultValue = varDef['defaultValue'] as String;
+        final savedValue = G.prefs.getString('fexcore_$name') ?? defaultValue;
+        return Map<String, dynamic>.from(varDef)..['currentValue'] = savedValue;
+      }).toList();
+
+      String selectedPreset = 'Custom';
+
+      // Check if current values match the performance preset
+      bool matchesPreset = true;
+      for (final variable in localVariables) {
+        final name = variable['name'] as String;
+        if (_fexcorePerformancePreset.containsKey(name) &&
+            _fexcorePerformancePreset[name] != variable['currentValue']) {
+          matchesPreset = false;
+          break;
+        }
+      }
+      if (matchesPreset) selectedPreset = 'FEXCore Performance';
+
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('FEXCore Dynarec Settings'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Preset dropdown
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Preset',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const SizedBox(height: 8),
+                            DropdownButton<String>(
+                              value: selectedPreset,
+                              isExpanded: true,
+                              items: const [
+                                DropdownMenuItem(value: 'Custom', child: Text('Custom')),
+                                DropdownMenuItem(
+                                    value: 'FEXCore Performance',
+                                    child: Text('FEXCore Performance')),
+                              ],
+                              onChanged: (newValue) {
+                                if (newValue == 'FEXCore Performance') {
+                                  setDialogState(() {
+                                    selectedPreset = 'FEXCore Performance';
+                                    for (final variable in localVariables) {
+                                      final name = variable['name'] as String;
+                                      if (_fexcorePerformancePreset.containsKey(name)) {
+                                        variable['currentValue'] =
+                                            _fexcorePerformancePreset[name];
+                                      }
+                                    }
+                                  });
+                                } else {
+                                  setDialogState(() => selectedPreset = 'Custom');
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // All variable widgets
+                    ...localVariables.map((variable) {
+                      return _buildSimpleVariableWidget(
+                        variable,
+                        onChanged: () {
+                          setDialogState(() => selectedPreset = 'Custom');
+                        },
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // Save all variables using prefix 'fexcore_'
+                  for (final variable in localVariables) {
+                    final name = variable['name'] as String;
+                    final value = variable['currentValue'] as String;
+                    await G.prefs.setString('fexcore_$name', value);
+                  }
+                  // Also update the main list for consistency
+                  for (final localVar in localVariables) {
+                    final idx = _fexcoreVariables.indexWhere(
+                        (v) => v['name'] == localVar['name']);
+                    if (idx != -1) {
+                      _fexcoreVariables[idx]['currentValue'] = localVar['currentValue'];
+                    }
+                  }
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('FEXCore settings saved')),
+                  );
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+Widget _buildSimpleVariableWidget(Map<String, dynamic> variable, {VoidCallback? onChanged}) {
+  final name = variable['name'] as String;
+  final type = variable['type'] as String;
+  final values = (variable['values'] as List).cast<String>();
+  final currentValue = variable['currentValue'] as String;
+
+  return Card(
+    margin: const EdgeInsets.symmetric(vertical: 4),
+    child: Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          if (type == 'toggle' && values.length == 2)
+            SwitchListTile(
+              title: Text(currentValue == values[1] ? 'Enabled' : 'Disabled'),
+              value: currentValue == values[1],
+              onChanged: (bool enabled) {
+                variable['currentValue'] = enabled ? values[1] : values[0];
+                onChanged?.call();
+              },
+            )
+          else
+            DropdownButton<String>(
+              value: currentValue,
+              isExpanded: true,
+              items: values.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              onChanged: (newVal) {
+                if (newVal != null) {
+                  variable['currentValue'] = newVal;
+                  onChanged?.call();
+                }
+              },
+            ),
+        ],
+      ),
+    ),
+  );
+}
 
   void _showDynarecDialog() {
     showDialog(
@@ -1164,6 +1386,19 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
               ),
               const SizedBox(height: 8),
               
+// --- NEW: FEXCore Dynarec button ---
+Card(
+  child: ListTile(
+    title: const Text('FEXCore Dynarec'),
+    subtitle: const Text('FEX emulation performance settings'),
+    trailing: const Icon(Icons.arrow_forward),
+    onTap: _showFexcoreDynarecDialog,
+  ),
+),
+const SizedBox(height: 8),
+
+
+
               Card(
                 child: SwitchListTile(
                   title: const Text('Wine Fsync'),
