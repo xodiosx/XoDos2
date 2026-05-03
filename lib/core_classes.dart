@@ -690,6 +690,7 @@ export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
 pkill -f com.termux*
+pkill -f /system/bin/logcat
 export TERMUX_X11_DEBUG=0
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
 rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
@@ -766,6 +767,7 @@ export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 cd
 termux-x11 :4 -ac &
+pkill -f logcat*
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
 unset ANGLE_DEFAULT_PLATFORM

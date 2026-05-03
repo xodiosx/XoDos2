@@ -37,9 +37,9 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                     // 设置环境变量
                     setenv("TMPDIR", tmpdir, true)
                     setenv("XKB_CONFIG_ROOT", xkb, true)
-                    setenv("TERMUX_X11_DEBUG", "1", true)
-                    setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
-                    
+                    setenv("TERMUX_X11_DEBUG", "0", true)
+                    //setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
+                    setenv("DISPLAY", ":4", true)
                     // 启动X服务器，使用传入的参数
                    // com.termux.x11.CmdEntryPoint.main(xserverArgs.toTypedArray())
                     result.success(0)
@@ -62,6 +62,8 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             }
             "launchX11Page" -> {
                 try {
+                
+                setenv("DISPLAY", ":4", true)
                     activity?.let {
                         val intent = Intent(it, com.termux.x11.MainActivity::class.java)
                         it.startActivity(intent)
