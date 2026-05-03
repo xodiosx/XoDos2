@@ -691,7 +691,7 @@ mkdir -p \$TMPDIR
 mkdir -p \$HOME
 pkill -f com.termux*
 pkill -f /system/bin/logcat
-export TERMUX_X11_DEBUG=0
+unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
 rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
 export DISPLAY=:4

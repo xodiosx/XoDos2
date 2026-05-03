@@ -767,7 +767,7 @@ export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 cd
 termux-x11 :4 -ac &
-pkill -f /system/bin/logcat
+pkill -f logcat*
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
 unset ANGLE_DEFAULT_PLATFORM
