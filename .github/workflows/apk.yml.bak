@@ -1,0 +1,217 @@
+name: Build xodos2 APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag (1.0.3)'
+        required: true
+        default: '1.0.4'
+
+
+permissions:
+  contents: write
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # -------------------------
+      # Checkout repo
+      # -------------------------
+      - name: Checkout repo
+        uses: actions/checkout@v4
+     
+      - name: Prepare SDK folders
+        run: |
+          ls $HOME/
+     
+      # -------------------------
+      # Cache Flutter SDK
+      # -------------------------
+      - name: Cache Flutter SDK
+        id: cache-flutter
+        uses: actions/cache@v3
+        with:
+          path: ~/flutter
+          key: flutter-sdk-cache-v1
+          restore-keys: |
+            flutter-sdk-cache-
+
+      - name: Download Flutter SDK if not cached
+        if: steps.cache-flutter.outputs.cache-hit != 'true'
+        run: |
+          echo "Flutter not in cache, downloading..."
+          wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip -O flutter.zip
+          unzip flutter.zip -d $HOME
+
+      - name: Add Flutter to PATH
+        run: |
+          ls "$HOME"
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
+          export PATH="$HOME/flutter/bin:$PATH"
+          flutter --version
+
+      # -------------------------
+      # Set Android environment
+      # -------------------------
+      - name: Set Android Home
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+
+      # -------------------------
+      # Cache Android SDK
+      # -------------------------
+      - name: Cache Android SDK
+        id: cache-android
+        uses: actions/cache@v3
+        with:
+          path: ~/android-sdk
+          key: android-sdk-cache-v1
+          restore-keys: |
+            android-sdk-cache-
+
+      # -------------------------
+      # Install Android SDK dependencies
+      # -------------------------
+      - name: Install Android SDK dependencies
+        if: steps.cache-android.outputs.cache-hit != 'true'
+        run: |
+          flutter --version
+          sudo apt-get update
+          sudo apt-get install -y unzip wget
+
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+            "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+
+      # -------------------------
+      # Cache Gradle
+      # -------------------------
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+      # -------------------------
+      # Cache Flutter packages
+      # -------------------------
+      - name: Cache Flutter packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.pub-cache
+          key: flutter-packages-${{ hashFiles('pubspec.yaml') }}
+
+      # -------------------------
+      # Cache Flutter build outputs
+      # -------------------------
+      - name: Cache Flutter build
+        uses: actions/cache@v3
+        with:
+          path: build
+          key: flutter-build-cache-${{ github.sha }}
+          restore-keys: |
+            flutter-build-cache-
+
+      # -------------------------
+      # Verify setup
+      # -------------------------
+      - name: Verify Flutter and Android Setup
+        run: |
+          echo "Flutter PATH: $(which flutter)"
+          flutter --version
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -la "$HOME/android-sdk/platforms" || echo "Platforms not found"
+          ls -la "$HOME/android-sdk/build-tools" || echo "Build-tools not found"
+          flutter doctor -v
+
+      # -------------------------
+      # Flutter dependencies
+      # -------------------------
+      - name: Pub Get
+        run: flutter pub get
+
+      # -------------------------
+      # Build APK
+      # -------------------------
+      - name: Build release APK
+        run: |
+          flutter build apk --target-platform android-arm64 --split-per-abi
+
+      # -------------------------
+      # Upload artifact
+      # -------------------------
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-arm64-apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+      # -------------------------
+      # Generate MD5 checksum
+      # -------------------------
+      - name: Generate MD5 checksum
+        id: md5
+        run: |
+          cd build/app/outputs/flutter-apk
+          cp app-arm64-v8a-release.apk XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk
+          md5sum app-arm64-v8a-release.apk > md5.txt
+
+          echo "md5_list<<EOF" >> $GITHUB_ENV
+          cat md5.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # -------------------------
+      # Create Git Tag
+      # -------------------------
+      - name: Create Git Tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+         # git tag "v${{ github.event.inputs.version_tag }}"
+        #  git push origin "v${{ github.event.inputs.version_tag }}"
+
+      # -------------------------
+      # Create GitHub Release
+      # -------------------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version_tag }}
+          name: XoDos ${{ github.event.inputs.version_tag }}
+          files: |
+            build/app/outputs/flutter-apk/XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk      
+          draft: false
+          prerelease: true
+          fail_on_unmatched_files: false
+          body: |
+            📱 **XoDos APK**
+
+            Version: **${{ github.event.inputs.version_tag }}**
+            
+            Test pre-release of the New XoDos without data,, please wait until Full version release
+            ### 🧾 MD5 Checksum
+            ```
+            ${{ env.md5_list }}
+            ```
+
+            ---
+
+            **💬 Support**  
+            Telegram: t.me/xodemulatorr  
+            Discord: discord.gg/d2ChVhPfnF  
+
+            _© 2025 XoDos_

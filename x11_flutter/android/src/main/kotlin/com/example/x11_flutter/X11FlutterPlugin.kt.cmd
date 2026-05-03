@@ -23,30 +23,46 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-            "launchXServer" -> {
-                try {
-                    val tmpdir = call.argument<String>("tmpdir")
-                    val xkb = call.argument<String>("xkb")
-                    val xserverArgs = call.argument<List<String>>("xserverArgs")
-                    
-                    if (tmpdir == null || xkb == null || xserverArgs == null) {
-                        result.error("INVALID_ARGUMENTS", "tmpdir, xkb and xserverArgs arguments are required", null)
-                        return
-                    }
+           "launchXServer" -> {
+    try {
+        val tmpdir = call.argument<String>("tmpdir")
+        val xkb = call.argument<String>("xkb")
+        val xserverArgs = call.argument<List<String>>("xserverArgs")
 
-                    // 设置环境变量
-                    setenv("TMPDIR", tmpdir, true)
-                    setenv("XKB_CONFIG_ROOT", xkb, true)
-                    setenv("TERMUX_X11_DEBUG", "1", true)
-                    setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
-                    
-                    // 启动X服务器，使用传入的参数
-                   // com.termux.x11.CmdEntryPoint.main(xserverArgs.toTypedArray())
-                    result.success(0)
-                } catch (e: Exception) {
-                    result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server from flutter: ${e.message}", e.stackTraceToString())
-                }
-            }
+        if (tmpdir == null || xkb == null || xserverArgs == null) {
+            result.error("INVALID_ARGUMENTS", "tmpdir, xkb and xserverArgs arguments are required", null)
+            return
+        }
+
+        // Path to the termux-x11 script inside XoDos's environment.
+        // Adjust if your prefix is different.
+        val termuxX11Binary = "/data/data/com.xodos/files/usr/bin/termux-x11"
+
+        // Build the command: termux-x11 <display_number>
+        // The display number is usually the first argument.
+        val command = listOf(termuxX11Binary) + xserverArgs
+
+        val processBuilder = ProcessBuilder(command)
+            .directory(android.os.Environment.getExternalStorageDirectory()) // any writable dir
+            .redirectErrorStream(true)
+
+        // Set the environment variables needed by the script and the loader
+        val env = processBuilder.environment()
+        env["TMPDIR"] = tmpdir
+        env["XKB_CONFIG_ROOT"] = xkb
+        env["TERMUX_X11_DEBUG"] = "1"
+        // Tell the loader which package to look for (your own APK)
+        env["TERMUX_X11_OVERRIDE_PACKAGE"] = activity!!.packageName
+
+        // Start the process (do not wait – it runs in the background)
+        processBuilder.start()
+
+        // Return immediately; the X server will be running in its own process
+        result.success(0)
+    } catch (e: Exception) {
+        result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
+    }
+}
             "launchX11PrefsPage" -> {
                 try {
                     activity?.let {

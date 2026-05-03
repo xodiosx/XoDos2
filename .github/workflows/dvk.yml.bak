@@ -1,0 +1,177 @@
+name: Build dvk xodos2 APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag (1.0.3)'
+        required: true
+        default: '1.0.8'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # -------------------------
+      # Checkout repo
+      # -------------------------
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # -------------------------
+      # Cache Flutter SDK
+      # -------------------------
+      - name: Cache Flutter SDK
+        id: cache-flutter
+        uses: actions/cache@v3
+        with:
+          path: ~/flutter
+          key: flutter-sdk-cache-v1
+          restore-keys: |
+            flutter-sdk-cache-
+
+      - name: Download Flutter SDK if not cached
+        if: steps.cache-flutter.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/xodiosx/XoDos2/releases/download/v1.0.0/Flutter-SDK-ARM64.zip -O flutter.zip
+          unzip flutter.zip -d $HOME
+
+      - name: Add Flutter to PATH
+        run: |
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
+          export PATH="$HOME/flutter/bin:$PATH"
+          flutter --version
+
+      # -------------------------
+      # Android SDK
+      # -------------------------
+      - name: Set Android Home
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Cache Android SDK
+        id: cache-android
+        uses: actions/cache@v3
+        with:
+          path: ~/android-sdk
+          key: android-sdk-cache-v1
+          restore-keys: |
+            android-sdk-cache-
+
+      - name: Install Android SDK (if needed)
+        if: steps.cache-android.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip wget
+
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+            "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;27.1.12297006"
+
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+
+      # -------------------------
+      # Cache Gradle
+      # -------------------------
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+      # -------------------------
+      # Cache Flutter packages
+      # -------------------------
+      - name: Cache Flutter packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.pub-cache
+          key: flutter-packages-${{ hashFiles('pubspec.yaml') }}
+
+      # -------------------------
+      # Verify setup
+      # -------------------------
+      - name: Verify setup
+        run: |
+          flutter --version
+          flutter doctor -v
+
+      # -------------------------
+      # Get dependencies
+      # -------------------------
+      - name: Pub Get
+        run: flutter pub get
+
+      # -------------------------
+      # 🔥 FORCE OPENGL-LEANING BUILD
+      # -------------------------
+      - name: Build release APK (Impeller OFF → OpenGL fallback)
+        run: |
+          flutter clean
+          flutter pub get
+
+          flutter build apk \
+            --release \
+            --target-platform android-arm64 \
+            --split-per-abi \
+            --dart-define=FLUTTER_ENGINE_SWITCHES=--enable-software-rendering
+            --dart-define=FLUTTER_WEB_USE_SKIA=true
+
+      # -------------------------
+      # Upload artifact
+      # -------------------------
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-arm64-apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+      # -------------------------
+      # Rename + MD5
+      # -------------------------
+      - name: Prepare Release File
+        id: md5
+        run: |
+          cd build/app/outputs/flutter-apk
+
+          mv app-arm64-v8a-release.apk XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk
+
+          md5sum XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk > md5.txt
+
+          echo "md5_list<<EOF" >> $GITHUB_ENV
+          cat md5.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # -------------------------
+      # GitHub Release
+      # -------------------------
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version_tag }}
+          name: XoDos ${{ github.event.inputs.version_tag }}
+          files: |
+            build/app/outputs/flutter-apk/XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk
+          prerelease: true
+          body: |
+            📱 XoDos APK
+
+            Version: ${{ github.event.inputs.version_tag }}
+
+            MD5:
+            ```
+            ${{ env.md5_list }}
+            ```
