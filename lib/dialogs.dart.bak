@@ -833,7 +833,7 @@ final Map<String, String> _fexcorePerformancePreset = {
     
     // Clear and write FEX environment variables
 Util.termWrite("echo '' > ${G.dataPath}/usr/opt/dyna");
-Util.termWrite("echo '' > ${G.dataPath}/usr/opt/dyna");
+//Util.termWrite("mv ${G.dataPath}/home/.fex-emu/ ${G.dataPath}/home/.fex-emu.old");
 await Future.delayed(const Duration(milliseconds: 50));
 
 for (final variable in _fexcoreVariables) {

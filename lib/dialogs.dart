@@ -231,25 +231,28 @@ Util.termWrite("source ${G.dataPath}/usr/opt/hud");
     await Future.delayed(const Duration(milliseconds: 50));
   }
 
-  Future<List<String>> _findRelatedFiles(String pattern) async {
-    if (_dxvkDirectory == null) return [];
-    
-    try {
-      final dir = Directory(_dxvkDirectory!);
-      final files = await dir.list().toList();
-      
-      return files
-          .where((file) => file is File)
-          .map((file) => file.path.split('/').last)
-          .where((fileName) => fileName.toLowerCase().contains(pattern.toLowerCase()))
-          .where((fileName) => RegExp(r'\.(tzst|tar\.gz|tgz|tar\.xz|txz|tar|zip|7z)$').hasMatch(fileName))
-          .toList();
-    } catch (e) {
-      print('Error finding related files: $e');
-      return [];
-    }
-  }
+  /// Returns *only* the file named exactly [baseName].7z (ignoring case).
+/// If not found, returns an empty list.
+Future<List<String>> _findRelatedFiles(String baseName) async {
+  if (_dxvkDirectory == null) return [];
+  try {
+    final dir = Directory(_dxvkDirectory!);
+    final files = await dir.list().toList();
 
+    final target = '$baseName.7z'.toLowerCase();   // e.g. "vkd3d.7z" or "d8vk.7z"
+
+    final matched = files
+        .whereType<File>()
+        .map((f) => f.path.split('/').last)
+        .where((name) => name.toLowerCase() == target)
+        .toList();
+
+    return matched;
+  } catch (e) {
+    print('Error finding related files for $baseName: $e');
+    return [];
+  }
+}
   Future<void> _cancelDialog() async {
     await _savePreferences();
     
