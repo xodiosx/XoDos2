@@ -1392,6 +1392,7 @@ SwitchListTile(
                   ),
                   
                   
+/*
 OutlinedButton(
             style: D.commandButtonStyle,
             child: Text('Wine bionic Settings🍷'),
@@ -1402,6 +1403,7 @@ OutlinedButton(
               );
             },
           ),
+          */
         ],
       ),
               

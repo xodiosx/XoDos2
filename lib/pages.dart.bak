@@ -240,7 +240,6 @@ Future<bool> _installMesa({required bool zink}) async {
     pty.write(Utf8Encoder().convert('''
 echo "Installing $package..."
 rm -rf \${G.dataPath}/usr/lib/dri
-apt remove $removePackage
 apt install $debPath
 echo "Installation finished."
 exit
