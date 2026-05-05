@@ -1570,8 +1570,8 @@ OutlinedButton(
                           onPressed: () {
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
-                            Util.termWrite("rm -rf ${G.dataPath}/usr/opt/wine");
-                            Util.termWrite("rm -rf ${G.dataPath}/usr/opt/winece");
+                            Util.termWrite("rm -rf /data/data/com.xodos/files/usr/opt/wine");
+                            Util.termWrite("rm -rf /data/data/com.xodos/files/usr/opt/winece");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Wine deleted'),
@@ -1617,7 +1617,7 @@ OutlinedButton(
                           onPressed: () {
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
-                            Util.termWrite("rm -rf ${G.dataPath}/usr/glibc");
+                            Util.termWrite("rm -rf /data/data/com.xodos/files/usr/glibc");
                             //Util.termWrite("rm -rf ~/.wine");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -1664,8 +1664,8 @@ OutlinedButton(
                           onPressed: () {
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
-                            Util.termWrite("[ -f /etc/bash.bashrc ] && exit && rm -rf ${G.dataPath}/containers/0/");
-                            Util.termWrite("rm -rf ${G.dataPath}/containers/0/");
+                            Util.termWrite("[ -f /etc/bash.bashrc ] && exit && rm -rf /data/data/com.xodos/files/containers/0/");
+                            Util.termWrite("rm -rf /data/data/com.xodos/files/containers/0/");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('proot deleted'),
@@ -1713,7 +1713,7 @@ OutlinedButton(
                             Navigator.of(context).pop();
                             G.pageIndex.value = 0;
                             Util.termWrite("rm -rf ~/.wine");
-                            Util.termWrite("rm -rf ${G.dataPath}/home/.wine");
+                            Util.termWrite("rm -rf /data/data/com.xodos/files/home/.wine");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Wine prefix deleted'),
