@@ -1,0 +1,96 @@
+name: Upload XoDos Full MEGA to Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag (e.g., 2.0.0)'
+        required: true
+        default: '1.0.8'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install megatools
+        run: |
+          sudo apt update
+          sudo apt install -y megatools
+
+      # 🔍 Check if a release for this tag already exists
+      - name: Check if release exists
+        id: check_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "v${{ github.event.inputs.version_tag }}" &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 🏷️ Only create and push the tag for a new release
+      - name: Create Git Tag
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag "v${{ github.event.inputs.version_tag }}"
+          git push origin "v${{ github.event.inputs.version_tag }}"
+
+      # ☁️ Download MEGA files into a clean folder
+      - name: Download files from MEGA
+        run: |
+          mkdir mega-files
+          cd mega-files
+          megatools dl "https://mega.nz/file/dg5WgJrL#Hljn-Osb7iMLZK2R3ED75vvC-kcJN4MfDn_AvHrxCXM"
+
+      - name: Show downloaded files
+        run: ls -lh mega-files/
+             ls
+
+      # 🆕 New release → create with body & all files
+      - name: Create new release
+        if: steps.check_release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ github.event.inputs.version_tag }}"
+          name: "XoDos v${{ github.event.inputs.version_tag }}"
+          body: |
+            🧩 **XoDos v${{ github.event.inputs.version_tag }} full release**
+
+            ### ✅ What's New
+            - Added files 
+
+            ---
+            **👥 Credits**  
+            python: @xodiosx • Logos: @sabamdarif  
+            **💬 Support**  
+            Telegram: [t.me/xodemulatorr](https://t.me/xodemulatorr)  
+            Discord: [discord.gg/d2ChVhPfnF](https://discord.gg/d2ChVhPfnF)
+          files: |
+            mega-files/*
+
+      # ♻️ Existing release → only add files, don’t touch body/assets
+      - name: Add files to existing release
+        if: steps.check_release.outputs.exists == 'true'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ github.event.inputs.version_tag }}"
+          files: |
+            mega-files/*
+          # No body/name → keeps existing release description untouched
