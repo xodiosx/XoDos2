@@ -56,7 +56,7 @@ jobs:
           megatools dl "https://mega.nz/file/94BSlbDZ#X7Ms7OOgKQ_4SdvoFrdMW2bXnbBLG-iOMA69jlQI3XE"
 
       - name: Show downloaded files
-        run: ls -lh mega-files/
+        run: ls -lh ../mega-files/ | true
 
 
       # 🆕 New release → create with body & all files
