@@ -53,11 +53,11 @@ jobs:
         run: |
           mkdir mega-files
           cd mega-files
-          megatools dl "https://mega.nz/file/94BSlbDZ#X7Ms7OOgKQ_4SdvoFrdMW2bXnbBLG-iOMA69jlQI3XE"
+          megatools dl "https://mega.nz/file/id"
 
       - name: Show downloaded files
         run: ls -lh ../mega-files/ || true
-
+             
 
       # 🆕 New release → create with body & all files
       - name: Create new release
