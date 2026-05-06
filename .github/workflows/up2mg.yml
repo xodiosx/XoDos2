@@ -57,7 +57,7 @@ jobs:
 
       - name: Show downloaded files
         run: ls -lh mega-files/
-             ls
+
 
       # 🆕 New release → create with body & all files
       - name: Create new release
