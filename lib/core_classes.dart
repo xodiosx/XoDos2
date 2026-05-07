@@ -216,18 +216,25 @@ class Util {
     }
   }
 
-  static Future<void> waitForXServer() async {
-    const host = '127.0.0.1';
-    const port = 7897;
-    
-    while (true) {
-      bool isReady = await isXServerReady(host, port);
-      await Future.delayed(Duration(seconds: 1));
-      if (isReady) {
-        return;
-      }
+  static Future<void> waitForXServer({int timeoutSeconds = 15}) async {
+  const host = '127.0.0.1';
+  const port = 7897;
+  final deadline = DateTime.now().add(Duration(seconds: timeoutSeconds));
+
+  while (DateTime.now().isBefore(deadline)) {
+    if (await isXServerReady(host, port)) {
+      return; // success
     }
+    await Future.delayed(const Duration(seconds: 1));
   }
+
+  // Timeout reached – X11 server never appeared.
+  // Fall back gracefully: disable X11 and switch to VNC (or whatever you prefer).
+  debugPrint('⚠️ X11 server did not start in time – falling back to VNC');
+  G.wasX11Enabled = false;                       // stop waiting for X11
+  await G.prefs.setBool("useX11", false);        // persist the change
+  // Now the rest of workflow() will see wasX11Enabled = false and go to VNC.
+}
 
   static String getl10nText(String key, BuildContext context) {
     switch (key) {
