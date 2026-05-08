@@ -229,10 +229,12 @@ class Util {
   }
 
   // Timeout reached – X11 server never appeared.
-  // Fall back gracefully: disable X11 and switch to VNC (or whatever you prefer).
+  // Fall back gracefully: disable X11 and switch to VNC 
   debugPrint('⚠️ X11 server did not start in time – falling back to VNC');
-  G.wasX11Enabled = false;                       // stop waiting for X11
-  await G.prefs.setBool("useX11", false);        // persist the change
+//  G.wasX11Enabled = false;
+  G.wasAvncEnabled = true;                       // stop waiting for X11
+//  await G.prefs.setBool("useX11", false);        // persist the change
+await G.prefs.setBool("useAvnc", true); 
   // Now the rest of workflow() will see wasX11Enabled = false and go to VNC.
 }
 
@@ -773,7 +775,7 @@ ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 cd
-termux-x11 :4 -ac &
+termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &
 pkill -f logcat*
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
@@ -976,7 +978,7 @@ cd \$DATA_DIR
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-xodos > /dev/null 2>&1
+xodos > /sdcard/xodos-desktop.log 2>&1 &
       echo 'opening Linux proot termial,,,'
       echo ' press CTRL + D to logout Linux proot'      
      sleep 1
@@ -1021,8 +1023,8 @@ static Future<void> launchGUIBackend() async {
   if (Util.getGlobal("autoLaunchVnc") as bool) {
     if (Util.getGlobal("useX11") as bool) {
       // X11 already redirects to log file, keep as is
-      Util.termWrite("""termux-x11 :4 -ac &""");
-      Util.termWrite("""sleep 2""");
+     // Util.termWrite("""termux-x11 :4 -ac >> /sdcard/x11.log 2>&1 &""");
+      Util.termWrite("""sleep 1""");
     } else {
     Util.termWrite("""pkill -f com.termux*""");
       // Redirect VNC command output to /dev/null
