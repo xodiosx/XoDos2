@@ -18,13 +18,17 @@ class _MyAppState extends State<MyApp> {
   Future<void> _launchXServer() async {
     try {
       // 这里需要提供实际的tmpdir和xkb路径
-      String tmpdir = "/data/data/com.termux/files/usr/tmp";
-      String xkb = "/data/data/com.termux/files/usr/share/X11/xkb";
+      String tmpdir = "/data/data/com.xodos/files/usr/tmp";
+      String xkb = "/data/data/com.xodos/files/usr/share/X11/xkb";
       
       // X服务器参数，可以自定义
       List<String> xserverArgs = [":4", "-ac", "-screen", "0", "800x600x24"];
       
-      await X11Flutter.launchXServer(tmpdir, xkb, xserverArgs);
+     // await X11Flutter.launchXServer(tmpdir, xkb, xserverArgs);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(' launch X11 Server:')),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
