@@ -1,55 +1,70 @@
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     >
-
-    <!-- ================= PERMISSIONS ================= -->
-
+    
+        <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+  <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:remove="maxSdkVersion"/>
+    
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        tools:remove="maxSdkVersion"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
-
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
-
-    <!-- ================= APPLICATION ================= -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
-        android:name=".MainApplication"
+android:requestLegacyExternalStorage="true"
         android:label="@string/tc_app_name"
+        android:name=".MainApplication"
         android:icon="@mipmap/ic_launcher"
-        android:theme="@style/App.Theme"
-        android:hardwareAccelerated="true"
-        android:extractNativeLibs="true"
         android:usesCleartextTraffic="true"
-        android:allowBackup="false"
-        android:requestLegacyExternalStorage="true"
-        android:supportsRtl="true">
-
-        <!-- ================= FLUTTER MAIN ================= -->
-
+        android:launchMode="singleInstance"
+        android:theme="@style/App.Theme"
+        android:extractNativeLibs="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
+            android:configChanges="navigation|orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:configChanges="navigation|orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode">
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name=".Signal9Activity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+        <provider
+android:name="bin.mt.file.content.MTDataFilesProvider"
+android:permission="android.permission.MANAGE_DOCUMENTS"
+android:exported="true"
+android:authorities="com.xodos.MTDataFilesProvider"
+android:grantUriPermissions="true">
+<intent-filter>
+<action
+android:name="android.content.action.DOCUMENTS_PROVIDER"/>
+</intent-filter>
+</provider>
 
-        <!-- ================= X11 MAIN ================= -->
+       
+           <!-- ================= X11 MAIN ================= -->
 
         <activity
             android:name="com.termux.x11.MainActivity"
@@ -97,20 +112,6 @@
                 <action android:name="android.intent.action.MAIN"/>
             </intent-filter>
         </activity>
-        <!-- ================= REQUIRED DATA PROVIDER (YOU WERE MISSING THIS) ================= -->
-
-        <provider
-            android:name="bin.mt.file.content.MTDataFilesProvider"
-            android:authorities="com.xodos.MTDataFilesProvider"
-            android:exported="true"
-            android:grantUriPermissions="true"
-            android:permission="android.permission.MANAGE_DOCUMENTS">
-
-            <intent-filter>
-                <action android:name="android.content.action.DOCUMENTS_PROVIDER"/>
-            </intent-filter>
-
-        </provider>
 
   
               <!-- ================= RECEIVER ================= -->
@@ -169,5 +170,4 @@
     <queries>
         <package android:name="com.xodos"/>
     </queries>
-
 </manifest>
