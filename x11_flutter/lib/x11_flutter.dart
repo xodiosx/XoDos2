@@ -7,15 +7,19 @@ class X11Flutter {
   /// [tmpdir] 临时目录路径
   /// [xkb] XKB配置根目录路径
   /// [xserverArgs] X服务器命令行参数，例如 [":4", "-ac"]
-  static Future<int> launchXServer(
-    String tmpdir,
-    String xkb,
-    List<String> xserverArgs,
-) async {
-  // Completely disabled
-  print("launchXServer disabled (XoDos mode)");
-  return 0;
-}
+  static Future<int> launchXServer(String tmpdir, String xkb, List<String> xserverArgs) async {
+    try {
+      final result = await _channel.invokeMethod('launchXServer', {
+        'tmpdir': tmpdir,
+        'xkb': xkb,
+        'xserverArgs': xserverArgs,
+      });
+      return result as int;
+    } on PlatformException catch (e) {
+      _logError('launchXServer', e);
+      rethrow;
+    }
+  }
 
   /// 启动X11首选项页面
   static Future<int> launchX11PrefsPage() async {
