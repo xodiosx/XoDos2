@@ -978,7 +978,7 @@ cd \$DATA_DIR
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-xodos > /dev/null 2>&1
+xodos > /sdcard/xodos-desktop.log 2>&1 &
       echo 'opening Linux proot termial,,,'
       echo ' press CTRL + D to logout Linux proot'      
      sleep 1
