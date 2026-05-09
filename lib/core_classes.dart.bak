@@ -109,7 +109,7 @@ class Util {
     switch (key) {
       case "defaultContainer" : return b ? G.prefs.getInt(key)! : (value){G.prefs.setInt(key, value); return value;}(0);
       case "defaultAudioPort" : return b ? G.prefs.getInt(key)! : (value){G.prefs.setInt(key, value); return value;}(4718);
-      case "autoLaunchVnc" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
+      case "autoLaunchVnc" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
       case "lastDate" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("1970-01-01");
       case "isTerminalWriteEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "isTerminalCommandsEnabled" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
@@ -231,9 +231,9 @@ class Util {
   // Timeout reached – X11 server never appeared.
   // Fall back gracefully: disable X11 and switch to VNC 
   debugPrint('⚠️ X11 server did not start in time – falling back to VNC');
-//  G.wasX11Enabled = false;
+  G.wasX11Enabled = false;
   G.wasAvncEnabled = true;                       // stop waiting for X11
-//  await G.prefs.setBool("useX11", false);        // persist the change
+  await G.prefs.setBool("useX11", false);        // persist the change
 await G.prefs.setBool("useAvnc", true); 
   // Now the rest of workflow() will see wasX11Enabled = false and go to VNC.
 }
