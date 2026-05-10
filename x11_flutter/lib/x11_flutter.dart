@@ -5,70 +5,26 @@ import 'package:flutter/services.dart';
 class X11Flutter {
   static const MethodChannel _channel = MethodChannel('x11_flutter');
 
-  /// Check if termux-x11 process is running using shell
-  static Future<bool> isX11Running() async {
-    try {
-      // Try pgrep first (cleanest)
-      final result = await Process.run(
-        '/data/data/com.xodos/files/usr/bin/sh',
-        ['-c', 'pgrep -f termux-x11'],
-        runInShell: true,
-      );
-
-      if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
-        print("X11 process found via pgrep ✅");
-        return true;
-      }
-
-      // Fallback: use ps + grep
-      final psResult = await Process.run(
-        '/data/data/com.xodos/files/usr/bin/sh',
-        ['-c', 'ps -A | grep termux-x11'],
-        runInShell: true,
-      );
-
-      final output = psResult.stdout.toString();
-
-      if (output.contains('termux-x11') && !output.contains('grep')) {
-        print("X11 process found via ps/grep ✅");
-        return true;
-      }
-
-      print("X11 not running ❌");
-      return false;
-    } catch (e) {
-      print("Process check failed: $e");
-      return false;
-    }
-  }
-
-
-static Future<int> launchXServer(
-  String tmpdir,
-  String xkb,
-  List<String> xserverArgs,
-) async {
-  return await launchXServerSafe(tmpdir, xkb, xserverArgs);
-}
-  /// Launch X11 safely with retry logic
-  static Future<int> launchXServerSafe(
+  /// Launch X11, but first check if any termux-x11 process is already running.
+  /// Retries up to 3 times with 2‑second pauses.
+  static Future<int> launchXServer(
     String tmpdir,
     String xkb,
     List<String> xserverArgs,
   ) async {
-    const int maxAttempts = 3; // ~6 sec
+    const int maxAttempts = 3;
     const Duration delay = Duration(seconds: 2);
 
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
-      final running = await isX11Running();
-
-      if (running) {
-        print("X11 already running, skipping 🚫");
-        return 0;
+      // 1. Check if X11 is already running anywhere
+      if (await isX11Running()) {
+        print('✅ X11 already running, skipping launch');
+        return 0; // Already running – success
       }
 
-      print("Launching X11 (attempt ${attempt + 1}) 🚀");
+      print('🚀 Launching X11 (attempt ${attempt + 1}/$maxAttempts)');
 
+      // 2. Call the platform channel (your original native method)
       try {
         final result = await _channel.invokeMethod('launchXServer', {
           'tmpdir': tmpdir,
@@ -76,39 +32,66 @@ static Future<int> launchXServer(
           'xserverArgs': xserverArgs,
         });
 
-        // Give it time to spawn
+        // 3. Wait for the process to start
         await Future.delayed(delay);
 
+        // 4. Verify a process now exists (any termux-x11)
         if (await isX11Running()) {
-          print("X11 started successfully 🎯");
+          print('🎯 X11 started successfully (channel returned: $result)');
           return result as int;
+        } else {
+          print('⚠️ Channel returned OK, but no X11 process found – retrying...');
         }
       } on PlatformException catch (e) {
-        _logError('launchXServer', e);
+        _logError('launchXServer attempt $attempt', e);
       }
 
-      await Future.delayed(delay);
+      // Wait before next attempt (except after the last)
+      if (attempt < maxAttempts - 1) {
+        await Future.delayed(delay);
+      }
     }
 
-    throw Exception("X11 failed to start after timeout ❌");
+    throw Exception('❌ X11 failed to start after $maxAttempts attempts');
   }
 
-  /// Optional: direct shell launcher (if you want to bypass MethodChannel)
-  static Future<void> launchXServerViaShell() async {
+  /// Returns `true` if *any* `termux-x11` process is currently running.
+  static Future<bool> isX11Running() async {
     try {
-      final process = await Process.start(
+      // Use pgrep first (cleanest)
+      final result = await Process.run(
         '/data/data/com.xodos/files/usr/bin/sh',
-        ['-c', 'termux-x11 :4 -ac &'],
+        ['-c', 'pgrep -f termux-x11'],
         runInShell: true,
       );
 
-      print("Shell X11 launch started (PID: ${process.pid})");
+      if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
+        print('✅ X11 process found via pgrep');
+        return true;
+      }
+
+      // Fallback: ps + grep
+      final psResult = await Process.run(
+        '/data/data/com.xodos/files/usr/bin/sh',
+        ['-c', 'ps -A | grep termux-x11'],
+        runInShell: true,
+      );
+      final output = psResult.stdout.toString();
+
+      if (output.contains('termux-x11') && !output.contains('grep')) {
+        print('✅ X11 process found via ps/grep');
+        return true;
+      }
+
+      print('❌ X11 not running');
+      return false;
     } catch (e) {
-      print("Shell launch failed: $e");
+      print('isX11Running error: $e');
+      return false;
     }
   }
 
-  /// Existing methods
+  // ---------- All other original methods (unchanged) ----------
   static Future<int> launchX11PrefsPage() async {
     try {
       final result = await _channel.invokeMethod('launchX11PrefsPage');
