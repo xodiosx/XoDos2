@@ -216,7 +216,17 @@ class Util {
     }
   }
 
-  static Future<void> waitForXServer({int timeoutSeconds = 15}) async {
+  static Future<void> waitForXServer({int timeoutSeconds = 10}) async {
+  // Read the Fix_x11 preference – if it's not enabled, skip immediately.
+  final bool fixX11 = G.prefs.getBool("Fix_x11") ?? false;
+  if (!fixX11) {
+    // Make sure the flag is definitely false (just in case)
+    await G.prefs.setBool("Fix_x11", false);
+    debugPrint('⏩ Fix X11 is disabled – skipping waitForXServer');
+    return;
+  }
+
+  // Fix X11 is enabled – proceed with the usual port check.
   const host = '127.0.0.1';
   const port = 7897;
   final deadline = DateTime.now().add(Duration(seconds: timeoutSeconds));
@@ -229,13 +239,13 @@ class Util {
   }
 
   // Timeout reached – X11 server never appeared.
-  // Fall back gracefully: disable X11 and switch to VNC 
+  // Fall back gracefully: disable X11 and switch to VNC
   debugPrint('⚠️ X11 server did not start in time – falling back to VNC');
- // G.wasX11Enabled = false;
-//  G.wasAvncEnabled = true;                       // stop waiting for X11
- // await G.prefs.setBool("useX11", false);        // persist the change
-//await G.prefs.setBool("useAvnc", true); 
-  // Now the rest of workflow() will see wasX11Enabled = false and go to VNC.
+  //  uncomment the fallback logic if you want automatic switching.
+  // G.wasX11Enabled = false;
+  // G.wasAvncEnabled = true;
+  // await G.prefs.setBool("useX11", false);
+  // await G.prefs.setBool("useAvnc", true);
 }
 
   static String getl10nText(String key, BuildContext context) {

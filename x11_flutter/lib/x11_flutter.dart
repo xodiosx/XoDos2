@@ -4,41 +4,62 @@ import 'package:shared_preferences/shared_preferences.dart';
 class X11Flutter {
   static const MethodChannel _channel = MethodChannel('x11_flutter');
 
+  // ---- Preferences & Idempotent Guard ----
   static SharedPreferences? _prefs;
+  static bool _serverLaunched = false;
 
-  /// Call this once during app init (e.g., after G.prefs is ready).
+  /// Call this **once** after your SharedPreferences instance is ready.
+  /// (e.g., in Workflow.initData())
   static void init(SharedPreferences prefs) {
     _prefs = prefs;
   }
 
-  /// Launch the X11 server **only if** the user has enabled it via the toggle.
-  /// If the preference "Fix_x11" is false (or missing), the call is skipped.
+  /// Launch the X11 server **only if** the user has enabled the
+  /// "Fix_x11" toggle AND it hasn't been launched already.
+  ///
+  /// If the toggle is off, the call is skipped entirely.
+  /// If the toggle is on but already launched, it's a safe no‑op.
   static Future<int> launchXServer(
     String tmpdir,
     String xkb,
     List<String> xserverArgs,
   ) async {
+    // 1. Respect the toggle
     final enabled = _prefs?.getBool("Fix_x11") ?? false;
     if (!enabled) {
       print('X11 launch skipped – Fix_x11 is disabled ❌');
-      return 0; // Not launched, but not an error
+      return 0;
     }
 
+    // 2. Already launched in this session → nothing to do
+    if (_serverLaunched) {
+      print('X11 server already launched, skipping 👌');
+      return 0;
+    }
+
+    // 3. Call the platform channel
     try {
       final result = await _channel.invokeMethod('launchXServer', {
         'tmpdir': tmpdir,
         'xkb': xkb,
         'xserverArgs': xserverArgs,
       });
-      print('X11 server launched via channel 🎯');
+      _serverLaunched = true;
+      print('X11 server launched successfully 🎯');
       return result as int;
     } on PlatformException catch (e) {
       _logError('launchXServer', e);
-      rethrow;
+      rethrow; // Do NOT set _serverLaunched – allows retry on failure
     }
   }
 
-  // ---- All other methods unchanged ----
+  // ---- Reset helpers (optional) ----
+  /// Reset the guard so the X server can be re‑launched later.
+  static void resetXServerState() {
+    _serverLaunched = false;
+  }
+
+  // ---- All other methods (unchanged) ----
   static Future<int> launchX11PrefsPage() async {
     try {
       final result = await _channel.invokeMethod('launchX11PrefsPage');
