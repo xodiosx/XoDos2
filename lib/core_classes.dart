@@ -781,12 +781,17 @@ pkill -f logcat*
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
 unset ANGLE_DEFAULT_PLATFORM
-    if [ -f "\$PREFIX/bin/bash" ]; then
-exec \$DATA_DIR/usr/bin/bash --login  
+
+if [ -f "\$PREFIX/bin/bash" ]; then
+exec \$PREFIX/bin/bash --login  
 elif [ -f "\$PREFIX/bin/sh" ]; then 
-exec \$DATA_DIR/usr/bin/sh
+exec \$PREFIX/bin/sh
 else
 echo 'no shell found'
+
+fi
+
+# ready
 fi
 """;
     
