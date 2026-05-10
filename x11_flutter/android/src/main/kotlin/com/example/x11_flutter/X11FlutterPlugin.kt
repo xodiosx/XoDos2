@@ -38,10 +38,10 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                     setenv("TMPDIR", tmpdir, true)
                     setenv("XKB_CONFIG_ROOT", xkb, true)
                    // setenv("TERMUX_X11_DEBUG", "0", true)
-                    //setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
+                    setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
                     setenv("DISPLAY", ":4", true)
                     // 启动X服务器，使用传入的参数
-                   // com.termux.x11.CmdEntryPoint.main(xserverArgs.toTypedArray())
+                    com.termux.x11.CmdEntryPoint.main(xserverArgs.toTypedArray())
                     result.success(0)
                 } catch (e: Exception) {
                     result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server from flutter: ${e.message}", e.stackTraceToString())
