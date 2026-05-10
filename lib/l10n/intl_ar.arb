@@ -1,6 +1,7 @@
 {
 "@@locale": "ar",
   "appTitle": "XoDos",
+  "fixX11": "إصلاح X11",
   "advancedSettings": "الإعدادات المتقدمة",
   "restartAfterChange": "التغييرات سارية بعد إعادة التشغيل",
   "resetStartupCommand": "إعادة تعيين أمر التشغيل",

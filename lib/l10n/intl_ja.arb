@@ -1,6 +1,7 @@
 {
 "@@locale": "ja",
   "appTitle": "XoDos",
+  "fixX11": "X11を修正",
   "advancedSettings": "詳細設定",
   "restartAfterChange": "変更は再起動後に有効になります",
   "resetStartupCommand": "起動コマンドをリセット",

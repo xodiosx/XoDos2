@@ -1,5 +1,6 @@
 {
   "appTitle": "XoDos",
+  "fixX11": "Fix X11",
   "advancedSettings": "Advanced Settings",
   "restartAfterChange": "Changes take effect after restart",
   "resetStartupCommand": "Reset Startup Command",

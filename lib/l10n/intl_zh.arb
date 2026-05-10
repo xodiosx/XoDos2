@@ -1,5 +1,6 @@
 {
   "appTitle": "XoDos",
+  "fixX11": "修复 X11",
   "advancedSettings": "高级设置",
   "restartAfterChange": "修改后重启生效",
   "resetStartupCommand": "重置启动命令",

@@ -231,10 +231,10 @@ class Util {
   // Timeout reached – X11 server never appeared.
   // Fall back gracefully: disable X11 and switch to VNC 
   debugPrint('⚠️ X11 server did not start in time – falling back to VNC');
-  G.wasX11Enabled = false;
-  G.wasAvncEnabled = true;                       // stop waiting for X11
-  await G.prefs.setBool("useX11", false);        // persist the change
-await G.prefs.setBool("useAvnc", true); 
+ // G.wasX11Enabled = false;
+//  G.wasAvncEnabled = true;                       // stop waiting for X11
+ // await G.prefs.setBool("useX11", false);        // persist the change
+//await G.prefs.setBool("useAvnc", true); 
   // Now the rest of workflow() will see wasX11Enabled = false and go to VNC.
 }
 

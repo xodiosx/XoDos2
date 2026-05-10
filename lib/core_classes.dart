@@ -628,7 +628,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
     G.keyboard = VirtualKeyboard(defaultInputHandler);
     
     G.prefs = await SharedPreferences.getInstance();
-
+X11Flutter.init(G.prefs);       
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
 
     // If this key doesn't exist, it means it's the first startup

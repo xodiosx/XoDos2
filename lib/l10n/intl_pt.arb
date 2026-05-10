@@ -1,6 +1,7 @@
 {
 "@@locale": "pt",
   "appTitle": "XoDos",
+  "fixX11": "Corrigir X11",
   "advancedSettings": "Configurações avançadas",
   "restartAfterChange": "As alterações terão efeito após reiniciar",
   "resetStartupCommand": "Redefinir comando de inicialização",

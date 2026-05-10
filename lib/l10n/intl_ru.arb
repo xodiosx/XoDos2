@@ -1,6 +1,7 @@
 {
 "@@locale": "ru",
   "appTitle": "XoDos",
+  "fixX11": "Исправить X11",
   "advancedSettings": "Расширенные настройки",
   "restartAfterChange": "Изменения вступят в силу после перезапуска",
   "resetStartupCommand": "Сбросить команду запуска",
