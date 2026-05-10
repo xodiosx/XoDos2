@@ -42,6 +42,14 @@ class X11Flutter {
     }
   }
 
+
+static Future<int> launchXServer(
+  String tmpdir,
+  String xkb,
+  List<String> xserverArgs,
+) async {
+  return await launchXServerSafe(tmpdir, xkb, xserverArgs);
+}
   /// Launch X11 safely with retry logic
   static Future<int> launchXServerSafe(
     String tmpdir,
