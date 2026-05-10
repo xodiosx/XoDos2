@@ -640,8 +640,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
     G.keyboard = VirtualKeyboard(defaultInputHandler);
     
     G.prefs = await SharedPreferences.getInstance();
-X11Flutter.init(G.prefs);   
-X11Flutter.init(G.prefs);  
+
 await G.prefs.remove('extractionProgressT');    
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
 
