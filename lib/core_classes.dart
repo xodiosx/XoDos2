@@ -689,11 +689,11 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     // Write environment variables at the very beginning
     String envCommands = """
 export DATA_DIR=${G.dataPath}
+export PREFIX=/data/data/com.xodos/files/usr   
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$LD_LIBRARY_PATH
 export PATH=\$DATA_DIR/usr/bin:\$PATH:\$DATA_DIR/bin
-export PREFIX=\$DATA_DIR/usr
-export HOME=\$DATA_DIR/home
-export TMPDIR=\$DATA_DIR/usr/tmp
+export HOME=/data/data/com.xodos/files/home
+export TMPDIR=\$PREFIX/usr/tmp
 export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
@@ -704,11 +704,9 @@ unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
 rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
 export DISPLAY=:4
-export XDG_RUNTIME_DIR=\$DATA_DIR/usr/tmp/
-export X11_UNIX_PATH=\$DATA_DIR/usr/tmp/.X11-unix
+export XDG_RUNTIME_DIR=\$PREFIX/usr/tmp/
+export X11_UNIX_PATH=\$PREFIX/usr/tmp/.X11-unix
 unset LD_LIBRARY_PATH
-export TMPDIR=\$DATA_DIR/usr/tmp
-export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 
 export XDG_RUNTIME_DIR=\$TMPDIR/runtime
 export XDG_CACHE_HOME=\$PREFIX/tmp/.cache
@@ -736,61 +734,32 @@ export prefixsh="/data/data/com.xodos/files/usr/bin/"
     export EXTERNAL_STORAGE=/sdcard
     #export LD_PRELOAD=/data/data/com.xodos/files/usr/lib/libtermux-exec-ld-preload.so
     unset LD_PRELOAD
-    export HOME=/data/data/com.xodos/files/home
-    #export LANG=en_US.UTF-8
-    #export SHELL_CMD__TERMINAL_SESSION_NUMBER_SINCE_BOOT=0    
-    #export ANDROID_RUNTIME_ROOT=/apex/com.android.runtime
-    #export TERMUX_APP__PACKAGE_MANAGER=apt
-    #export DEX2OATBOOTCLASSPATH=/apex/com.android.runtime/javalib/core-oj.jar:/apex/com.android.runtime/javalib/core-libart.jar:/apex/com.android.runtime/javalib/okhttp.jar:/apex/com.android.runtime/javalib/bouncycastle.jar:/apex/com.android.runtime/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/system/framework/knoxsdk.jar:/system/framework/knoxanalyticssdk.jar:/system/framework/smartbondingservice.jar:/system/framework/securetimersdk.jar:/system/framework/fipstimakeystore.jar:/system/framework/timakeystore.jar:/system/framework/sec_sdp_sdk.jar:/system/framework/sec_sdp_hidden_sdk.jar:/system/framework/drutils.jar:/system/framework/android.test.base.jar:/system/framework/ucmopensslenginehelper.jar:/system/framework/esecomm.jar:/system/framework/tcmiface.jar:/system/framework/QPerformance.jar:/system/framework/UxPerformance.jar
-    export TMPDIR=/data/data/com.xodos/files/usr/tmp
-    #export ANDROID_DATA=/data
-    #export TERMUX_APP__AM_SOCKET_SERVER_ENABLED=true
-    #export SHELL_CMD__SHELL_ID=0    
-   #export ANDROID_STORAGE=/storage
-    export TERM=xterm-256color
-    #export TERMUX_APP__IS_DEBUGGABLE_BUILD=true
-    #export ASEC_MOUNTPOINT=/mnt/asec
-    export DISPLAY=:4
+    
+   export TERM=xterm-256color
+     export DISPLAY=:4
     export XKB_CONFIG_ROOT=\$PREFIX/share/X11/xkb
     rm -rf \$PREFIX/lib/libandroid.so
-    #export SHLVL=1
-    #export ANDROID_ROOT=/system
-    #export SHELL_CMD__TERMINAL_SESSION_NUMBER_SINCE_APP_START=0
-    #export BOOTCLASSPATH=/apex/com.android.runtime/javalib/core-oj.jar:/apex/com.android.runtime/javalib/core-libart.jar:/apex/com.android.runtime/javalib/okhttp.jar:/apex/com.android.runtime/javalib/bouncycastle.jar:/apex/com.android.runtime/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/system/framework/knoxsdk.jar:/system/framework/knoxanalyticssdk.jar:/system/framework/smartbondingservice.jar:/system/framework/securetimersdk.jar:/system/framework/fipstimakeystore.jar:/system/framework/timakeystore.jar:/system/framework/sec_sdp_sdk.jar:/system/framework/sec_sdp_hidden_sdk.jar:/system/framework/drutils.jar:/system/framework/android.test.base.jar:/system/framework/ucmopensslenginehelper.jar:/system/framework/esecomm.jar:/system/framework/tcmiface.jar:/system/framework/QPerformance.jar:/system/framework/UxPerformance.jar:/apex/com.android.conscrypt/javalib/conscrypt.jar:/apex/com.android.media/javalib/updatable-media.jar
-    export TERMUX_APP__APK_RELEASE=GITHUB
+ l    export TERMUX_APP__APK_RELEASE=GITHUB
     export XDG_RUNTIME_DIR=/data/data/com.xodos/files/usr/tmp
     export DXVK_LOG_PATH=/data/data/com.xodos/files/home/.cache
     export DXVK_STATE_CACHE_PATH=/data/data/com.xodos/files/home/.cache
-    #export ANDROID_TZDATA_ROOT=/apex/com.android.tzdata
-    export SHELL_CMD__PACKAGE_NAME=com.xodos
-    #export ANDROID_ASSETS=/system/app
-    export _=/data/data/com.xodos/files/usr/bin/env
-#export XDG_DATA_DIRS=\$PREFIX/usr/share
-#export XDG_CONFIG_DIRS=\$PREFIX/etc/xdg
 export XDG_CONFIG_HOME=\$HOME/.config
-#export XDG_DATA_HOME=\$HOME/.local/share
-#export XDG_CACHE_HOME=\$HOME/.cache
+export XDG_CACHE_HOME=\$HOME/.cache
 unset VK_ICD_FILENAMES
 rm -rf \$PREFIX/tmp/*
-#ln -sf \$DATA_DIR/containers/0/tmp \$DATA_DIR/usr/
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 cd
-termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &
+#termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &
 pkill -f logcat*
 unset LD_LIBRARY_PATH
-unset EGL_PLATFORM
-unset ANGLE_DEFAULT_PLATFORM
-
 if [ -f "\$PREFIX/bin/bash" ]; then
 exec \$PREFIX/bin/bash --login  
 elif [ -f "\$PREFIX/bin/sh" ]; then 
 exec \$PREFIX/bin/sh
 else
 echo 'no shell found'
-
 fi
-
 # ready
 fi
 """;
