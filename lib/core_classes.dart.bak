@@ -419,6 +419,8 @@ static VoidCallback? onExtractionComplete;
 
 class Workflow {
 
+  static bool _x11LaunchDone = false;   // <-- ADD THIS
+
   static Future<void> grantPermissions() async {
     Permission.storage.request();
     //Permission.manageExternalStorage.request();
@@ -640,7 +642,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
     G.prefs = await SharedPreferences.getInstance();
 X11Flutter.init(G.prefs);   
 X11Flutter.init(G.prefs);  
-await setupBootstrap.prefs.remove('extractionProgressT');    
+await G.prefs.remove('extractionProgressT');    
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
 
     // If this key doesn't exist, it means it's the first startup
@@ -711,6 +713,7 @@ export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
 pkill -f com.termux*
+pkill -f com.xodos*"
 pkill -f /system/bin/logcat
 unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
@@ -991,6 +994,7 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
 #pkill -f com.termux*
+pkill -f com.xodos*"
 sleep 1
 #export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
 cd \$DATA_DIR
@@ -1015,10 +1019,21 @@ static Future<void> launchGUIBackend() async {
   if (Util.getGlobal("autoLaunchVnc") as bool) {
     if (Util.getGlobal("useX11") as bool) {
       // X11 already redirects to log file, keep as is
-     // Util.termWrite("""termux-x11 :4 -ac >> /sdcard/x11.log 2>&1 &""");
-      Util.termWrite("""sleep 1""");
+            final bool fixX11 = G.prefs.getBool("Fix_x11") ?? false;
+
+      if (fixX11) {
+        // X11 is already being managed by the Flutter plugin.
+        // Do NOT start a second termux-x11 process from the terminal.
+        Util.termWrite("echo 'X11 is running (managed by Fix X11)'\n");
+      } else {
+        // Original behaviour: launch termux-x11 via shell
+        Util.termWrite("""termux-x11 :4 -ac >> /sdcard/x11.log 2>&1 &""");
+        Util.termWrite("""sleep 1""");
+      }
+      
     } else {
     Util.termWrite("""pkill -f com.termux*""");
+    Util.termWrite("""pkill -f com.xodos*""");
       // Redirect VNC command output to /dev/null
       String vncCmd = Util.getCurrentProp("vnc");
       // Remove any existing & and add redirection
@@ -1078,9 +1093,30 @@ static Future<void> launchGUIBackend() async {
   }
 
   static Future<void> launchXServer() async {
-    await X11Flutter.launchXServer("${G.dataPath}/usr/tmp", "${G.dataPath}/usr/share/X11/xkb", [":4"]);
+  // 1. Respect the user's toggle
+  final bool fixX11 = G.prefs.getBool("Fix_x11") ?? false;
+  if (!fixX11) {
+    debugPrint('⏩ Fix_x11 is off – skipping X11 launch');
+    return;
   }
 
+  // 2. Already launched in this session?
+  if (_x11LaunchDone) {
+    debugPrint(' X11 already launched – skipping duplicate');
+    return;
+  }
+
+  // 3. Mark as done BEFORE the call (so even if an error occurs later,
+  //    we won't call it again from other places)
+  _x11LaunchDone = true;
+
+  // 4. Launch via the untouched, original X11Flutter method
+  await X11Flutter.launchXServer(
+    "${G.dataPath}/usr/tmp",
+    "${G.dataPath}/usr/share/X11/xkb",
+    [":4"],
+  );
+}
   static Future<void> launchX11() async {
     await X11Flutter.launchX11Page();
   }

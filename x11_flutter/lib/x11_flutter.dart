@@ -1,65 +1,27 @@
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class X11Flutter {
   static const MethodChannel _channel = MethodChannel('x11_flutter');
 
-  // ---- Preferences & Idempotent Guard ----
-  static SharedPreferences? _prefs;
-  static bool _serverLaunched = false;
-
-  /// Call this **once** after your SharedPreferences instance is ready.
-  /// (e.g., in Workflow.initData())
-  static void init(SharedPreferences prefs) {
-    _prefs = prefs;
-  }
-
-  /// Launch the X11 server **only if** the user has enabled the
-  /// "Fix_x11" toggle AND it hasn't been launched already.
-  ///
-  /// If the toggle is off, the call is skipped entirely.
-  /// If the toggle is on but already launched, it's a safe no‑op.
-  static Future<int> launchXServer(
-    String tmpdir,
-    String xkb,
-    List<String> xserverArgs,
-  ) async {
-    // 1. Respect the toggle
-    final enabled = _prefs?.getBool("Fix_x11") ?? false;
-    if (!enabled) {
-      print('X11 launch skipped – Fix_x11 is disabled ❌');
-      return 0;
-    }
-
-    // 2. Already launched in this session → nothing to do
-    if (_serverLaunched) {
-      print('X11 server already launched, skipping 👌');
-      return 0;
-    }
-
-    // 3. Call the platform channel
+  /// 启动X11服务器
+  /// [tmpdir] 临时目录路径
+  /// [xkb] XKB配置根目录路径
+  /// [xserverArgs] X服务器命令行参数，例如 [":4", "-ac"]
+  static Future<int> launchXServer(String tmpdir, String xkb, List<String> xserverArgs) async {
     try {
       final result = await _channel.invokeMethod('launchXServer', {
         'tmpdir': tmpdir,
         'xkb': xkb,
         'xserverArgs': xserverArgs,
       });
-      _serverLaunched = true;
-      print('X11 server launched successfully 🎯');
       return result as int;
     } on PlatformException catch (e) {
       _logError('launchXServer', e);
-      rethrow; // Do NOT set _serverLaunched – allows retry on failure
+      rethrow;
     }
   }
 
-  // ---- Reset helpers (optional) ----
-  /// Reset the guard so the X server can be re‑launched later.
-  static void resetXServerState() {
-    _serverLaunched = false;
-  }
-
-  // ---- All other methods (unchanged) ----
+  /// 启动X11首选项页面
   static Future<int> launchX11PrefsPage() async {
     try {
       final result = await _channel.invokeMethod('launchX11PrefsPage');
@@ -70,6 +32,7 @@ class X11Flutter {
     }
   }
 
+  /// 启动X11主页面
   static Future<int> launchX11Page() async {
     try {
       final result = await _channel.invokeMethod('launchX11Page');
@@ -80,6 +43,7 @@ class X11Flutter {
     }
   }
 
+  /// 在原有的缩放上设置缩放倍率
   static Future<int> setX11ScaleFactor(double scale) async {
     try {
       final result = await _channel.invokeMethod('setScale', {
