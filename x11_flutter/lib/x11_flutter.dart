@@ -56,7 +56,7 @@ static Future<int> launchXServer(
     String xkb,
     List<String> xserverArgs,
   ) async {
-    const int maxAttempts = 8; // ~16 sec
+    const int maxAttempts = 3; // ~6 sec
     const Duration delay = Duration(seconds: 2);
 
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
