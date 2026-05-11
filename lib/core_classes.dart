@@ -714,7 +714,7 @@ G.prefs.setBool("reinstallBootstrap", false);
       }
       
     }
-
+}
     // What graphical interface is enabled?
     if (Util.getGlobal("useX11")) {
       G.wasX11Enabled = true;
