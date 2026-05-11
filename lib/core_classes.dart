@@ -666,7 +666,7 @@ await G.prefs.remove('extractionProgressT');
           return; // stop further initialisation
         }
       }
-    }
+    
       // Adjust resolution based on user's screen
       final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
       final String w = (max(s.width, s.height) * 0.75).round().toString();

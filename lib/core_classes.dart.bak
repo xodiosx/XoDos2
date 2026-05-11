@@ -1306,111 +1306,6 @@ echo "Virgl server started in background"
 // Local Archive Installer Dialog
 // =========================================================================
 
-// =========================================================================
-// Local Archive Installer Dialog
-// =========================================================================
-
-// =========================================================================
-// Local Archive Installer Dialog
-// =========================================================================
-
-class LocalArchiveInstaller {
-  /// Shows the undismissible installer dialog. Returns `true` if the user
-  /// completed the installation, `false` if they cancelled.
-  static Future<bool> showDialog(BuildContext context) async {
-    final result = await showGeneralDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: "Install",
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (BuildContext context, Animation<double> animation,
-          Animation<double> secondaryAnimation) {
-        return _LocalArchiveDialog();
-      },
-    );
-    return result ?? false;
-  }
-
-  /// Called after a successful local archive extraction to finalise the
-  /// first-time setup (symlinks, default prefs, container info).
-  static Future<void> finalizeSystem() async {
-    // Recreate essential directories (idempotent)
-    Util.createDirFromString("${G.dataPath}/share");
-    Util.createDirFromString("${G.dataPath}/usr/bin");
-    Util.createDirFromString("${G.dataPath}/usr/lib");
-    Util.createDirFromString("${G.dataPath}/usr/tmp");
-    Util.createDirFromString("${G.dataPath}/tmp");
-    Util.createDirFromString("${G.dataPath}/proot_tmp");
-    Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
-
-    // Run the symlink script (identical to the one in setupBootstrap)
-    await Util.execute("""
-export DATA_DIR=${G.dataPath}
-export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
-export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
-export CONTAINER_DIR=\$DATA_DIR/containers/0
-export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
-export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
-export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-cd \$DATA_DIR
-
-ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
-ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
-ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
-ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/xz
-ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/gzip
-ln -sf \$DATA_DIR/applib/libexec_proot.so \$DATA_DIR/usr/bin/proot
-ln -sf \$DATA_DIR/applib/libexec_tar.so \$DATA_DIR/usr/bin/tar
-ln -sf \$DATA_DIR/applib/libexec_pulseaudio.so \$DATA_DIR/usr/bin/pulseaudio
-ln -sf \$DATA_DIR/applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
-ln -sf \$DATA_DIR/applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
-ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
-ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
-""");
-
-    // Remove extraction progress flag
-    await G.prefs.remove('extractionProgressT');
-
-    // Set default container properties (same as in initForFirstTime)
-    final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
-    final groupedCommands = LanguageManager.getGroupedCommandsForLanguage(languageCode);
-    final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
-    await G.prefs.setStringList("containersInfo", ["""{
-"name":"XoDos Rebirth",
-"boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
-"vnc":"startnovnc &",
-"vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
-"commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))},
-"groupedCommands":${jsonEncode(groupedCommands)},
-"groupedWineCommands":${jsonEncode(groupedWineCommands)}
-}"""]);
-
-    // Set other default prefs for new users (mirrors initForFirstTime)
-    final String w = (max(WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.width,
-                         WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.height) * 0.75).round().toString();
-    final String h = (min(WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.width,
-                         WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.height) * 0.75).round().toString();
-    G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
-sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
-""";
-    if (languageCode != 'zh') {
-      G.postCommand += "\nlocaledef -c -i en_US -f UTF-8 en_US.UTF-8";
-      await G.prefs.setBool("isTerminalWriteEnabled", true);
-      await G.prefs.setBool("isTerminalCommandsEnabled", true);
-      await G.prefs.setBool("isStickyKey", false);
-      await G.prefs.setBool("wakelock", true);
-    }
-
-    // Notify any completion callback
-    G.onExtractionComplete?.call();
-  }
-}
-
-class _LocalArchiveDialog extends StatefulWidget {
-  @override
-  __LocalArchiveDialogState createState() => __LocalArchiveDialogState();
-}
-
 class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   final String _downloadDir = '/sdcard/Download';
   String _archivePath = '';
@@ -1457,7 +1352,8 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       _archiveFound = true;
     } else {
       setState(() {
-        _statusMessage = 'No xodos.tar.xz or xodos.tar.gz found in $_downloadDir';
+        _statusMessage =
+            'No xodos.tar.xz or xodos.tar.gz found in $_downloadDir';
         _error = true;
       });
     }
@@ -1468,19 +1364,71 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
     }
   }
 
+  /// Parses a size string like "964.9 MiB" or "268.0 MiB" into bytes.
+  int _parseSize(String str) {
+    final regex = RegExp(r'^([\d.]+)\s*([A-Za-z]*)');
+    final match = regex.firstMatch(str.trim());
+    if (match == null) return 0;
+
+    final value = double.tryParse(match.group(1)!);
+    if (value == null) return 0;
+
+    final unit = (match.group(2) ?? '').toUpperCase();
+    switch (unit) {
+      case 'KIB':
+        return (value * 1024).round();
+      case 'MIB':
+        return (value * 1024 * 1024).round();
+      case 'GIB':
+        return (value * 1024 * 1024 * 1024).round();
+      default: // assume bytes
+        return value.round();
+    }
+  }
+
   Future<int> _getTotalUncompressedSize() async {
-    final result = await Process.run(
-      'sh',
-      [
-        '-c',
-        'LD_LIBRARY_PATH=${G.dataPath}/usr/lib:${G.dataPath}/lib '
-            '${G.dataPath}/usr/bin/tar tvf "$_archivePath" 2>/dev/null | '
-            'awk \'{ sum += \$3 } END { print sum }\''
-      ],
-      environment: {'DATA_DIR': G.dataPath},
-    );
-    if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
-      return int.tryParse(result.stdout.toString().trim()) ?? 0;
+    try {
+      final binary = _archiveType == 'xz'
+          ? '${G.dataPath}/usr/bin/xz'
+          : '${G.dataPath}/usr/bin/gzip';
+      final flag = '-l';
+      final result = await Process.run(
+        binary,
+        [flag, _archivePath],
+        environment: {
+          'LD_LIBRARY_PATH': '${G.dataPath}/usr/lib:${G.dataPath}/lib',
+        },
+      );
+
+      if (result.exitCode == 0) {
+        final output = result.stdout.toString();
+        final lines = const LineSplitter().convert(output);
+
+        if (_archiveType == 'xz') {
+          // xz -l output example:
+          // Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename
+          //     1       6    268.0 MiB    964.9 MiB  0.278  CRC64   /path/file.tar.xz
+          if (lines.length >= 2) {
+            final parts = lines[1].trim().split(RegExp(r'\s+'));
+            if (parts.length >= 5) {
+              return _parseSize(parts[3]); // uncompressed size (column 4)
+            }
+          }
+        } else {
+          // gzip -l output example:
+          // compressed        uncompressed  ratio uncompressed_name
+          //   281018368            1012602880  72.2% /path/file.tar
+          if (lines.length >= 2) {
+            final parts = lines.last.trim().split(RegExp(r'\s+'));
+            if (parts.length >= 3) {
+              // uncompressed is the second column, just bytes (no unit)
+              return int.tryParse(parts[1]) ?? 0;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error getting archive size: $e');
     }
     return 0;
   }
@@ -1502,7 +1450,6 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
     }
 
     final decompressFlag = _archiveType == 'xz' ? '-J' : '-z';
-    // Extract directly into the whole data directory (overwrites/creates needed files)
     final script = '''
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
@@ -1529,7 +1476,8 @@ exit \$?
         if (!mounted) return;
         setState(() {
           _progress = newProgress;
-          _statusMessage = 'Extracting... ${(newProgress * 100).toStringAsFixed(1)}%';
+          _statusMessage =
+              'Extracting... ${(newProgress * 100).toStringAsFixed(1)}%';
         });
       }
     });
@@ -1566,7 +1514,9 @@ exit \$?
               Text('Looking for archive in $_downloadDir ...'),
             if (_error)
               Text(
-                _statusMessage.isNotEmpty ? _statusMessage : 'An error occurred',
+                _statusMessage.isNotEmpty
+                    ? _statusMessage
+                    : 'An error occurred',
                 style: const TextStyle(color: Colors.red),
               ),
             if (_archiveFound && !_extracting && !_done && !_error)
@@ -1595,7 +1545,7 @@ exit \$?
         actions: [
           if (!_extracting && !_done)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false), // cancel
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Cancel'),
             ),
           if (_archiveFound && !_extracting && !_done && !_error)
@@ -1605,9 +1555,7 @@ exit \$?
             ),
           if (_done)
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true); // success
-              },
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Close'),
             ),
         ],
@@ -1615,4 +1563,3 @@ exit \$?
     );
   }
 }
-
