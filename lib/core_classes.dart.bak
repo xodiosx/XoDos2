@@ -707,7 +707,7 @@ export PREFIX=/data/data/com.xodos/files/usr
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib:\$LD_LIBRARY_PATH
 export PATH=\$DATA_DIR/usr/bin:\$PATH:\$DATA_DIR/bin
 export HOME=/data/data/com.xodos/files/home
-export TMPDIR=\$PREFIX/usr/tmp
+export TMPDIR=\$PREFIX/tmp
 export FONTCONFIG_PATH=\$PREFIX/etc/fonts       
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
