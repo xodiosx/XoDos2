@@ -626,6 +626,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
     final prefs = await SharedPreferences.getInstance();
       await prefs.remove('extractionProgressT');
+      G.prefs.setBool("reinstallBootstrap", false);
        if (G.onExtractionComplete != null) {
       G.onExtractionComplete!();
           
@@ -648,8 +649,24 @@ await G.prefs.remove('extractionProgressT');
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
 
     // If this key doesn't exist, it means it's the first startup
+    // ---- First-time installation handling ----
     if (!G.prefs.containsKey("defaultContainer")) {
-      await initForFirstTime();
+      try {
+        await initForFirstTime(); // normal APK asset extraction
+      } catch (e) {
+        debugPrint('First-time setup failed: $e');
+        // Automatically show the local archive installer dialog
+        final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
+        if (installed == true) {
+          // User installed from a local archive – finalise the system
+          await LocalArchiveInstaller.finalizeSystem();
+        } else {
+          // Installation cancelled – exit the app
+          SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+          return; // stop further initialisation
+        }
+      }
+    }
       // Adjust resolution based on user's screen
       final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
       final String w = (max(s.width, s.height) * 0.75).round().toString();
@@ -670,13 +687,32 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
       }
     //  await G.prefs.setBool("getifaddrsBridge", (await DeviceInfoPlugin().androidInfo).version.sdkInt >= 31);
     }
+    
+    
     G.currentContainer = Util.getGlobal("defaultContainer") as int;
 
     // Need to reinstall bootstrap package?
     if (Util.getGlobal("reinstallBootstrap")) {
       G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.reinstallingBootPackage;
-      await initForFirstTime();
-      G.prefs.setBool("reinstallBootstrap", false);
+ if (Util.getGlobal("reinstallBootstrap")) {
+      try {
+        await initForFirstTime(); // normal APK asset extraction
+      } catch (e) {
+        debugPrint('First-time setup failed: $e');
+        // Automatically show the local archive installer dialog
+        final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
+        if (installed == true) {
+          // User installed from a local archive – finalise the system
+          await LocalArchiveInstaller.finalizeSystem();
+          G.prefs.setBool("reinstallBootstrap", false);
+        } else {
+          // Installation cancelled – exit the app
+          SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+          return; // stop further initialisation
+        }
+      }
+    }
+      
     }
 
     // What graphical interface is enabled?
@@ -1131,7 +1167,7 @@ static Future<void> workflow() async {
 
   if (Util.getGlobal("logcatEnabled") as bool) {
     LogcatManager().startCapture();
-    LocalArchiveInstaller.showDialog(G.homePageStateContext);
+    
   }
 
   setupAudio();                       // audio PTY (native)
@@ -1270,30 +1306,6 @@ echo "Virgl server started in background"
 // Local Archive Installer Dialog
 // =========================================================================
 
-// =========================================================================
-// Local Archive Installer Dialog
-// =========================================================================
-
-class LocalArchiveInstaller {
-  static void showDialog(BuildContext context) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: "Install",
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (BuildContext context, Animation<double> animation,
-          Animation<double> secondaryAnimation) {
-        return _LocalArchiveDialog();
-      },
-    );
-  }
-}
-
-class _LocalArchiveDialog extends StatefulWidget {
-  @override
-  __LocalArchiveDialogState createState() => __LocalArchiveDialogState();
-}
-
 class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   final String _downloadDir = '/sdcard/Download';
   String _archivePath = '';
@@ -1303,9 +1315,9 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   bool _done = false;
   bool _error = false;
   String _statusMessage = '';
-  double _progress = 0.0; // 0.0 to 1.0
+  double _progress = 0.0;
 
-  Pty? _extractPty; // Dedicated PTY for extraction
+  Pty? _extractPty;
 
   @override
   void dispose() {
@@ -1352,23 +1364,71 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
     }
   }
 
+  /// Parses a size string like "964.9 MiB" or "268.0 MiB" into bytes.
+  int _parseSize(String str) {
+    final regex = RegExp(r'^([\d.]+)\s*([A-Za-z]*)');
+    final match = regex.firstMatch(str.trim());
+    if (match == null) return 0;
+
+    final value = double.tryParse(match.group(1)!);
+    if (value == null) return 0;
+
+    final unit = (match.group(2) ?? '').toUpperCase();
+    switch (unit) {
+      case 'KIB':
+        return (value * 1024).round();
+      case 'MIB':
+        return (value * 1024 * 1024).round();
+      case 'GIB':
+        return (value * 1024 * 1024 * 1024).round();
+      default: // assume bytes
+        return value.round();
+    }
+  }
+
   Future<int> _getTotalUncompressedSize() async {
-    // Quick size calculation using Process.run (no need for PTY here)
-    final result = await Process.run(
-      'sh',
-      [
-        '-c',
-        'LD_LIBRARY_PATH=${G.dataPath}/usr/lib:${G.dataPath}/lib '
-            '${G.dataPath}/usr/bin/tar tvf "$_archivePath" 2>/dev/null | '
-            'awk \'{ sum += \$3 } END { print sum }\''
-      ],
-      environment: {
-        'DATA_DIR': G.dataPath,
-      },
-    );
-    if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
-      final size = int.tryParse(result.stdout.toString().trim());
-      return size ?? 0;
+    try {
+      final binary = _archiveType == 'xz'
+          ? '${G.dataPath}/usr/bin/xz'
+          : '${G.dataPath}/usr/bin/gzip';
+      final flag = '-l';
+      final result = await Process.run(
+        binary,
+        [flag, _archivePath],
+        environment: {
+          'LD_LIBRARY_PATH': '${G.dataPath}/usr/lib:${G.dataPath}/lib',
+        },
+      );
+
+      if (result.exitCode == 0) {
+        final output = result.stdout.toString();
+        final lines = const LineSplitter().convert(output);
+
+        if (_archiveType == 'xz') {
+          // xz -l output example:
+          // Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename
+          //     1       6    268.0 MiB    964.9 MiB  0.278  CRC64   /path/file.tar.xz
+          if (lines.length >= 2) {
+            final parts = lines[1].trim().split(RegExp(r'\s+'));
+            if (parts.length >= 5) {
+              return _parseSize(parts[3]); // uncompressed size (column 4)
+            }
+          }
+        } else {
+          // gzip -l output example:
+          // compressed        uncompressed  ratio uncompressed_name
+          //   281018368            1012602880  72.2% /path/file.tar
+          if (lines.length >= 2) {
+            final parts = lines.last.trim().split(RegExp(r'\s+'));
+            if (parts.length >= 3) {
+              // uncompressed is the second column, just bytes (no unit)
+              return int.tryParse(parts[1]) ?? 0;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error getting archive size: $e');
     }
     return 0;
   }
@@ -1389,10 +1449,7 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       return;
     }
 
-    final containerDir = '${G.dataPath}/containers/0';
     final decompressFlag = _archiveType == 'xz' ? '-J' : '-z';
-
-    // Build the shell script we will write to the PTY
     final script = '''
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
@@ -1401,15 +1458,13 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:/system/bin
 cd \$DATA_DIR
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat '$_archivePath' | \$DATA_DIR/usr/bin/tar x $decompressFlag --checkpoint=1024 --checkpoint-action='echo %{{s}}' --delay-directory-restore --preserve-permissions -C $containerDir"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat '$_archivePath' | \$DATA_DIR/usr/bin/tar x $decompressFlag --checkpoint=1024 --checkpoint-action='echo %{{s}}' --delay-directory-restore --preserve-permissions -C \$DATA_DIR"
 exit \$?
 ''';
 
-    // Start a dedicated PTY  for the extraction
     _extractPty = Pty.start('/system/bin/sh');
     _extractPty!.write(const Utf8Encoder().convert(script));
 
-    // Listen to PTY output and parse checkpoint bytes
     _extractPty!.output
         .cast<List<int>>()
         .transform(const Utf8Decoder())
@@ -1437,8 +1492,6 @@ exit \$?
         _progress = 1.0;
         _statusMessage = 'Installation complete!';
       });
-      // Optionally trigger a container restart if needed:
-      // Workflow.launchCurrentContainer();
     } else {
       setState(() {
         _error = true;
@@ -1451,7 +1504,7 @@ exit \$?
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false, // block back button
+      onWillPop: () async => false,
       child: AlertDialog(
         title: const Text('Install XoDos System'),
         content: Column(
@@ -1461,7 +1514,9 @@ exit \$?
               Text('Looking for archive in $_downloadDir ...'),
             if (_error)
               Text(
-                _statusMessage.isNotEmpty ? _statusMessage : 'An error occurred',
+                _statusMessage.isNotEmpty
+                    ? _statusMessage
+                    : 'An error occurred',
                 style: const TextStyle(color: Colors.red),
               ),
             if (_archiveFound && !_extracting && !_done && !_error)
@@ -1490,7 +1545,7 @@ exit \$?
         actions: [
           if (!_extracting && !_done)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Cancel'),
             ),
           if (_archiveFound && !_extracting && !_done && !_error)
@@ -1500,7 +1555,7 @@ exit \$?
             ),
           if (_done)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Close'),
             ),
         ],

@@ -626,6 +626,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installationComplete;
     final prefs = await SharedPreferences.getInstance();
       await prefs.remove('extractionProgressT');
+      G.prefs.setBool("reinstallBootstrap", false);
        if (G.onExtractionComplete != null) {
       G.onExtractionComplete!();
           
@@ -648,8 +649,24 @@ await G.prefs.remove('extractionProgressT');
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
 
     // If this key doesn't exist, it means it's the first startup
+    // ---- First-time installation handling ----
     if (!G.prefs.containsKey("defaultContainer")) {
-      await initForFirstTime();
+      try {
+        await initForFirstTime(); // normal APK asset extraction
+      } catch (e) {
+        debugPrint('First-time setup failed: $e');
+        // Automatically show the local archive installer dialog
+        final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
+        if (installed == true) {
+          // User installed from a local archive – finalise the system
+          await LocalArchiveInstaller.finalizeSystem();
+        } else {
+          // Installation cancelled – exit the app
+          SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+          return; // stop further initialisation
+        }
+      }
+    }
       // Adjust resolution based on user's screen
       final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
       final String w = (max(s.width, s.height) * 0.75).round().toString();
@@ -670,13 +687,32 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
       }
     //  await G.prefs.setBool("getifaddrsBridge", (await DeviceInfoPlugin().androidInfo).version.sdkInt >= 31);
     }
+    
+    
     G.currentContainer = Util.getGlobal("defaultContainer") as int;
 
     // Need to reinstall bootstrap package?
     if (Util.getGlobal("reinstallBootstrap")) {
       G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.reinstallingBootPackage;
-      await initForFirstTime();
-      G.prefs.setBool("reinstallBootstrap", false);
+ if (Util.getGlobal("reinstallBootstrap")) {
+      try {
+        await initForFirstTime(); // normal APK asset extraction
+      } catch (e) {
+        debugPrint('First-time setup failed: $e');
+        // Automatically show the local archive installer dialog
+        final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
+        if (installed == true) {
+          // User installed from a local archive – finalise the system
+          await LocalArchiveInstaller.finalizeSystem();
+          G.prefs.setBool("reinstallBootstrap", false);
+        } else {
+          // Installation cancelled – exit the app
+          SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+          return; // stop further initialisation
+        }
+      }
+    }
+      
     }
 
     // What graphical interface is enabled?
@@ -1131,7 +1167,7 @@ static Future<void> workflow() async {
 
   if (Util.getGlobal("logcatEnabled") as bool) {
     LogcatManager().startCapture();
-    LocalArchiveInstaller.showDialog(context);
+    
   }
 
   setupAudio();                       // audio PTY (native)
@@ -1274,9 +1310,15 @@ echo "Virgl server started in background"
 // Local Archive Installer Dialog
 // =========================================================================
 
+// =========================================================================
+// Local Archive Installer Dialog
+// =========================================================================
+
 class LocalArchiveInstaller {
-  static void showDialog(BuildContext context) {
-    showGeneralDialog(
+  /// Shows the undismissible installer dialog. Returns `true` if the user
+  /// completed the installation, `false` if they cancelled.
+  static Future<bool> showDialog(BuildContext context) async {
+    final result = await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
       barrierLabel: "Install",
@@ -1286,6 +1328,81 @@ class LocalArchiveInstaller {
         return _LocalArchiveDialog();
       },
     );
+    return result ?? false;
+  }
+
+  /// Called after a successful local archive extraction to finalise the
+  /// first-time setup (symlinks, default prefs, container info).
+  static Future<void> finalizeSystem() async {
+    // Recreate essential directories (idempotent)
+    Util.createDirFromString("${G.dataPath}/share");
+    Util.createDirFromString("${G.dataPath}/usr/bin");
+    Util.createDirFromString("${G.dataPath}/usr/lib");
+    Util.createDirFromString("${G.dataPath}/usr/tmp");
+    Util.createDirFromString("${G.dataPath}/tmp");
+    Util.createDirFromString("${G.dataPath}/proot_tmp");
+    Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
+
+    // Run the symlink script (identical to the one in setupBootstrap)
+    await Util.execute("""
+export DATA_DIR=${G.dataPath}
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
+export CONTAINER_DIR=\$DATA_DIR/containers/0
+export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
+export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
+export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
+cd \$DATA_DIR
+
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/xz
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/gzip
+ln -sf \$DATA_DIR/applib/libexec_proot.so \$DATA_DIR/usr/bin/proot
+ln -sf \$DATA_DIR/applib/libexec_tar.so \$DATA_DIR/usr/bin/tar
+ln -sf \$DATA_DIR/applib/libexec_pulseaudio.so \$DATA_DIR/usr/bin/pulseaudio
+ln -sf \$DATA_DIR/applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
+ln -sf \$DATA_DIR/applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
+ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
+ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
+""");
+
+    // Remove extraction progress flag
+    await G.prefs.remove('extractionProgressT');
+
+    // Set default container properties (same as in initForFirstTime)
+    final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
+    final groupedCommands = LanguageManager.getGroupedCommandsForLanguage(languageCode);
+    final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
+    await G.prefs.setStringList("containersInfo", ["""{
+"name":"XoDos Rebirth",
+"boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
+"vnc":"startnovnc &",
+"vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
+"commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))},
+"groupedCommands":${jsonEncode(groupedCommands)},
+"groupedWineCommands":${jsonEncode(groupedWineCommands)}
+}"""]);
+
+    // Set other default prefs for new users (mirrors initForFirstTime)
+    final String w = (max(WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.width,
+                         WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.height) * 0.75).round().toString();
+    final String h = (min(WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.width,
+                         WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.height) * 0.75).round().toString();
+    G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
+sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
+""";
+    if (languageCode != 'zh') {
+      G.postCommand += "\nlocaledef -c -i en_US -f UTF-8 en_US.UTF-8";
+      await G.prefs.setBool("isTerminalWriteEnabled", true);
+      await G.prefs.setBool("isTerminalCommandsEnabled", true);
+      await G.prefs.setBool("isStickyKey", false);
+      await G.prefs.setBool("wakelock", true);
+    }
+
+    // Notify any completion callback
+    G.onExtractionComplete?.call();
   }
 }
 
@@ -1303,9 +1420,9 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   bool _done = false;
   bool _error = false;
   String _statusMessage = '';
-  double _progress = 0.0; // 0.0 to 1.0
+  double _progress = 0.0;
 
-  Pty? _extractPty; // Dedicated PTY for extraction
+  Pty? _extractPty;
 
   @override
   void dispose() {
@@ -1340,8 +1457,7 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       _archiveFound = true;
     } else {
       setState(() {
-        _statusMessage =
-            'No xodos.tar.xz or xodos.tar.gz found in $_downloadDir';
+        _statusMessage = 'No xodos.tar.xz or xodos.tar.gz found in $_downloadDir';
         _error = true;
       });
     }
@@ -1353,7 +1469,6 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   }
 
   Future<int> _getTotalUncompressedSize() async {
-    // Quick size calculation using Process.run (no need for PTY here)
     final result = await Process.run(
       'sh',
       [
@@ -1362,13 +1477,10 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
             '${G.dataPath}/usr/bin/tar tvf "$_archivePath" 2>/dev/null | '
             'awk \'{ sum += \$3 } END { print sum }\''
       ],
-      environment: {
-        'DATA_DIR': G.dataPath,
-      },
+      environment: {'DATA_DIR': G.dataPath},
     );
     if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
-      final size = int.tryParse(result.stdout.toString().trim());
-      return size ?? 0;
+      return int.tryParse(result.stdout.toString().trim()) ?? 0;
     }
     return 0;
   }
@@ -1389,10 +1501,8 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       return;
     }
 
-    final containerDir = '${G.dataPath}/containers/0';
     final decompressFlag = _archiveType == 'xz' ? '-J' : '-z';
-
-    // Build the shell script we will write to the PTY
+    // Extract directly into the whole data directory (overwrites/creates needed files)
     final script = '''
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
@@ -1401,15 +1511,13 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:/system/bin
 cd \$DATA_DIR
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat '$_archivePath' | \$DATA_DIR/usr/bin/tar x $decompressFlag --checkpoint=1024 --checkpoint-action='echo %{{s}}' --delay-directory-restore --preserve-permissions -C $containerDir"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat '$_archivePath' | \$DATA_DIR/usr/bin/tar x $decompressFlag --checkpoint=1024 --checkpoint-action='echo %{{s}}' --delay-directory-restore --preserve-permissions -C \$DATA_DIR"
 exit \$?
 ''';
 
-    // Start a dedicated PTY  for the extraction
     _extractPty = Pty.start('/system/bin/sh');
     _extractPty!.write(const Utf8Encoder().convert(script));
 
-    // Listen to PTY output and parse checkpoint bytes
     _extractPty!.output
         .cast<List<int>>()
         .transform(const Utf8Decoder())
@@ -1421,8 +1529,7 @@ exit \$?
         if (!mounted) return;
         setState(() {
           _progress = newProgress;
-          _statusMessage =
-              'Extracting... ${(newProgress * 100).toStringAsFixed(1)}%';
+          _statusMessage = 'Extracting... ${(newProgress * 100).toStringAsFixed(1)}%';
         });
       }
     });
@@ -1437,8 +1544,6 @@ exit \$?
         _progress = 1.0;
         _statusMessage = 'Installation complete!';
       });
-      // Optionally trigger a container restart if needed:
-      // Workflow.launchCurrentContainer();
     } else {
       setState(() {
         _error = true;
@@ -1451,7 +1556,7 @@ exit \$?
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false, // block back button
+      onWillPop: () async => false,
       child: AlertDialog(
         title: const Text('Install XoDos System'),
         content: Column(
@@ -1490,7 +1595,7 @@ exit \$?
         actions: [
           if (!_extracting && !_done)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(false), // cancel
               child: const Text('Cancel'),
             ),
           if (_archiveFound && !_extracting && !_done && !_error)
@@ -1500,7 +1605,9 @@ exit \$?
             ),
           if (_done)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                Navigator.of(context).pop(true); // success
+              },
               child: const Text('Close'),
             ),
         ],
@@ -1508,3 +1615,4 @@ exit \$?
     );
   }
 }
+
