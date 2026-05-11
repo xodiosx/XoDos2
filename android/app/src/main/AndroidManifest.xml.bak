@@ -1,5 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    >
+    
+        <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+  <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:remove="maxSdkVersion"/>
@@ -12,8 +21,6 @@
 android:requestLegacyExternalStorage="true"
         android:label="@string/tc_app_name"
         android:name=".MainApplication"
-        android:appCategory="game"
-        android:isGame="true"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:launchMode="singleInstance"
@@ -22,7 +29,7 @@ android:requestLegacyExternalStorage="true"
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
             android:configChanges="navigation|orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -57,10 +64,110 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
 </provider>
 
        
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+           <!-- ================= X11 MAIN ================= -->
+
+        <activity
+            android:name="com.termux.x11.MainActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="stateHidden"
+            android:configChanges="fontScale|orientation|screenSize|keyboard|keyboardHidden|layoutDirection|locale|navigation|screenLayout|touchscreen|uiMode|smallestScreenSize|density"
+            android:theme="@style/AppTheme" />
+
+        <!-- ================= CONTROLLER ACTIVITIES ================= -->
+
+        <activity
+            android:name="com.termux.x11.controller.ControlsEditorActivity"
+            android:exported="false"
+            android:screenOrientation="sensor"
+            android:theme="@style/AppTheme"/>
+
+        <activity
+            android:name="com.termux.x11.controller.ExternalControllerBindingsActivity"
+            android:exported="false"
+            android:screenOrientation="sensor"
+            android:theme="@style/AppTheme"/>
+
+        <activity
+            android:name="com.termux.x11.controller.InputControllerActivity"
+            android:exported="false"
+            android:screenOrientation="sensor"
+            android:theme="@style/AppTheme"/>
+
+        <!-- ================= PREFERENCES ================= -->
+
+        <activity
+            android:name="com.termux.x11.LoriePreferences"
+            android:theme="@style/Theme.AppCompat.DayNight"
+            android:excludeFromRecents="true"
+            android:taskAffinity=".LoriePreferences"
+            android:supportsPictureInPicture="false"
+            android:resizeableActivity="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES"/>
+                <action android:name="android.intent.action.MAIN"/>
+            </intent-filter>
+        </activity>
+
+  
+              <!-- ================= RECEIVER ================= -->
+
+        <receiver
+            android:name="com.termux.x11.LoriePreferences$Receiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="com.termux.x11.CHANGE_PREFERENCE"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- ================= HUD SERVICE ================= -->
+
+        <service
+            android:name="com.termux.x11.HudService"
+            android:enabled="true"
+            android:exported="false"/>
+
+        <!-- ================= KEY INTERCEPTOR ================= -->
+
+        <service
+            android:name="com.termux.x11.utils.KeyInterceptor"
+            android:exported="true"
+            android:label="XoDos KeyInterceptor"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config"/>
+        </service>
+
+        <!-- ================= PERFORMANCE FLAGS ================= -->
+
         <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
+            android:name="android.allow_multiple_resumed_activities"
+            android:value="true"/>
+
+        <meta-data
+            android:name="com.samsung.android.multidisplay.keep_process_alive"
+            android:value="true"/>
+
+        <!-- Flutter -->
+        <meta-data android:name="flutterEmbedding" android:value="2"/>
+        <meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false"/>
+
     </application>
+
+    <!-- ================= QUERIES ================= -->
+
+    <queries>
+        <package android:name="com.xodos"/>
+    </queries>
 </manifest>
