@@ -767,7 +767,7 @@ rm -rf \$PREFIX/tmp/*
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 cd
-termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &
+#termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &
 pkill -f logcat*
 unset LD_LIBRARY_PATH
 if [ -f "\$PREFIX/bin/bash" ]; then

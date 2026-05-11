@@ -714,8 +714,8 @@ export FONTCONFIG_PATH=\$PREFIX/etc/fonts
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
-pkill -f com.termux*
-pkill -f com.xodos*
+#pkill -f com.termux*
+#pkill -f com.xodos*
 pkill -f /system/bin/logcat
 unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
@@ -1027,8 +1027,7 @@ static Future<void> launchGUIBackend() async {
         // X11 is already being managed by the Flutter plugin.
         // Do NOT start a second termux-x11 process from the terminal.
         Util.termWrite("echo 'X11 is running (managed by Fix X11)'\n");
-    Util.termWrite("""pkill -f com.termux*""");
-    Util.termWrite("""pkill -f com.xodos*""");
+    
       } else {
         // Original behaviour: launch termux-x11 via shell
         Util.termWrite("""termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &""");
