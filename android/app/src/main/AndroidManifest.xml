@@ -83,18 +83,21 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
         <activity
             android:name="com.termux.x11.controller.ControlsEditorActivity"
             android:exported="false"
+            android:process=":x11"
             android:screenOrientation="sensor"
             android:theme="@style/AppTheme"/>
 
         <activity
             android:name="com.termux.x11.controller.ExternalControllerBindingsActivity"
             android:exported="false"
+            android:process=":x11"
             android:screenOrientation="sensor"
             android:theme="@style/AppTheme"/>
 
         <activity
             android:name="com.termux.x11.controller.InputControllerActivity"
             android:exported="false"
+            android:process=":x11"
             android:screenOrientation="sensor"
             android:theme="@style/AppTheme"/>
 
@@ -104,6 +107,7 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
             android:name="com.termux.x11.LoriePreferences"
             android:theme="@style/Theme.AppCompat.DayNight"
             android:excludeFromRecents="true"
+            android:process=":x11"
             android:taskAffinity=".LoriePreferences"
             android:supportsPictureInPicture="false"
             android:resizeableActivity="true"
@@ -120,6 +124,7 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
         <receiver
             android:name="com.termux.x11.LoriePreferences$Receiver"
             android:exported="true"
+            android:process=":x11"
             android:enabled="true">
             <intent-filter>
                 <action android:name="com.termux.x11.CHANGE_PREFERENCE"/>
@@ -139,6 +144,7 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
         <service
             android:name="com.termux.x11.utils.KeyInterceptor"
             android:exported="true"
+            android:process=":x11"
             android:label="XoDos KeyInterceptor"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
 

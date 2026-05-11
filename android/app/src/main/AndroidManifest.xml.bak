@@ -69,6 +69,7 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
         <activity
             android:name="com.termux.x11.MainActivity"
             android:exported="false"
+            android:process=":x11"
             android:launchMode="singleTask"
             android:supportsPictureInPicture="true"
             android:resizeableActivity="true"
@@ -130,6 +131,7 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
         <service
             android:name="com.termux.x11.HudService"
             android:enabled="true"
+            android:process=":x11"
             android:exported="false"/>
 
         <!-- ================= KEY INTERCEPTOR ================= -->
