@@ -718,8 +718,8 @@ unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
 rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
 export DISPLAY=:4
-export XDG_RUNTIME_DIR=\$PREFIX/usr/tmp/
-export X11_UNIX_PATH=\$PREFIX/usr/tmp/.X11-unix
+export XDG_RUNTIME_DIR=\$PREFIX/tmp/
+export X11_UNIX_PATH=\$PREFIX/tmp/.X11-unix
 unset LD_LIBRARY_PATH
 
 export XDG_RUNTIME_DIR=\$TMPDIR/runtime

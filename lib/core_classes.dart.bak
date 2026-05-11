@@ -711,8 +711,8 @@ export FONTCONFIG_PATH=\$PREFIX/etc/fonts
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
-pkill -f com.termux*
-pkill -f com.xodos*
+#pkill -f com.termux*
+#pkill -f com.xodos*
 pkill -f /system/bin/logcat
 unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
@@ -992,7 +992,7 @@ unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
-#pkill -f com.termux*
+pkill -f com.termux*
 pkill -f com.xodos*
 sleep 1
 #export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
