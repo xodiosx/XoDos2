@@ -1334,7 +1334,7 @@ class LocalArchiveInstaller {
     final String w = (max(s.width, s.height) * 0.75).round().toString();
     final String h = (min(s.width, s.height) * 0.75).round().toString();
     G.postCommand = '''sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
-sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \\$(command -v startvnc)
+' sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \\$(command -v startvnc)'
 
 ''';
 
