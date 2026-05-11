@@ -1131,7 +1131,7 @@ static Future<void> workflow() async {
 
   if (Util.getGlobal("logcatEnabled") as bool) {
     LogcatManager().startCapture();
-    LocalArchiveInstaller.showDialog(G.homePageStateContext);
+    LocalArchiveInstaller.showDialog(context);
   }
 
   setupAudio();                       // audio PTY (native)
