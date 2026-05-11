@@ -754,7 +754,7 @@ export prefixsh="/data/data/com.xodos/files/usr/bin/"
      export DISPLAY=:4
     export XKB_CONFIG_ROOT=\$PREFIX/share/X11/xkb
     rm -rf \$PREFIX/lib/libandroid.so
- l    export TERMUX_APP__APK_RELEASE=GITHUB
+     export TERMUX_APP__APK_RELEASE=GITHUB
     export XDG_RUNTIME_DIR=/data/data/com.xodos/files/usr/tmp
     export DXVK_LOG_PATH=/data/data/com.xodos/files/home/.cache
     export DXVK_STATE_CACHE_PATH=/data/data/com.xodos/files/home/.cache
@@ -765,7 +765,7 @@ rm -rf \$PREFIX/tmp/*
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 cd
-#termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &
+termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &
 pkill -f logcat*
 unset LD_LIBRARY_PATH
 if [ -f "\$PREFIX/bin/bash" ]; then
@@ -1025,9 +1025,11 @@ static Future<void> launchGUIBackend() async {
         // X11 is already being managed by the Flutter plugin.
         // Do NOT start a second termux-x11 process from the terminal.
         Util.termWrite("echo 'X11 is running (managed by Fix X11)'\n");
+        Util.termWrite("""pkill -f com.termux*""");
+    Util.termWrite("""pkill -f com.xodos*""");
       } else {
         // Original behaviour: launch termux-x11 via shell
-        Util.termWrite("""termux-x11 :4 -ac >> /sdcard/x11.log 2>&1 &""");
+        Util.termWrite("""termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &""");
         Util.termWrite("""sleep 1""");
       }
       
