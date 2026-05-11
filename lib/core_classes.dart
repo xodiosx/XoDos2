@@ -1131,7 +1131,7 @@ static Future<void> workflow() async {
 
   if (Util.getGlobal("logcatEnabled") as bool) {
     LogcatManager().startCapture();
-    LocalArchiveInstaller.showDialog(G.homePageStateContext);
+    LocalArchiveInstaller.showDialog(context);
   }
 
   setupAudio();                       // audio PTY (native)
@@ -1270,6 +1270,10 @@ echo "Virgl server started in background"
 // Local Archive Installer Dialog
 // =========================================================================
 
+// =========================================================================
+// Local Archive Installer Dialog
+// =========================================================================
+
 class LocalArchiveInstaller {
   static void showDialog(BuildContext context) {
     showGeneralDialog(
@@ -1291,15 +1295,23 @@ class _LocalArchiveDialog extends StatefulWidget {
 }
 
 class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
-  String _downloadDir = '/sdcard/Download';
+  final String _downloadDir = '/sdcard/Download';
   String _archivePath = '';
-  String _archiveType = ''; // '.xz' or '.gz'
+  String _archiveType = ''; // 'xz' or 'gz'
   bool _archiveFound = false;
   bool _extracting = false;
   bool _done = false;
   bool _error = false;
   String _statusMessage = '';
   double _progress = 0.0; // 0.0 to 1.0
+
+  Pty? _extractPty; // Dedicated PTY for extraction
+
+  @override
+  void dispose() {
+    _extractPty?.kill();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -1328,7 +1340,8 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       _archiveFound = true;
     } else {
       setState(() {
-        _statusMessage = 'No xodos.tar.xz or xodos.tar.gz found in $_downloadDir';
+        _statusMessage =
+            'No xodos.tar.xz or xodos.tar.gz found in $_downloadDir';
         _error = true;
       });
     }
@@ -1340,11 +1353,14 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   }
 
   Future<int> _getTotalUncompressedSize() async {
-    // Run tar tvf to get total size (third column)
+    // Quick size calculation using Process.run (no need for PTY here)
     final result = await Process.run(
       'sh',
-      ['-c',
-        'LD_LIBRARY_PATH=${G.dataPath}/usr/lib:${G.dataPath}/lib ${G.dataPath}/usr/bin/tar tvf "$_archivePath" 2>/dev/null | awk \'{ sum += \$3 } END { print sum }\''
+      [
+        '-c',
+        'LD_LIBRARY_PATH=${G.dataPath}/usr/lib:${G.dataPath}/lib '
+            '${G.dataPath}/usr/bin/tar tvf "$_archivePath" 2>/dev/null | '
+            'awk \'{ sum += \$3 } END { print sum }\''
       ],
       environment: {
         'DATA_DIR': G.dataPath,
@@ -1362,6 +1378,7 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       _extracting = true;
       _statusMessage = 'Preparing extraction...';
     });
+
     final totalSize = await _getTotalUncompressedSize();
     if (totalSize <= 0) {
       setState(() {
@@ -1371,20 +1388,12 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       });
       return;
     }
+
     final containerDir = '${G.dataPath}/containers/0';
     final decompressFlag = _archiveType == 'xz' ? '-J' : '-z';
 
-    // Construct environment and command for proot extraction
-    final env = {
-      'DATA_DIR': G.dataPath,
-      'LD_LIBRARY_PATH': '${G.dataPath}/usr/lib:${G.dataPath}/lib',
-      'PROOT_TMP_DIR': '${G.dataPath}/proot_tmp',
-      'PROOT_LOADER': '${G.dataPath}/applib/libproot-loader.so',
-      'PROOT_LOADER_32': '${G.dataPath}/applib/libproot-loader32.so',
-      'PATH': '${G.dataPath}/usr/bin:${G.dataPath}/bin:/system/bin',
-    };
-
-    final cmd = '''
+    // Build the shell script we will write to the PTY
+    final script = '''
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
@@ -1392,18 +1401,18 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:/system/bin
 cd \$DATA_DIR
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat '$_archivePath' | \$DATA_DIR/usr/bin/tar x $decompressFlag --checkpoint=1024 --checkpoint-action='echo=''%{{s}}''' --delay-directory-restore --preserve-permissions -C $containerDir"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat '$_archivePath' | \$DATA_DIR/usr/bin/tar x $decompressFlag --checkpoint=1024 --checkpoint-action='echo %{{s}}' --delay-directory-restore --preserve-permissions -C $containerDir"
+exit \$?
 ''';
 
-    final process = await Process.start(
-      'sh',
-      ['-c', cmd],
-      environment: env,
-    );
+    // Start a dedicated PTY  for the extraction
+    _extractPty = Pty.start('/system/bin/sh');
+    _extractPty!.write(const Utf8Encoder().convert(script));
 
-    // Parse stdout for checkpoint bytes
-    process.stdout
-        .transform(utf8.decoder)
+    // Listen to PTY output and parse checkpoint bytes
+    _extractPty!.output
+        .cast<List<int>>()
+        .transform(const Utf8Decoder())
         .transform(const LineSplitter())
         .listen((line) {
       final bytes = int.tryParse(line.trim());
@@ -1412,14 +1421,15 @@ cd \$DATA_DIR
         if (!mounted) return;
         setState(() {
           _progress = newProgress;
-          _statusMessage = 'Extracting... ${(newProgress * 100).toStringAsFixed(1)}%';
+          _statusMessage =
+              'Extracting... ${(newProgress * 100).toStringAsFixed(1)}%';
         });
       }
     });
 
-    // Wait for process to finish
-    final exitCode = await process.exitCode;
+    final exitCode = await _extractPty!.exitCode;
     if (!mounted) return;
+
     if (exitCode == 0) {
       setState(() {
         _done = true;
@@ -1427,7 +1437,7 @@ cd \$DATA_DIR
         _progress = 1.0;
         _statusMessage = 'Installation complete!';
       });
-      // Optional: refresh container or reboot
+      // Optionally trigger a container restart if needed:
       // Workflow.launchCurrentContainer();
     } else {
       setState(() {
@@ -1498,4 +1508,3 @@ cd \$DATA_DIR
     );
   }
 }
-
