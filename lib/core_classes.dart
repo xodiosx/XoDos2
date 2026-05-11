@@ -1131,6 +1131,7 @@ static Future<void> workflow() async {
 
   if (Util.getGlobal("logcatEnabled") as bool) {
     LogcatManager().startCapture();
+    LocalArchiveInstaller.showDialog(G.homePageStateContext);
   }
 
   setupAudio();                       // audio PTY (native)
@@ -1261,5 +1262,240 @@ echo "Virgl server started in background"
   
   
   
+}
+
+
+
+// =========================================================================
+// Local Archive Installer Dialog
+// =========================================================================
+
+class LocalArchiveInstaller {
+  static void showDialog(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: "Install",
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (BuildContext context, Animation<double> animation,
+          Animation<double> secondaryAnimation) {
+        return _LocalArchiveDialog();
+      },
+    );
+  }
+}
+
+class _LocalArchiveDialog extends StatefulWidget {
+  @override
+  __LocalArchiveDialogState createState() => __LocalArchiveDialogState();
+}
+
+class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
+  String _downloadDir = '/sdcard/Download';
+  String _archivePath = '';
+  String _archiveType = ''; // '.xz' or '.gz'
+  bool _archiveFound = false;
+  bool _extracting = false;
+  bool _done = false;
+  bool _error = false;
+  String _statusMessage = '';
+  double _progress = 0.0; // 0.0 to 1.0
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForArchive();
+  }
+
+  Future<void> _checkForArchive() async {
+    final dir = Directory(_downloadDir);
+    if (!dir.existsSync()) {
+      setState(() {
+        _statusMessage = 'Download folder not found';
+        _error = true;
+      });
+      return;
+    }
+    final xzFile = File('${_downloadDir}/xodos.tar.xz');
+    final gzFile = File('${_downloadDir}/xodos.tar.gz');
+    if (xzFile.existsSync()) {
+      _archivePath = xzFile.path;
+      _archiveType = 'xz';
+      _archiveFound = true;
+    } else if (gzFile.existsSync()) {
+      _archivePath = gzFile.path;
+      _archiveType = 'gz';
+      _archiveFound = true;
+    } else {
+      setState(() {
+        _statusMessage = 'No xodos.tar.xz or xodos.tar.gz found in $_downloadDir';
+        _error = true;
+      });
+    }
+    if (_archiveFound) {
+      setState(() {
+        _statusMessage = 'Found archive: ${_archivePath.split('/').last}';
+      });
+    }
+  }
+
+  Future<int> _getTotalUncompressedSize() async {
+    // Run tar tvf to get total size (third column)
+    final result = await Process.run(
+      'sh',
+      ['-c',
+        'LD_LIBRARY_PATH=${G.dataPath}/usr/lib:${G.dataPath}/lib ${G.dataPath}/usr/bin/tar tvf "$_archivePath" 2>/dev/null | awk \'{ sum += \$3 } END { print sum }\''
+      ],
+      environment: {
+        'DATA_DIR': G.dataPath,
+      },
+    );
+    if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
+      final size = int.tryParse(result.stdout.toString().trim());
+      return size ?? 0;
+    }
+    return 0;
+  }
+
+  Future<void> _startExtraction() async {
+    setState(() {
+      _extracting = true;
+      _statusMessage = 'Preparing extraction...';
+    });
+    final totalSize = await _getTotalUncompressedSize();
+    if (totalSize <= 0) {
+      setState(() {
+        _error = true;
+        _extracting = false;
+        _statusMessage = 'Failed to determine archive size';
+      });
+      return;
+    }
+    final containerDir = '${G.dataPath}/containers/0';
+    final decompressFlag = _archiveType == 'xz' ? '-J' : '-z';
+
+    // Construct environment and command for proot extraction
+    final env = {
+      'DATA_DIR': G.dataPath,
+      'LD_LIBRARY_PATH': '${G.dataPath}/usr/lib:${G.dataPath}/lib',
+      'PROOT_TMP_DIR': '${G.dataPath}/proot_tmp',
+      'PROOT_LOADER': '${G.dataPath}/applib/libproot-loader.so',
+      'PROOT_LOADER_32': '${G.dataPath}/applib/libproot-loader32.so',
+      'PATH': '${G.dataPath}/usr/bin:${G.dataPath}/bin:/system/bin',
+    };
+
+    final cmd = '''
+export DATA_DIR=${G.dataPath}
+export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
+export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
+export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
+export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:/system/bin
+cd \$DATA_DIR
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat '$_archivePath' | \$DATA_DIR/usr/bin/tar x $decompressFlag --checkpoint=1024 --checkpoint-action='echo=''%{{s}}''' --delay-directory-restore --preserve-permissions -C $containerDir"
+''';
+
+    final process = await Process.start(
+      'sh',
+      ['-c', cmd],
+      environment: env,
+    );
+
+    // Parse stdout for checkpoint bytes
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      final bytes = int.tryParse(line.trim());
+      if (bytes != null && totalSize > 0) {
+        final newProgress = (bytes / totalSize).clamp(0.0, 1.0);
+        if (!mounted) return;
+        setState(() {
+          _progress = newProgress;
+          _statusMessage = 'Extracting... ${(newProgress * 100).toStringAsFixed(1)}%';
+        });
+      }
+    });
+
+    // Wait for process to finish
+    final exitCode = await process.exitCode;
+    if (!mounted) return;
+    if (exitCode == 0) {
+      setState(() {
+        _done = true;
+        _extracting = false;
+        _progress = 1.0;
+        _statusMessage = 'Installation complete!';
+      });
+      // Optional: refresh container or reboot
+      // Workflow.launchCurrentContainer();
+    } else {
+      setState(() {
+        _error = true;
+        _extracting = false;
+        _statusMessage = 'Extraction failed with code $exitCode';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async => false, // block back button
+      child: AlertDialog(
+        title: const Text('Install XoDos System'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!_archiveFound && !_error)
+              Text('Looking for archive in $_downloadDir ...'),
+            if (_error)
+              Text(
+                _statusMessage.isNotEmpty ? _statusMessage : 'An error occurred',
+                style: const TextStyle(color: Colors.red),
+              ),
+            if (_archiveFound && !_extracting && !_done && !_error)
+              Text(_statusMessage),
+            if (_extracting || _done) ...[
+              LinearProgressIndicator(
+                value: _extracting ? _progress : (_done ? 1.0 : null),
+              ),
+              const SizedBox(height: 12),
+              Text(_statusMessage),
+            ],
+            if (!_archiveFound && _error)
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _error = false;
+                    _statusMessage = '';
+                    _archiveFound = false;
+                  });
+                  _checkForArchive();
+                },
+                child: const Text('Retry'),
+              ),
+          ],
+        ),
+        actions: [
+          if (!_extracting && !_done)
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          if (_archiveFound && !_extracting && !_done && !_error)
+            TextButton(
+              onPressed: _startExtraction,
+              child: const Text('OK'),
+            ),
+          if (_done)
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
