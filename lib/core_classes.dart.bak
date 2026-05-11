@@ -1029,7 +1029,7 @@ static Future<void> launchGUIBackend() async {
     Util.termWrite("""pkill -f com.xodos*""");
       } else {
         // Original behaviour: launch termux-x11 via shell
-        Util.termWrite("""termux-x11 :4 -ac >> /sdcard/x11.log 2>&1 &""");
+        Util.termWrite("""termux-x11 :4 -ac > /sdcard/x11.log 2>&1 &""");
         Util.termWrite("""sleep 1""");
       }
       
