@@ -649,25 +649,26 @@ await G.prefs.remove('extractionProgressT');
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
 
     // If this key doesn't exist, it means it's the first startup
-    // ---- First-time installation handling ----
     if (!G.prefs.containsKey("defaultContainer")) {
       try {
         await initForFirstTime(); // normal APK asset extraction
       } catch (e) {
         debugPrint('First-time setup failed: $e');
-        // Automatically show the local archive installer dialog
+        // Show the local archive installer dialog
         final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
         if (installed == true) {
           // User installed from a local archive – finalise the system
           await LocalArchiveInstaller.finalizeSystem();
+          // Mark that we are no longer at first startup
+          G.prefs.setInt("defaultContainer", 0); // ← set the missing key
         } else {
-          // Installation cancelled – exit the app
+          // Installation cancelled or failed – exit the app
           SystemChannels.platform.invokeMethod("SystemNavigator.pop");
           return; // stop further initialisation
         }
       }
-    
-      // Adjust resolution based on user's screen
+
+      // Adjust resolution … (keep this code, it runs if initForFirstTime succeeded OR after fallback)
       final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
       final String w = (max(s.width, s.height) * 0.75).round().toString();
       final String h = (min(s.width, s.height) * 0.75).round().toString();
@@ -679,7 +680,6 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
       final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
       if (languageCode != 'zh') {
         G.postCommand += "\nlocaledef -c -i en_US -f UTF-8 en_US.UTF-8";
-        // For non-Chinese users, assume they need to enable terminal write
         await G.prefs.setBool("isTerminalWriteEnabled", true);
         await G.prefs.setBool("isTerminalCommandsEnabled", true);
         await G.prefs.setBool("isStickyKey", false);
@@ -688,30 +688,30 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     //  await G.prefs.setBool("getifaddrsBridge", (await DeviceInfoPlugin().androidInfo).version.sdkInt >= 31);
     }
     
-    
     G.currentContainer = Util.getGlobal("defaultContainer") as int;
 
     // Need to reinstall bootstrap package?
     if (Util.getGlobal("reinstallBootstrap")) {
       G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.reinstallingBootPackage;
  if (Util.getGlobal("reinstallBootstrap")) {
-      try {
+try {
         await initForFirstTime(); // normal APK asset extraction
       } catch (e) {
         debugPrint('First-time setup failed: $e');
-        // Automatically show the local archive installer dialog
+        // Show the local archive installer dialog
         final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
         if (installed == true) {
           // User installed from a local archive – finalise the system
           await LocalArchiveInstaller.finalizeSystem();
-          G.prefs.setBool("reinstallBootstrap", false);
+          // Mark that we are no longer at first startup
+          G.prefs.setInt("defaultContainer", 0); // ← set the missing key
+G.prefs.setBool("reinstallBootstrap", false);
         } else {
-          // Installation cancelled – exit the app
+          // Installation cancelled or failed – exit the app
           SystemChannels.platform.invokeMethod("SystemNavigator.pop");
           return; // stop further initialisation
         }
       }
-    }
       
     }
 
@@ -1306,6 +1306,73 @@ echo "Virgl server started in background"
 // Local Archive Installer Dialog
 // =========================================================================
 
+// =========================================================================
+// Local Archive Installer Dialog
+// =========================================================================
+
+class LocalArchiveInstaller {
+
+  /// Shows the dialog and returns `true` when the user successfully
+  /// extracted an archive, `false` when cancelled, and `null` on error.
+  static Future<bool?> showDialog(BuildContext context) {
+    return showGeneralDialog<bool?>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: "Install",
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (BuildContext context, Animation<double> animation,
+          Animation<double> secondaryAnimation) {
+        return _LocalArchiveDialog();
+      },
+    );
+  }
+
+  /// Post‑installation finalisation – mirrors the end of `initForFirstTime`.
+  static Future<void> finalizeSystem() async {
+    // Adjust resolution based on user's screen
+    final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
+    final String w = (max(s.width, s.height) * 0.75).round().toString();
+    final String h = (min(s.width, s.height) * 0.75).round().toString();
+    G.postCommand = '''sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
+sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \\$(command -v startvnc)
+
+''';
+
+    final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
+    if (languageCode != 'zh') {
+      G.postCommand += "\nlocaledef -c -i en_US -f UTF-8 en_US.UTF-8";
+      await G.prefs.setBool("isTerminalWriteEnabled", true);
+      await G.prefs.setBool("isTerminalCommandsEnabled", true);
+      await G.prefs.setBool("isStickyKey", false);
+      await G.prefs.setBool("wakelock", true);
+    }
+
+    // Use LanguageManager for proper language support
+    final groupedCommands = LanguageManager.getGroupedCommandsForLanguage(languageCode);
+    final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
+
+    await G.prefs.setStringList("containersInfo", ["""{
+"name":"XoDos Rebirth",
+"boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
+"vnc":"startnovnc &",
+"vncUrl":"http://localhost:36082/vnc.html?host=localhost&port=36082&autoconnect=true&resize=remote&password=12345678",
+"commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))},
+"groupedCommands":${jsonEncode(groupedCommands)},
+"groupedWineCommands":${jsonEncode(groupedWineCommands)}
+}"""]);
+
+    G.prefs.setBool("reinstallBootstrap", false);
+
+    // Clean any stale progress flag
+    await G.prefs.remove('extractionProgressT');
+  }
+}
+
+class _LocalArchiveDialog extends StatefulWidget {
+  @override
+  __LocalArchiveDialogState createState() => __LocalArchiveDialogState();
+}
+
 class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   final String _downloadDir = '/sdcard/Download';
   String _archivePath = '';
@@ -1405,23 +1472,17 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
         final lines = const LineSplitter().convert(output);
 
         if (_archiveType == 'xz') {
-          // xz -l output example:
-          // Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename
-          //     1       6    268.0 MiB    964.9 MiB  0.278  CRC64   /path/file.tar.xz
           if (lines.length >= 2) {
             final parts = lines[1].trim().split(RegExp(r'\s+'));
             if (parts.length >= 5) {
-              return _parseSize(parts[3]); // uncompressed size (column 4)
+              return _parseSize(parts[3]);
             }
           }
         } else {
-          // gzip -l output example:
-          // compressed        uncompressed  ratio uncompressed_name
-          //   281018368            1012602880  72.2% /path/file.tar
+          // gzip -l output
           if (lines.length >= 2) {
             final parts = lines.last.trim().split(RegExp(r'\s+'));
             if (parts.length >= 3) {
-              // uncompressed is the second column, just bytes (no unit)
               return int.tryParse(parts[1]) ?? 0;
             }
           }
