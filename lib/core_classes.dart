@@ -241,6 +241,7 @@ class Util {
   // Timeout reached – X11 server never appeared.
   // Fall back gracefully: disable X11 and switch to VNC
   debugPrint('⚠️ X11 server did not start in time – falling back to VNC');
+  await G.prefs.setBool("Fix_x11", true);
   //  uncomment the fallback logic if you want automatic switching.
   // G.wasX11Enabled = false;
   // G.wasAvncEnabled = true;
@@ -711,8 +712,8 @@ export FONTCONFIG_PATH=\$PREFIX/etc/fonts
 export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf 
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
-#pkill -f com.termux*
-#pkill -f com.xodos*
+pkill -f com.termux*
+pkill -f com.xodos*
 pkill -f /system/bin/logcat
 unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test

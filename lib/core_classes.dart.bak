@@ -241,6 +241,7 @@ class Util {
   // Timeout reached – X11 server never appeared.
   // Fall back gracefully: disable X11 and switch to VNC
   debugPrint('⚠️ X11 server did not start in time – falling back to VNC');
+  await G.prefs.setBool("Fix_x11", true);
   //  uncomment the fallback logic if you want automatic switching.
   // G.wasX11Enabled = false;
   // G.wasAvncEnabled = true;
@@ -718,8 +719,8 @@ unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
 rm -f /data/data/com.xodos/files/usr/tmp/.virgl_test
 export DISPLAY=:4
-export XDG_RUNTIME_DIR=\$PREFIX/usr/tmp/
-export X11_UNIX_PATH=\$PREFIX/usr/tmp/.X11-unix
+export XDG_RUNTIME_DIR=\$PREFIX/tmp/
+export X11_UNIX_PATH=\$PREFIX/tmp/.X11-unix
 unset LD_LIBRARY_PATH
 
 export XDG_RUNTIME_DIR=\$TMPDIR/runtime
