@@ -656,21 +656,25 @@ await G.prefs.remove('extractionProgressT');
     // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
       try {
-        await initForFirstTime(); // normal APK asset extraction
-      } catch (e) {
-        debugPrint('First-time setup failed: $e');
-        // Show the local archive installer dialog
+        
+      // Show the local archive installer dialog
         final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
         if (installed == true) {
           // User installed from a local archive – finalise the system
           await LocalArchiveInstaller.finalizeSystem();
           // Mark that we are no longer at first startup
           G.prefs.setInt("defaultContainer", 0); // ← set the missing key
+G.prefs.setBool("reinstallBootstrap", false);
         } else {
-          // Installation cancelled or failed – exit the app
-          SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+          // Installation cancelled or failed – 
+await initForFirstTime(); // normal APK asset extraction
+          
           return; // stop further initialisation
         }
+      } catch (e) {
+        debugPrint('First-time setup failed: $e');
+  SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+      }
       }
 
       // Adjust resolution … (keep this code, it runs if initForFirstTime succeeded OR after fallback)
@@ -700,10 +704,8 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
       G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.reinstallingBootPackage;
  if (Util.getGlobal("reinstallBootstrap")) {
 try {
-        await initForFirstTime(); // normal APK asset extraction
-      } catch (e) {
-        debugPrint('First-time setup failed: $e');
-        // Show the local archive installer dialog
+        
+      // Show the local archive installer dialog
         final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
         if (installed == true) {
           // User installed from a local archive – finalise the system
@@ -712,10 +714,14 @@ try {
           G.prefs.setInt("defaultContainer", 0); // ← set the missing key
 G.prefs.setBool("reinstallBootstrap", false);
         } else {
-          // Installation cancelled or failed – exit the app
-          SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+          // Installation cancelled or failed – 
+await initForFirstTime(); // normal APK asset extraction
+          
           return; // stop further initialisation
         }
+      } catch (e) {
+        debugPrint('First-time setup failed: $e');
+  SystemChannels.platform.invokeMethod("SystemNavigator.pop");
       }
       
     }
