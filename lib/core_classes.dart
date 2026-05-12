@@ -1524,7 +1524,30 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
     }
 
     // ----- 2. Create symlinks and unzip the binaries -----
+    
     try {
+    Util.createDirFromString("${G.dataPath}/share");
+     Util.createDirFromString("${G.dataPath}/home");
+  //    Util.createDirFromString("${G.dataPath}/bin");
+    // Folder for storing executable files
+    Util.createDirFromString("${G.dataPath}/usr/bin");
+    // Folder for storing libraries
+    Util.createDirFromString("${G.dataPath}/usr/lib");
+    // Folder to be mounted to /dev/shm
+    Util.createDirFromString("${G.dataPath}/usr/tmp");
+    Util.createDirFromString("${G.dataPath}/tmp");
+    // tmp folder for proot, though I don't know why proot needs this
+    Util.createDirFromString("${G.dataPath}/proot_tmp");
+    // tmp folder for pulseaudio
+    Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
+    
+    await Util.copyAsset(
+    "assets/assets.zip",
+    "${G.dataPath}/assets.zip",
+    );
+        print("preparing system environment ");
+    Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+
       final prepResult = await Util.execute(
         '''
 export DATA_DIR=${G.dataPath}
