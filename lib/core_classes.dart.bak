@@ -1329,7 +1329,8 @@ class LocalArchiveInstaller {
       },
     );
   }
-
+    LogcatManager().startCapture();
+    
   static Future<void> finalizeSystem() async {
     final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
     final String w = (max(s.width, s.height) * 0.75).round().toString();
@@ -1603,7 +1604,7 @@ cd \$DATA_DIR
 
 if [ -f "/sdcard/Download/proot.tar.xz" ]; then
 export CONTAINER_DIR=\$DATA_DIR/containers/0
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar /sdcard/Download/proot.tar.x -xf --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C  /data/data/com.xodos/files/containers/0"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar /sdcard/Download/proot.tar.xz -xf --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C  /data/data/com.xodos/files/containers/0"
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"

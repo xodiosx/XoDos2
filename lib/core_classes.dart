@@ -652,7 +652,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
 
 await G.prefs.remove('extractionProgressT');    
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
-
+LogcatManager().startCapture();
     // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
       // Show the local archive installer dialog
@@ -1329,7 +1329,7 @@ class LocalArchiveInstaller {
       },
     );
   }
-    LogcatManager().startCapture();
+    
     
   static Future<void> finalizeSystem() async {
     final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
