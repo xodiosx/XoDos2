@@ -1609,7 +1609,7 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 cd \$DATA_DIR
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "
+
   \$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
   # Fix permissions and user/group as in original script
   #Script from proot-distro
