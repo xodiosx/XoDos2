@@ -28,6 +28,7 @@
   "attention": "Notice",
   "confirmResetCommand": "Reset startup command?",
   "cancel": "Cancel",
+    "no": "no",
   "yes": "Yes",
   "signal9ErrorPage": "Signal9 Error Page",
   "containerName": "Container Name",

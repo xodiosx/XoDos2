@@ -1758,7 +1758,7 @@ exit \$?
         title: Text(loc.prootPromptTitle),
         content: Text(loc.prootPromptMessage),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.no)),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.yes)),
         ],
       ),

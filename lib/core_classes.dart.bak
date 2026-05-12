@@ -1312,8 +1312,8 @@ echo "Virgl server started in background"
 }
 
 
-/// =========================================================================
-// Local Archive Installer Dialog (with proot prompt)
+// =========================================================================
+// Local Archive Installer Dialog (with proot prompt) – localized version
 // =========================================================================
 
 class LocalArchiveInstaller {
@@ -1321,7 +1321,7 @@ class LocalArchiveInstaller {
     return showGeneralDialog<bool?>(
       context: context,
       barrierDismissible: false,
-      barrierLabel: "Install",
+      barrierLabel: AppLocalizations.of(context)!.installTitle,
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (BuildContext context, Animation<double> animation,
           Animation<double> secondaryAnimation) {
@@ -1406,9 +1406,10 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
 
   Future<void> _checkForArchive() async {
     final dir = Directory(_downloadDir);
+    final loc = AppLocalizations.of(context)!;
     if (!dir.existsSync()) {
       setState(() {
-        _statusMessage = 'Download folder not found';
+        _statusMessage = loc.downloadFolderNotFound;
         _error = true;
       });
       return;
@@ -1426,17 +1427,16 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
     } else {
       setState(() {
         _noArchiveFallback = true;
-        _statusMessage =
-            'XoDos system archive not found in Download folder. Installing basic shell instead.';
+        _statusMessage = loc.fallbackNoArchive;
       });
       return;
     }
     setState(() {
-      _statusMessage = 'Found archive: ${_archivePath.split('/').last}';
+      _statusMessage = loc.foundArchive(_archivePath.split('/').last);
     });
   }
 
-  // --- size parsing (same as before) ---
+  // --- size parsing (unchanged) ---
   int _parseSize(String str) {
     final match = RegExp(r'^([\d.]+)\s*([A-Za-z]*)').firstMatch(str.trim());
     if (match == null) return 0;
@@ -1492,12 +1492,10 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
     return 0;
   }
 
-  // --- environment setup (same as before) ---
+  // --- environment setup (unchanged) ---
   Future<bool> _setupEnvironment() async {
     try {
-      // copy assets.zip
       await Util.copyAsset("assets/assets.zip", "${G.dataPath}/assets.zip");
-      // create required directories
       Util.createDirFromString("${G.dataPath}/share");
       Util.createDirFromString("${G.dataPath}/home");
       Util.createDirFromString("${G.dataPath}/usr/bin");
@@ -1583,7 +1581,7 @@ exit \$?
       if (percent != null && mounted) {
         setState(() {
           _progress = (percent / 100.0).clamp(0.0, 1.0);
-          _statusMessage = 'Installing... ${percent.toStringAsFixed(0)}%';
+          _statusMessage = AppLocalizations.of(context)!.installingProgress(percent.toStringAsFixed(0));
         });
       }
     });
@@ -1593,7 +1591,7 @@ exit \$?
     return completer.future;
   }
 
-  // --- proot.tar.xz extraction using proot + pv ---
+  // --- proot.tar.xz extraction ---
   Future<int> _extractProotArchive() async {
     const prootPath = '/sdcard/Download/proot.tar.xz';
     final prootSize = await _getTotalUncompressedSize(prootPath, 'xz');
@@ -1611,8 +1609,7 @@ export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 cd \$DATA_DIR
 
   \$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
-  # Fix permissions and user/group as in original script
-  #Script from proot-distro
+  # Fix permissions and user/group
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
 echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
@@ -1630,13 +1627,13 @@ done
 sleep 1
 exit \$?
 ''';
-    _extractPty?.kill(); // close previous PTY if any
+    _extractPty?.kill();
     _extractPty = Pty.start('/system/bin/sh');
     _extractPty!.write(const Utf8Encoder().convert(script));
-    // Reset progress for new extraction
+    final loc = AppLocalizations.of(context)!;
     setState(() {
       _progress = 0.0;
-      _statusMessage = 'Installing proot system...';
+      _statusMessage = loc.prootProgress('0');
     });
     final completer = Completer<int>();
     _extractPty!.output
@@ -1648,7 +1645,7 @@ exit \$?
       if (percent != null && mounted) {
         setState(() {
           _progress = (percent / 100.0).clamp(0.0, 1.0);
-          _statusMessage = 'Proot: ${percent.toStringAsFixed(0)}%';
+          _statusMessage = loc.prootProgress(percent.toStringAsFixed(0));
         });
       }
     });
@@ -1660,11 +1657,11 @@ exit \$?
 
   // --- main entry point ---
   Future<void> _startMainAction() async {
+    final loc = AppLocalizations.of(context)!;
     if (_noArchiveFallback) {
-      // Only install basic shell
       setState(() {
         _extracting = true;
-        _statusMessage = 'Installing basic shell...';
+        _statusMessage = loc.installingBasicShell;
       });
       final ok = await _setupEnvironment();
       if (!mounted) return;
@@ -1673,13 +1670,13 @@ exit \$?
           _done = true;
           _extracting = false;
           _progress = 1.0;
-          _statusMessage = 'Basic shell installed.';
+          _statusMessage = loc.basicShellInstalled;
         });
       } else {
         setState(() {
           _error = true;
           _extracting = false;
-          _statusMessage = 'Failed to install basic shell.';
+          _statusMessage = loc.basicShellFailed;
         });
       }
       return;
@@ -1689,43 +1686,39 @@ exit \$?
     setState(() {
       _extracting = true;
     });
-    // 1. Setup environment
     final envOk = await _setupEnvironment();
     if (!mounted) return;
     if (!envOk) {
       setState(() {
         _error = true;
         _extracting = false;
-        _statusMessage = 'Environment setup failed';
+        _statusMessage = loc.environmentSetupFailed;
       });
       return;
     }
-    // 2. Compute size
-    setState(() { _statusMessage = 'Calculating size...'; });
+    setState(() { _statusMessage = loc.calculatingSize; });
     final totalSize = await _getTotalUncompressedSize(_archivePath, _archiveType);
     if (!mounted) return;
     if (totalSize <= 0) {
       setState(() {
         _error = true;
         _extracting = false;
-        _statusMessage = 'Cannot determine archive size – check integrity';
+        _statusMessage = loc.cannotDetermineSize;
       });
       return;
     }
-    // 3. Extract main archive
     final mainExit = await _extractMainArchive(totalSize);
     if (!mounted) return;
     if (mainExit != 0) {
       setState(() {
         _error = true;
         _extracting = false;
-        _statusMessage = 'Extraction failed with code $mainExit';
+        _statusMessage = loc.extractionFailed(mainExit.toString());
       });
       return;
     }
-    // 4. Check for proot.tar.xz in Download
+    // Check for proot.tar.xz
     if (File('$_downloadDir/proot.tar.xz').existsSync()) {
-      // Ask the user
       final installProot = await _showProotPrompt();
       if (installProot == true) {
         final prootExit = await _extractProotArchive();
@@ -1735,37 +1728,38 @@ exit \$?
             _done = true;
             _extracting = false;
             _progress = 1.0;
-            _statusMessage = 'Installation complete (including proot).';
+            _statusMessage = loc.installationCompleteWithProot;
           });
         } else {
           setState(() {
             _error = true;
             _extracting = false;
-            _statusMessage = 'Proot extraction failed with code $prootExit';
+            _statusMessage = loc.extractionFailed(prootExit.toString());
           });
         }
         return;
       }
     }
-    // No proot or user cancelled → just finish
+    // No proot or cancelled
     setState(() {
       _done = true;
       _extracting = false;
       _progress = 1.0;
-      _statusMessage = 'Installation complete!';
+      _statusMessage = loc.installationComplete;
     });
   }
 
   Future<bool?> _showProotPrompt() async {
+    final loc = AppLocalizations.of(context)!;
     return await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Proot system found'),
-        content: const Text('Do you want to install the Proot system from the download folder?'),
+        title: Text(loc.prootPromptTitle),
+        content: Text(loc.prootPromptMessage),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.no)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.yes)),
         ],
       ),
     );
@@ -1773,20 +1767,21 @@ exit \$?
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return WillPopScope(
       onWillPop: () async => false,
       child: AlertDialog(
-        title: const Text('Install XoDos System'),
+        title: Text(loc.installTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (_noArchiveFallback && !_extracting && !_done) ...[
+            if (_noArchiveFallback && !_extracting && !_done)
               Text(_statusMessage),
-            ] else if (!_archiveFound && !_noArchiveFallback && !_error)
-              Text('Looking for archive in $_downloadDir ...'),
+            if (!_archiveFound && !_noArchiveFallback && !_error)
+              Text(loc.lookingForArchive(_downloadDir)),
             if (_error)
               Text(
-                _statusMessage.isNotEmpty ? _statusMessage : 'An error occurred',
+                _statusMessage.isNotEmpty ? _statusMessage : loc.errorOccurred,
                 style: const TextStyle(color: Colors.red),
               ),
             if (_archiveFound && !_extracting && !_done && !_error)
@@ -1798,7 +1793,6 @@ exit \$?
               const SizedBox(height: 12),
               Text(_statusMessage),
             ],
-            // Show retry only for real errors, not fallback
             if (_error && !_noArchiveFallback)
               TextButton(
                 onPressed: () {
@@ -1810,7 +1804,7 @@ exit \$?
                   });
                   _checkForArchive();
                 },
-                child: const Text('Retry'),
+                child: Text(loc.retry),
               ),
           ],
         ),
@@ -1818,23 +1812,22 @@ exit \$?
           if (!_extracting && !_done)
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(loc.cancel),
             ),
-          // Show OK for fallback (basic shell) or for found archive + not extracting
           if (_noArchiveFallback && !_extracting && !_done)
             TextButton(
               onPressed: _startMainAction,
-              child: const Text('OK'),
+              child: Text(loc.ok),
             ),
           if (_archiveFound && !_extracting && !_done && !_error)
             TextButton(
               onPressed: _startMainAction,
-              child: const Text('OK'),
+              child: Text(loc.ok),
             ),
           if (_done)
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Close'),
+              child: Text(loc.close),
             ),
         ],
       ),

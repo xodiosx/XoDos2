@@ -29,6 +29,7 @@
   "attention": "ملاحظة",
   "confirmResetCommand": "إعادة تعيين أمر التشغيل؟",
   "cancel": "إلغاء",
+  "no": "إلغاء",
   "yes": "نعم",
   "signal9ErrorPage": "صفحة خطأ Signal9",
   "containerName": "اسم الحاوية",
