@@ -720,6 +720,8 @@ G.prefs.setBool("reinstallBootstrap", false);
       }
           // Installation cancelled or failed – exit the app         
         }
+        
+        
 }
     // What graphical interface is enabled?
     if (Util.getGlobal("useX11")) {
