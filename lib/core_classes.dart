@@ -702,7 +702,6 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
     if (Util.getGlobal("reinstallBootstrap")) {
       G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.reinstallingBootPackage;
 
-  if (Util.getGlobal("reinstallBootstrap")) {
       // Show the local archive installer dialog
         final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
         if (installed == true) {
@@ -721,6 +720,8 @@ G.prefs.setBool("reinstallBootstrap", false);
       }
           // Installation cancelled or failed – exit the app         
         }
+        
+        
 }
     // What graphical interface is enabled?
     if (Util.getGlobal("useX11")) {
