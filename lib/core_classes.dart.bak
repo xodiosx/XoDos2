@@ -1568,6 +1568,7 @@ if [ "$_archiveType" = "xz" ]; then
 else
   \$DATA_DIR/usr/bin/gzip -dc '$_archivePath' | \$DATA_DIR/usr/bin/pv -n -s $totalSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR"
 fi
+\$DATA_DIR/usr/bin/busybox rm -rf assets.zip
 exit \$?
 ''';
     _extractPty = Pty.start('/system/bin/sh');
@@ -1597,7 +1598,7 @@ exit \$?
     const prootPath = '/sdcard/Download/proot.tar.xz';
     final prootSize = await _getTotalUncompressedSize(prootPath, 'xz');
     if (prootSize <= 0) {
-      debugPrint('Failed to get proot.tar.xz uncompressed size');
+      debugPrint('Failed to get proot.tar.xz size');
       return 1;
     }
     final script = '''
@@ -1611,20 +1612,22 @@ cd \$DATA_DIR
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "
   xz -dc '$prootPath' | pv -n -s $prootSize | tar -xf - --delay-directory-restore --preserve-permissions -C \$DATA_DIR/containers/0
   # Fix permissions and user/group as in original script
-  chmod u+rw '\$DATA_DIR/containers/0/etc/passwd' '\$DATA_DIR/containers/0/etc/shadow' '\$DATA_DIR/containers/0/etc/group' '\$DATA_DIR/containers/0/etc/gshadow'
-  echo 'aid_'\$(id -un)':x:'\$(id -u)':'$(id -g)':Termux:/:/sbin/nologin' >> '\$DATA_DIR/containers/0/etc/passwd'
-  echo 'aid_'\$(id -un)':*:18446:0:99999:7:::' >> '\$DATA_DIR/containers/0/etc/shadow'
-  id -Gn | tr ' ' '\\n' > tmp1
-  id -G | tr ' ' '\\n' > tmp2
-  paste tmp1 tmp2 > tmp3
-  while read -r group_name group_id; do
-    echo 'aid_'\${group_name}':x:'\${group_id}':root,aid_'\$(id -un) >> '\$DATA_DIR/containers/0/etc/group'
-    if [ -f '\$DATA_DIR/containers/0/etc/gshadow' ]; then
-      echo 'aid_'\${group_name}':*::root,aid_'\$(id -un) >> '\$DATA_DIR/containers/0/etc/gshadow'
-    fi
-  done < tmp3
-  rm -f tmp1 tmp2 tmp3
-"
+  #Script from proot-distro
+chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
+echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
+echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
+id -Gn | tr ' ' '\\n' > tmp1
+id -G | tr ' ' '\\n' > tmp2
+\$DATA_DIR/usr/bin/busybox paste tmp1 tmp2 > tmp3
+local group_name group_id
+cat tmp3 | while read -r group_name group_id; do
+	echo "aid_\${group_name}:x:\${group_id}:root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/group"
+	if [ -f "\$CONTAINER_DIR/etc/gshadow" ]; then
+		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
+	fi
+done
+\$DATA_DIR/usr/bin/busybox rm -rf proot.tar* tmp1 tmp2 tmp3 assets.zip
+sleep 1
 exit \$?
 ''';
     _extractPty?.kill(); // close previous PTY if any
@@ -1759,7 +1762,7 @@ exit \$?
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Proot system found'),
-        content: const Text('Do you want to install the proot system from the download folder?'),
+        content: const Text('Do you want to install the Proot system from the download folder?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes')),

@@ -1610,7 +1610,7 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 cd \$DATA_DIR
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "
-  xz -dc '$prootPath' | pv -n -s $prootSize | tar -xf - --delay-directory-restore --preserve-permissions -C \$DATA_DIR/containers/0
+  \$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
   # Fix permissions and user/group as in original script
   #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
