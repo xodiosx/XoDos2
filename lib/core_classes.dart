@@ -605,7 +605,7 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "
-cd /data/data/com.xodos/files || true
+cd /data/data/com.xodos/files || tr
 
 FILES=\$(ls xa* 2>/dev/null)
 
@@ -620,7 +620,7 @@ else
 fi
 "
 
-[ -f "$DATA_DIR/xodos.tar.xz" ] && \
+[ -f "\$DATA_DIR/xodos.tar.xz" ] && \
 \$DATA_DIR/usr/bin/tar -xf \$DATA_DIR/xodos.tar.xz \
   --delay-directory-restore \
   --preserve-permissions \
