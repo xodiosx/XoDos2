@@ -1309,19 +1309,13 @@ echo "Virgl server started in background"
 }
 
 
-
-// =========================================================================
-// Local Archive Installer Dialog
-// =========================================================================
-
 // =========================================================================
 // Local Archive Installer Dialog
 // =========================================================================
 
 class LocalArchiveInstaller {
-
   /// Shows the dialog and returns `true` when the user successfully
-  /// extracted an archive, `false` when cancelled, and `null` on error.
+  /// extracted an archive, `false` when cancelled.
   static Future<bool?> showDialog(BuildContext context) {
     return showGeneralDialog<bool?>(
       context: context,
@@ -1337,17 +1331,17 @@ class LocalArchiveInstaller {
 
   /// Post‑installation finalisation – mirrors the end of `initForFirstTime`.
   static Future<void> finalizeSystem() async {
-    // Adjust resolution based on user's screen
     final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
     final String w = (max(s.width, s.height) * 0.75).round().toString();
     final String h = (min(s.width, s.height) * 0.75).round().toString();
-    
+
     G.postCommand = """sed -i -E "s@(geometry)=.*@\\\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
 sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 
 """;
 
-    final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
+    final languageCode =
+        Localizations.localeOf(G.homePageStateContext).languageCode;
     if (languageCode != 'zh') {
       G.postCommand += "\nlocaledef -c -i en_US -f UTF-8 en_US.UTF-8";
       await G.prefs.setBool("isTerminalWriteEnabled", true);
@@ -1356,11 +1350,13 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
       await G.prefs.setBool("wakelock", true);
     }
 
-    // Use LanguageManager for proper language support
-    final groupedCommands = LanguageManager.getGroupedCommandsForLanguage(languageCode);
-    final groupedWineCommands = LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
+    final groupedCommands =
+        LanguageManager.getGroupedCommandsForLanguage(languageCode);
+    final groupedWineCommands =
+        LanguageManager.getGroupedWineCommandsForLanguage(languageCode);
 
-    await G.prefs.setStringList("containersInfo", ["""{
+    await G.prefs.setStringList("containersInfo", [
+      """{
 "name":"XoDos Rebirth",
 "boot":"${LanguageManager.getBootCommandForLanguage(languageCode)}",
 "vnc":"startnovnc &",
@@ -1368,11 +1364,10 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 "commands":${jsonEncode(LanguageManager.getCommandsForLanguage(languageCode))},
 "groupedCommands":${jsonEncode(groupedCommands)},
 "groupedWineCommands":${jsonEncode(groupedWineCommands)}
-}"""]);
+}"""
+    ]);
 
     G.prefs.setBool("reinstallBootstrap", false);
-
-    // Clean any stale progress flag
     await G.prefs.remove('extractionProgressT');
   }
 }
@@ -1442,22 +1437,24 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
 
   /// Parses a size string like "964.9 MiB" or "268.0 MiB" into bytes.
   int _parseSize(String str) {
-    final regex = RegExp(r'^([\d.]+)\s*([A-Za-z]*)');
-    final match = regex.firstMatch(str.trim());
+    final match = RegExp(r'^([\d.]+)\s*([A-Za-z]*)').firstMatch(str.trim());
     if (match == null) return 0;
 
     final value = double.tryParse(match.group(1)!);
     if (value == null) return 0;
 
-    final unit = (match.group(2) ?? '').toUpperCase();
+    final unit = (match.group(2) ?? '').toLowerCase();
     switch (unit) {
-      case 'KIB':
+      case 'kib':
         return (value * 1024).round();
-      case 'MIB':
+      case 'mib':
         return (value * 1024 * 1024).round();
-      case 'GIB':
+      case 'gib':
         return (value * 1024 * 1024 * 1024).round();
-      default: // assume bytes
+      case 'b':
+      case '':
+        return value.round();
+      default:
         return value.round();
     }
   }
@@ -1467,10 +1464,10 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       final binary = _archiveType == 'xz'
           ? '${G.dataPath}/usr/bin/xz'
           : '${G.dataPath}/usr/bin/gzip';
-      final flag = '-l';
+
       final result = await Process.run(
         binary,
-        [flag, _archivePath],
+        ['-l', _archivePath],
         environment: {
           'LD_LIBRARY_PATH': '${G.dataPath}/usr/lib:${G.dataPath}/lib',
         },
@@ -1481,17 +1478,20 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
         final lines = const LineSplitter().convert(output);
 
         if (_archiveType == 'xz') {
+          // Sample line: 1  6  268.0 MiB  964.9 MiB  0.278  CRC64  /path/file.tar.xz
           if (lines.length >= 2) {
             final parts = lines[1].trim().split(RegExp(r'\s+'));
-            if (parts.length >= 5) {
-              return _parseSize(parts[3]);
+            if (parts.length >= 7) {
+              // uncompressed size is parts[4] + parts[5]
+              return _parseSize('${parts[4]} ${parts[5]}');
             }
           }
-        } else {
-          // gzip -l output
+        } else if (_archiveType == 'gz') {
+          // Sample line: 46492807  100055040  53.5%  /path/file.tar
           if (lines.length >= 2) {
-            final parts = lines.last.trim().split(RegExp(r'\s+'));
+            final parts = lines[1].trim().split(RegExp(r'\s+'));
             if (parts.length >= 3) {
+              // uncompressed size is parts[1] and already in bytes
               return int.tryParse(parts[1]) ?? 0;
             }
           }
@@ -1504,7 +1504,7 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   }
 
   Future<void> _startExtraction() async {
-  setState(() {
+    setState(() {
       _extracting = true;
       _statusMessage = 'Preparing system environment...';
     });
@@ -1522,7 +1522,6 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
     }
 
     // ----- 2. Create symlinks and unzip the binaries -----
-    // (identical to the first‑time setup, ensures proot/tar/xz are ready)
     final prepScript = '''
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
@@ -1602,7 +1601,28 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:/system/bin
 cd \$DATA_DIR
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat '$_archivePath' | \$DATA_DIR/usr/bin/tar x $decompressFlag --checkpoint=1024 --checkpoint-action='echo %{{s}}' --delay-directory-restore --preserve-permissions -C \$DATA_DIR"
+\$DATA_DIR/usr/bin/tar '$_archivePath' -xf --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C \$DATA_DIR
+
+if [ -f "/sdcard/Download/proot.tar.xz" ]; then
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar /sdcard/Download/proot.tar.x -xf --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C  /data/data/com.xodos/files/containers/0"
+#Script from proot-distro
+chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
+echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
+echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
+id -Gn | tr ' ' '\\n' > tmp1
+id -G | tr ' ' '\\n' > tmp2
+\$DATA_DIR/usr/bin/busybox paste tmp1 tmp2 > tmp3
+local group_name group_id
+cat tmp3 | while read -r group_name group_id; do
+	echo "aid_\${group_name}:x:\${group_id}:root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/group"
+	if [ -f "\$CONTAINER_DIR/etc/gshadow" ]; then
+		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
+	fi
+done
+\$DATA_DIR/usr/bin/busybox rm -rf proot.tar* tmp1 tmp2 tmp3 assets.zip
+sleep 1
+fi
+
 exit \$?
 ''';
 
@@ -1707,4 +1727,3 @@ exit \$?
     );
   }
 }
-

@@ -1312,10 +1312,11 @@ echo "Virgl server started in background"
 // =========================================================================
 // Local Archive Installer Dialog
 // =========================================================================
+// =========================================================================
+// Local Archive Installer Dialog
+// =========================================================================
 
 class LocalArchiveInstaller {
-  /// Shows the dialog and returns `true` when the user successfully
-  /// extracted an archive, `false` when cancelled.
   static Future<bool?> showDialog(BuildContext context) {
     return showGeneralDialog<bool?>(
       context: context,
@@ -1329,7 +1330,6 @@ class LocalArchiveInstaller {
     );
   }
 
-  /// Post‑installation finalisation – mirrors the end of `initForFirstTime`.
   static Future<void> finalizeSystem() async {
     final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
     final String w = (max(s.width, s.height) * 0.75).round().toString();
@@ -1380,7 +1380,7 @@ class _LocalArchiveDialog extends StatefulWidget {
 class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   final String _downloadDir = '/sdcard/Download';
   String _archivePath = '';
-  String _archiveType = ''; // 'xz' or 'gz'
+  String _archiveType = '';
   bool _archiveFound = false;
   bool _extracting = false;
   bool _done = false;
@@ -1435,7 +1435,6 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
     }
   }
 
-  /// Parses a size string like "964.9 MiB" or "268.0 MiB" into bytes.
   int _parseSize(String str) {
     final match = RegExp(r'^([\d.]+)\s*([A-Za-z]*)').firstMatch(str.trim());
     if (match == null) return 0;
@@ -1445,15 +1444,15 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
 
     final unit = (match.group(2) ?? '').toLowerCase();
     switch (unit) {
+      case 'b':
+      case '':
+        return value.round();
       case 'kib':
         return (value * 1024).round();
       case 'mib':
         return (value * 1024 * 1024).round();
       case 'gib':
         return (value * 1024 * 1024 * 1024).round();
-      case 'b':
-      case '':
-        return value.round();
       default:
         return value.round();
     }
@@ -1473,28 +1472,28 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
         },
       );
 
-      if (result.exitCode == 0) {
-        final output = result.stdout.toString();
-        final lines = const LineSplitter().convert(output);
+      debugPrint('size cmd exit=${result.exitCode}');
+      debugPrint('size cmd stdout:\n${result.stdout}');
+      debugPrint('size cmd stderr:\n${result.stderr}');
 
-        if (_archiveType == 'xz') {
-          // Sample line: 1  6  268.0 MiB  964.9 MiB  0.278  CRC64  /path/file.tar.xz
-          if (lines.length >= 2) {
-            final parts = lines[1].trim().split(RegExp(r'\s+'));
-            if (parts.length >= 7) {
-              // uncompressed size is parts[4] + parts[5]
-              return _parseSize('${parts[4]} ${parts[5]}');
-            }
-          }
-        } else if (_archiveType == 'gz') {
-          // Sample line: 46492807  100055040  53.5%  /path/file.tar
-          if (lines.length >= 2) {
-            final parts = lines[1].trim().split(RegExp(r'\s+'));
-            if (parts.length >= 3) {
-              // uncompressed size is parts[1] and already in bytes
-              return int.tryParse(parts[1]) ?? 0;
-            }
-          }
+      if (result.exitCode != 0) return 0;
+
+      final lines = const LineSplitter()
+          .convert(result.stdout.toString())
+          .where((l) => l.trim().isNotEmpty)
+          .toList();
+
+      if (_archiveType == 'xz') {
+        final dataLine = lines.last;
+        final parts = dataLine.trim().split(RegExp(r'\s+'));
+        if (parts.length >= 6) {
+          return _parseSize('${parts[4]} ${parts[5]}');
+        }
+      } else if (_archiveType == 'gz') {
+        final dataLine = lines.last;
+        final parts = dataLine.trim().split(RegExp(r'\s+'));
+        if (parts.length >= 3) {
+          return int.tryParse(parts[1]) ?? 0;
         }
       }
     } catch (e) {
@@ -1578,8 +1577,7 @@ exit 0
     }
 
     setState(() {
-      _extracting = true;
-      _statusMessage = 'Preparing extraction...';
+      _statusMessage = 'Calculating archive size...';
     });
 
     final totalSize = await _getTotalUncompressedSize();
@@ -1587,12 +1585,12 @@ exit 0
       setState(() {
         _error = true;
         _extracting = false;
-        _statusMessage = 'Failed to determine archive size';
+        _statusMessage = 'Failed to determine archive size – check logs';
       });
       return;
     }
 
-    final decompressFlag = _archiveType == 'xz' ? '-J' : '-z';
+    // ----- 3. YOUR EXTRACTION METHOD (exactly as you provided) -----
     final script = '''
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
@@ -1604,6 +1602,7 @@ cd \$DATA_DIR
 \$DATA_DIR/usr/bin/tar '$_archivePath' -xf --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C \$DATA_DIR
 
 if [ -f "/sdcard/Download/proot.tar.xz" ]; then
+export CONTAINER_DIR=\$DATA_DIR/containers/0
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar /sdcard/Download/proot.tar.x -xf --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C  /data/data/com.xodos/files/containers/0"
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
@@ -1629,6 +1628,7 @@ exit \$?
     _extractPty = Pty.start('/system/bin/sh');
     _extractPty!.write(const Utf8Encoder().convert(script));
 
+    // Parse checkpoint lines (numbers) to update progress
     _extractPty!.output
         .cast<List<int>>()
         .transform(const Utf8Decoder())
