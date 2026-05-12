@@ -482,8 +482,8 @@ if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
-ln -sf \$DATA_DIR/applib/xz.so \$DATA_DIR/usr/bin/xz
-ln -sf \$DATA_DIR/applib/gzip.so \$DATA_DIR/usr/bin/gzip
+ln -sf \$DATA_DIR/applib/libxz.so \$DATA_DIR/usr/bin/xz
+ln -sf \$DATA_DIR/applib/libgzip.so \$DATA_DIR/usr/bin/gzip
 ln -sf \$DATA_DIR/applib/liblzma.so \$DATA_DIR/usr/lib/liblzma.so.5
 ln -sf \$DATA_DIR/applib/libexec_proot.so \$DATA_DIR/usr/bin/proot
 ln -sf \$DATA_DIR/applib/libexec_tar.so \$DATA_DIR/usr/bin/tar
@@ -1538,8 +1538,8 @@ if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
-ln -sf \$DATA_DIR/applib/xz.so \$DATA_DIR/usr/bin/xz
-ln -sf \$DATA_DIR/applib/gzip.so \$DATA_DIR/usr/bin/gzip
+ln -sf \$DATA_DIR/applib/libxz.so \$DATA_DIR/usr/bin/xz
+ln -sf \$DATA_DIR/applib/libgzip.so \$DATA_DIR/usr/bin/gzip
 ln -sf \$DATA_DIR/applib/liblzma.so \$DATA_DIR/usr/lib/liblzma.so.5
 ln -sf \$DATA_DIR/applib/libexec_proot.so \$DATA_DIR/usr/bin/proot
 ln -sf \$DATA_DIR/applib/libexec_tar.so \$DATA_DIR/usr/bin/tar
