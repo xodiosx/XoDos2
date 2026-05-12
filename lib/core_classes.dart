@@ -453,11 +453,20 @@ class Workflow {
     );
     // proot.tar.xz contains the xodos folder with bionic rootfs
     // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
-    await Util.copyAsset(
+  /*  await Util.copyAsset(
     "assets/proot.tar.xz",
     "${G.dataPath}/proot.tar.xz",
     );
+    */
     
+    try {
+  await Util.copyAsset(
+    "assets/proot.tar.xz",
+    "${G.dataPath}/proot.tar.xz",
+  );
+} catch (e) {
+  print("⚠️ proot.tar.xz not found, skipping...");
+}
   /*  */
     
     print("preparing system environment ");
@@ -518,7 +527,7 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat proot.tar* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/containers/0"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat proot.tar* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/containers/0" || true
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
@@ -561,12 +570,23 @@ print("patch proot and assets extracted,,,");
     final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
 
     for (String assetPath in xaFiles) {
-      final fileName = assetPath.split('/').last;
-      await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
-    }
+  final fileName = assetPath.split('/').last;
 
+  try {
+    await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
+  } catch (e) {
+    print("⚠️ Skipping missing asset: $assetPath");
+  }
+}
 
-
+try {
+  await Util.copyAsset(
+    "assets/xodos.tar.xz",
+    "${G.dataPath}/xodos.tar.xz",
+  );
+} catch (e) {
+  print("⚠️ xodos.tar.xz not found, skipping...");
+}
   
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
@@ -584,12 +604,34 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat xa* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "
+cd /data/data/com.xodos/files || true
+
+FILES=\$(ls xa* 2>/dev/null)
+
+if [ -n \"\$FILES\" ]; then
+  echo '📦 Extracting split archive...'
+  cat \$FILES | \$DATA_DIR/usr/bin/tar x -J \
+    --delay-directory-restore \
+    --preserve-permissions \
+    -v -C /data/data/com.xodos/files
+else
+  echo '⚠️ No xa* parts found, skipping...'
+fi
+"
+
+[ -f "$DATA_DIR/xodos.tar.xz" ] && \
+\$DATA_DIR/usr/bin/tar -xf \$DATA_DIR/xodos.tar.xz \
+  --delay-directory-restore \
+  --preserve-permissions \
+  -C /data/data/com.xodos/files || \
+echo "⚠️ xodos.tar.xz not found, skipping..."
+
 #Script to fix
 
 sleep 1
 
-\$DATA_DIR/usr/bin/busybox rm -rf xa* 
+\$DATA_DIR/usr/bin/busybox rm -rf xa* xodos.tar.xz
 echo "" > /data/data/com.xodos/files/usr/opt/drv
 sed -i 's/xproot//g' /data/data/com.xodos/files/usr/bin/xodos
 

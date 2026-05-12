@@ -453,11 +453,20 @@ class Workflow {
     );
     // proot.tar.xz contains the xodos folder with bionic rootfs
     // These are some binaries to support wine bionic and patches that will be mounted to ~/.local/share/tiny
-    await Util.copyAsset(
+  /*  await Util.copyAsset(
     "assets/proot.tar.xz",
     "${G.dataPath}/proot.tar.xz",
     );
+    */
     
+    try {
+  await Util.copyAsset(
+    "assets/proot.tar.xz",
+    "${G.dataPath}/proot.tar.xz",
+  );
+} catch (e) {
+  print("⚠️ proot.tar.xz not found, skipping...");
+}
   /*  */
     
     print("preparing system environment ");
@@ -561,12 +570,23 @@ print("patch proot and assets extracted,,,");
     final List<String> xaFiles = List<String>.from(manifest['xaFiles']);
 
     for (String assetPath in xaFiles) {
-      final fileName = assetPath.split('/').last;
-      await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
-    }
+  final fileName = assetPath.split('/').last;
 
+  try {
+    await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
+  } catch (e) {
+    print("⚠️ Skipping missing asset: $assetPath");
+  }
+}
 
-
+try {
+  await Util.copyAsset(
+    "assets/xodos.tar.xz",
+    "${G.dataPath}/xodos.tar.xz",
+  );
+} catch (e) {
+  print("⚠️ xodos.tar.xz not found, skipping...");
+}
   
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
@@ -1758,7 +1778,7 @@ exit \$?
         title: Text(loc.prootPromptTitle),
         content: Text(loc.prootPromptMessage),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.no)),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.yes)),
         ],
       ),
