@@ -482,6 +482,7 @@ if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
+ln -sf \$DATA_DIR/applib/libpv.so \$DATA_DIR/usr/bin/pv
 ln -sf \$DATA_DIR/applib/libxz.so \$DATA_DIR/usr/bin/xz
 ln -sf \$DATA_DIR/applib/libgzip.so \$DATA_DIR/usr/bin/gzip
 ln -sf \$DATA_DIR/applib/liblzma.so \$DATA_DIR/usr/lib/liblzma.so.5
@@ -657,7 +658,7 @@ LogcatManager().startCapture();
     // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
       // Show the local archive installer dialog
- await setupBootstrap();
+// await setupBootstrap();
         final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
         if (installed == true) {
           // User installed from a local archive – finalise the system
@@ -1331,8 +1332,7 @@ class LocalArchiveInstaller {
       },
     );
   }
-    
-    
+
   static Future<void> finalizeSystem() async {
     final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
     final String w = (max(s.width, s.height) * 0.75).round().toString();
@@ -1523,11 +1523,10 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       return;
     }
 
-try {
-    //  final prepResult = await Util.execute(prepScript);
     // ----- 2. Create symlinks and unzip the binaries -----
-      final prepResult =  await Util.execute(
-"""
+    try {
+      final prepResult = await Util.execute(
+        '''
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
 export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
@@ -1542,6 +1541,7 @@ if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
+ln -sf \$DATA_DIR/applib/libpv.so \$DATA_DIR/usr/bin/pv
 ln -sf \$DATA_DIR/applib/libxz.so \$DATA_DIR/usr/bin/xz
 ln -sf \$DATA_DIR/applib/libgzip.so \$DATA_DIR/usr/bin/gzip
 ln -sf \$DATA_DIR/applib/liblzma.so \$DATA_DIR/usr/lib/liblzma.so.5
@@ -1560,10 +1560,8 @@ chmod -R +x bin/*
 chmod -R +x usr/libexec/*
 chmod 1777 usr/tmp
 sleep 1
-
-""");
-
-    
+'''
+      );
       if (prepResult != 0) {
         setState(() {
           _error = true;
@@ -1595,7 +1593,8 @@ sleep 1
       return;
     }
 
-    // ----- 3. YOUR EXTRACTION METHOD (exactly as you provided) -----
+    // ----- 3. Extraction using pv for accurate progress -----
+    final decompressor = _archiveType == 'xz' ? 'xz' : 'gzip';
     final script = '''
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
@@ -1604,8 +1603,15 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 cd \$DATA_DIR
-\$DATA_DIR/usr/bin/tar -xf '$_archivePath' --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C /data/data/com.xodos/files/
 
+# Extract main archive with pv progress
+if [ "$_archiveType" = "xz" ]; then
+  \$DATA_DIR/usr/bin/xz -dc '$_archivePath' | \$DATA_DIR/usr/bin/pv -n -s $totalSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR"
+else
+  \$DATA_DIR/usr/bin/gzip -dc '$_archivePath' | \$DATA_DIR/usr/bin/pv -n -s $totalSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR"
+fi
+
+# Optional: also extract proot.tar.xz if present
 if [ -f "/sdcard/Download/proot.tar.xz" ]; then
 export CONTAINER_DIR=\$DATA_DIR/containers/0
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar -xf /sdcard/Download/proot.tar.xz --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C  /data/data/com.xodos/files/containers/0"
@@ -1633,20 +1639,18 @@ exit \$?
     _extractPty = Pty.start('/system/bin/sh');
     _extractPty!.write(const Utf8Encoder().convert(script));
 
-    // Parse checkpoint lines (numbers) to update progress
+    // Listen for pv's numeric percentage output (each line is 0..100)
     _extractPty!.output
         .cast<List<int>>()
         .transform(const Utf8Decoder())
         .transform(const LineSplitter())
         .listen((line) {
-      final bytes = int.tryParse(line.trim());
-      if (bytes != null && totalSize > 0) {
-        final newProgress = (bytes / totalSize).clamp(0.0, 1.0);
-        if (!mounted) return;
+      final percent = double.tryParse(line.trim());
+      if (percent != null && mounted) {
         setState(() {
-          _progress = newProgress;
+          _progress = (percent / 100.0).clamp(0.0, 1.0);
           _statusMessage =
-              'Extracting... ${(newProgress * 100).toStringAsFixed(1)}%';
+              'Extracting... ${percent.toStringAsFixed(0)}%';
         });
       }
     });

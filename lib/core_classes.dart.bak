@@ -482,6 +482,7 @@ if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
+ln -sf \$DATA_DIR/applib/libpv.so \$DATA_DIR/usr/bin/pv
 ln -sf \$DATA_DIR/applib/libxz.so \$DATA_DIR/usr/bin/xz
 ln -sf \$DATA_DIR/applib/libgzip.so \$DATA_DIR/usr/bin/gzip
 ln -sf \$DATA_DIR/applib/liblzma.so \$DATA_DIR/usr/lib/liblzma.so.5
@@ -653,9 +654,11 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
 await G.prefs.remove('extractionProgressT');    
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
 LogcatManager().startCapture();
+
     // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
       // Show the local archive installer dialog
+// await setupBootstrap();
         final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
         if (installed == true) {
           // User installed from a local archive – finalise the system
@@ -1521,8 +1524,11 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       return;
     }
 
+try {
+    //  final prepResult = await Util.execute(prepScript);
     // ----- 2. Create symlinks and unzip the binaries -----
-    final prepScript = '''
+      final prepResult =  await Util.execute(
+"""
 export DATA_DIR=${G.dataPath}
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
 export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
@@ -1537,6 +1543,7 @@ if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
+ln -sf \$DATA_DIR/applib/libpv.so \$DATA_DIR/usr/bin/pv
 ln -sf \$DATA_DIR/applib/libxz.so \$DATA_DIR/usr/bin/xz
 ln -sf \$DATA_DIR/applib/libgzip.so \$DATA_DIR/usr/bin/gzip
 ln -sf \$DATA_DIR/applib/liblzma.so \$DATA_DIR/usr/lib/liblzma.so.5
@@ -1555,11 +1562,10 @@ chmod -R +x bin/*
 chmod -R +x usr/libexec/*
 chmod 1777 usr/tmp
 sleep 1
-exit 0
-''';
 
-    try {
-      final prepResult = await Util.execute(prepScript);
+""");
+
+    
       if (prepResult != 0) {
         setState(() {
           _error = true;
@@ -1598,13 +1604,13 @@ export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib:\$DATA_DIR/lib
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
-export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin:/system/bin
+export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 cd \$DATA_DIR
-\$DATA_DIR/usr/bin/tar '$_archivePath' -xf --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C \$DATA_DIR
+\$DATA_DIR/usr/bin/tar -xf '$_archivePath' --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C /data/data/com.xodos/files/
 
 if [ -f "/sdcard/Download/proot.tar.xz" ]; then
 export CONTAINER_DIR=\$DATA_DIR/containers/0
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar /sdcard/Download/proot.tar.xz -xf --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C  /data/data/com.xodos/files/containers/0"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/tar -xf /sdcard/Download/proot.tar.xz --checkpoint=1024 --checkpoint-action=echo=%s --delay-directory-restore --preserve-permissions -C  /data/data/com.xodos/files/containers/0"
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
