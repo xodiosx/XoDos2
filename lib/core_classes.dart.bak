@@ -478,10 +478,13 @@ cd \$DATA_DIR
 #export PATH=/system/bin:\$DATA_DIR/bin:\$DATA_DIR/usr/bin
 #export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
+if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
+fi
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
-ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/xz
-ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/gzip
+ln -sf \$DATA_DIR/applib/xz \$DATA_DIR/usr/bin/xz
+ln -sf \$DATA_DIR/applib/gzip \$DATA_DIR/usr/bin/gzip
+ln -sf \$DATA_DIR/applib/liblzma.so.5 \$DATA_DIR/usr/lib/liblzma.so.5
 ln -sf \$DATA_DIR/applib/libexec_proot.so \$DATA_DIR/usr/bin/proot
 ln -sf \$DATA_DIR/applib/libexec_tar.so \$DATA_DIR/usr/bin/tar
 ln -sf \$DATA_DIR/applib/libexec_pulseaudio.so \$DATA_DIR/usr/bin/pulseaudio
@@ -494,6 +497,8 @@ ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
 \$DATA_DIR/usr/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
 chmod -R +x usr/bin/*
+chmod -R +x bin/*
+chmod -R +x usr/libexec/*
 chmod 1777 usr/tmp
 sleep 1
 export PREFIX=\$DATA_DIR/usr
@@ -1496,6 +1501,80 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
   }
 
   Future<void> _startExtraction() async {
+  setState(() {
+      _extracting = true;
+      _statusMessage = 'Preparing system environment...';
+    });
+
+    // ----- 1. Copy the bootstrap assets (required for symlinks) -----
+    try {
+      await Util.copyAsset("assets/assets.zip", "${G.dataPath}/assets.zip");
+    } catch (e) {
+      setState(() {
+        _error = true;
+        _extracting = false;
+        _statusMessage = 'Failed to copy bootstrap assets';
+      });
+      return;
+    }
+
+    // ----- 2. Create symlinks and unzip the binaries -----
+    // (identical to the first‑time setup, ensures proot/tar/xz are ready)
+    final prepScript = '''
+export DATA_DIR=${G.dataPath}
+export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
+export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
+export CONTAINER_DIR=\$DATA_DIR/containers/0
+export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
+export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
+export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
+cd \$DATA_DIR
+
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
+if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
+fi
+ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/cat
+ln -sf \$DATA_DIR/applib/xz \$DATA_DIR/usr/bin/xz
+ln -sf \$DATA_DIR/applib/gzip \$DATA_DIR/usr/bin/gzip
+ln -sf \$DATA_DIR/applib/liblzma.so.5 \$DATA_DIR/usr/lib/liblzma.so.5
+ln -sf \$DATA_DIR/applib/libexec_proot.so \$DATA_DIR/usr/bin/proot
+ln -sf \$DATA_DIR/applib/libexec_tar.so \$DATA_DIR/usr/bin/tar
+ln -sf \$DATA_DIR/applib/libexec_pulseaudio.so \$DATA_DIR/usr/bin/pulseaudio
+ln -sf \$DATA_DIR/applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
+ln -sf \$DATA_DIR/applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
+ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
+ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
+
+\$DATA_DIR/usr/bin/busybox unzip -o assets.zip
+chmod -R +x libexec/proot/*
+chmod -R +x usr/bin/*
+chmod -R +x bin/*
+chmod -R +x usr/libexec/*
+chmod 1777 usr/tmp
+sleep 1
+exit 0
+''';
+
+    try {
+      final prepResult = await Util.execute(prepScript);
+      if (prepResult != 0) {
+        setState(() {
+          _error = true;
+          _extracting = false;
+          _statusMessage = 'Environment setup failed (code $prepResult)';
+        });
+        return;
+      }
+    } catch (e) {
+      setState(() {
+        _error = true;
+        _extracting = false;
+        _statusMessage = 'Environment setup error: $e';
+      });
+      return;
+    }
+
     setState(() {
       _extracting = true;
       _statusMessage = 'Preparing extraction...';
@@ -1625,3 +1704,4 @@ exit \$?
     );
   }
 }
+
