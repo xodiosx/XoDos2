@@ -575,7 +575,7 @@ print("patch proot and assets extracted,,,");
   try {
     await Util.copyAsset(assetPath, "${G.dataPath}/$fileName");
   } catch (e) {
-    print("⚠️ Skipping missing asset: $assetPath");
+    print(" Skipping missing asset: $assetPath");
   }
 }
 
@@ -585,7 +585,7 @@ try {
     "${G.dataPath}/xodos.tar.xz",
   );
 } catch (e) {
-  print("⚠️ xodos.tar.xz not found, skipping...");
+  print(" xodos.tar.xz not found in assets, skipping...");
 }
   
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
@@ -605,18 +605,17 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "
-cd /data/data/com.xodos/files || tr
 
 FILES=\$(ls xa* 2>/dev/null)
 
 if [ -n \"\$FILES\" ]; then
-  echo '📦 Extracting split archive...'
+  echo ' Extracting split archive...'
   cat \$FILES | \$DATA_DIR/usr/bin/tar x -J \
     --delay-directory-restore \
     --preserve-permissions \
     -v -C /data/data/com.xodos/files
 else
-  echo '⚠️ No xa* parts found, skipping...'
+  echo ' No xa* parts found, skipping...'
 fi
 "
 
@@ -625,7 +624,7 @@ fi
   --delay-directory-restore \
   --preserve-permissions \
   -C /data/data/com.xodos/files || \
-echo "⚠️ xodos.tar.xz not found, skipping..."
+echo " xodos.tar.xz not found, skipping..."
 
 #Script to fix
 

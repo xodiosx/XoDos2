@@ -527,6 +527,8 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
+
+if [ -f "\$DATA_DIR/proot.tar.xz" ]; then
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat proot.tar* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/containers/0" || true
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
@@ -542,7 +544,9 @@ cat tmp3 | while read -r group_name group_id; do
 		echo "aid_\${group_name}:*::root,aid_\$(id -un)" >> "\$CONTAINER_DIR/etc/gshadow"
 	fi
 done
-\$DATA_DIR/usr/bin/busybox rm -rf proot.tar* tmp1 tmp2 tmp3 assets.zip
+fi
+\$DATA_DIR/usr/bin/busybox rm -rf proot.tar* tmp1 tmp2 tmp3 assets.zip || true
+
 sleep 1
 
 """);
@@ -606,31 +610,29 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "
 
-FILES=\$(ls xa* 2>/dev/null)
-
-if [ -n \"\$FILES\" ]; then
+if [  -f "\$DATA_DIR/xaa" ]; then
   echo ' Extracting split archive...'
-  cat \$FILES | \$DATA_DIR/usr/bin/tar x -J \
+  cat xa* | \$DATA_DIR/usr/bin/tar x -J \
     --delay-directory-restore \
     --preserve-permissions \
     -v -C /data/data/com.xodos/files
 else
-  echo ' No xa* parts found, skipping...'
+  echo ' No xa archive parts found, skipping...'
 fi
 "
+if [ -f "\$DATA_DIR/xodos.tar.xz" ]; then
 
-[ -f "\$DATA_DIR/xodos.tar.xz" ] && \
 \$DATA_DIR/usr/bin/tar -xf \$DATA_DIR/xodos.tar.xz \
   --delay-directory-restore \
   --preserve-permissions \
-  -C /data/data/com.xodos/files || \
+  -C /data/data/com.xodos/files 
+  else
 echo " xodos.tar.xz not found, skipping..."
-
+fi
 #Script to fix
-
 sleep 1
 
-\$DATA_DIR/usr/bin/busybox rm -rf xa* xodos.tar.xz
+\$DATA_DIR/usr/bin/busybox rm -rf xa* xodos.tar.xz || true
 echo "" > /data/data/com.xodos/files/usr/opt/drv
 sed -i 's/xproot//g' /data/data/com.xodos/files/usr/bin/xodos
 
@@ -645,6 +647,7 @@ source \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
 unset GALLIUM_DRIVER' \"\$PREFIX/bin/xodos\"
 cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
 }
+sed -i.bak 's/\bset -e\b/set +e/g' "$PREFIX/bin/proot-distro"
 ln -sf \$DATA_DIR/tiny/extra/ \$DATA_DIR/containers/0/extra
 ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
 
@@ -694,7 +697,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
 
 await G.prefs.remove('extractionProgressT');    
     await Util.execute("ln -sf ${await D.androidChannel.invokeMethod("getNativeLibraryPath", {})} ${G.dataPath}/applib");
-LogcatManager().startCapture();
+//LogcatManager().startCapture();
 
     // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
