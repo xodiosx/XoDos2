@@ -55,11 +55,29 @@ jobs:
           cd mega-files
           megatools dl "https://mega.nz/file/id"
 
+      # 👀 Show downloaded files (corrected path)
       - name: Show downloaded files
-        run: ls -lh ../mega-files/ || true
-             
+        run: ls -lh ../mega-files/
 
-      # 🆕 New release → create with body & all files
+      # 🔐 Generate MD5 and SHA-256 checksums for all downloaded files
+      - name: Generate Checksums (MD5 & SHA256)
+        id: checksums
+        run: |
+          cd mega-files
+          echo "### 📄 File Checksums" > ../checksums.txt
+          echo "" >> ../checksums.txt
+          for f in *; do
+            if [ -f "$f" ]; then
+              md5=$(md5sum "$f" | awk '{print $1}')
+              sha256=$(sha256sum "$f" | awk '{print $1}')
+              echo "- **$f** → MD5: \`$md5\` • SHA256: \`$sha256\`" >> ../checksums.txt
+            fi
+          done
+          echo "checksum_list<<EOF" >> $GITHUB_ENV
+          cat ../checksums.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # 🆕 New release → create with body (includes checksums) & all files
       - name: Create new release
         if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
@@ -72,18 +90,23 @@ jobs:
             🧩 **XoDos v${{ github.event.inputs.version_tag }} full release**
 
             ### ✅ What's New
-            - Added files 
+            -  
+
+            ### 🧾 Checksums
+            ${{ env.checksum_list }}
 
             ---
             **👥 Credits**  
-            python: @xodiosx • Logos: @sabamdarif  
+            XoDos team: @xodiosx 🇾🇪, @KarysDeveloper 🇨🇴, @Mondo67244 🇲🇫, @Aurora0y 🇧🇷, @Chest1902 🇧🇩, @JiaxinChen‑max 🇨🇳, @Snap888 🇷🇺 Mateus (@tokokudo) 🇧🇷 
+Logo: @xl_v6 / ashen 🇮🇶
+
             **💬 Support**  
             Telegram: [t.me/xodemulatorr](https://t.me/xodemulatorr)  
             Discord: [discord.gg/d2ChVhPfnF](https://discord.gg/d2ChVhPfnF)
           files: |
             mega-files/*
 
-      # ♻️ Existing release → only add files, don’t touch body/assets
+      # ♻️ Existing release → only add files, description stays untouched
       - name: Add files to existing release
         if: steps.check_release.outputs.exists == 'true'
         uses: softprops/action-gh-release@v2
@@ -93,4 +116,3 @@ jobs:
           tag_name: "v${{ github.event.inputs.version_tag }}"
           files: |
             mega-files/*
-          # No body/name → keeps existing release description untouched
