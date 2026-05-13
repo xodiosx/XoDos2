@@ -53,7 +53,7 @@ jobs:
         run: |
           mkdir mega-files
           cd mega-files
-          megatools dl "https://mega.nz/file/id"
+          megatools dl "https://mega.nz/file/Y4oSyLyC#Hs__8G8ZBUy60o15pNA6WJyXydo1wtVsrnO0J932sbI"
 
       # 👀 Show downloaded files (corrected path)
       - name: Show downloaded files
@@ -87,10 +87,15 @@ jobs:
           tag_name: "v${{ github.event.inputs.version_tag }}"
           name: "XoDos v${{ github.event.inputs.version_tag }}"
           body: |
-            🧩 **XoDos v${{ github.event.inputs.version_tag }} full release**
+            🧩 **XoDos v${{ github.event.inputs.version_tag }} lite release**
 
             ### ✅ What's New
-            -  
+            - Fixed termux x11
+            - removed desktop environment
+            - removed wine 
+            - replaced Debian proot with official termux rootfs native
+            - added new Way to install XoDos system from download folder and fall back to APK system if there is nothing found
+            - and more
 
             ### 🧾 Checksums
             ${{ env.checksum_list }}
