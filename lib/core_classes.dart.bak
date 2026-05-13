@@ -487,6 +487,9 @@ cd \$DATA_DIR
 #export PATH=/system/bin:\$DATA_DIR/bin:\$DATA_DIR/usr/bin
 #export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
+if [ ! -f "/system/bin/sh" ]; then
+ln -sf /system/bin/sh \$DATA_DIR/usr/bin/sh
+fi
 if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
@@ -1561,6 +1564,9 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 cd \$DATA_DIR
 
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
+if [ ! -f "/system/bin/sh" ]; then
+ln -sf /system/bin/sh \$DATA_DIR/usr/bin/sh
+fi
 if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi

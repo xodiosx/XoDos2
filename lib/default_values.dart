@@ -231,7 +231,7 @@ WINEDLLOVERRIDES="d3d8=b,d3d9=b,d3d10core=b,d3d11=b,dxgi=b" wine  reg add 'HKEY_
     {"name": "F12", "key": TerminalKey.f12},
   ];
 
-  static const String boot = "echo ' anything command written in the startup command in advance Settings is going to be executed at App's startup # for proot login try xproot'";
+  static const String boot = "echo 'to login to proot Use xproot'";
   // Modern Android 10+ button styles
   static final ButtonStyle commandButtonStyle = AppButtonStyles.modernSettingsButton;
   
