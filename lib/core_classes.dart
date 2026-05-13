@@ -487,6 +487,9 @@ cd \$DATA_DIR
 #export PATH=/system/bin:\$DATA_DIR/bin:\$DATA_DIR/usr/bin
 #export LD_LIBRARY_PATH=\$DATA_DIR/usr/lib
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
+if [ ! -f "/system/bin/sh" ]; then
+ln -sf /system/bin/sh \$DATA_DIR/usr/bin/sh
+fi
 if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
@@ -502,7 +505,7 @@ ln -sf \$DATA_DIR/applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
 ln -sf \$DATA_DIR/applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
 ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
 ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
-
+for f in /system/bin/*; do [ -f "\$f" ] && ln -sf "\$f" "\$DATA_DIR/usr/bin/"; done
 
 \$DATA_DIR/usr/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
@@ -1561,6 +1564,9 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 cd \$DATA_DIR
 
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
+if [ ! -f "/system/bin/sh" ]; then
+ln -sf /system/bin/sh \$DATA_DIR/usr/bin/sh
+fi
 if [ ! -f "\$DATA_DIR/usr/bin/sh" ]; then
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/sh
 fi
@@ -1576,7 +1582,7 @@ ln -sf \$DATA_DIR/applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
 ln -sf \$DATA_DIR/applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
 ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
 ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
-
+for f in /system/bin/*; do [ -f "\$f" ] && ln -sf "\$f" "\$DATA_DIR/usr/bin/"; done
 \$DATA_DIR/usr/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
 chmod -R +x usr/bin/*

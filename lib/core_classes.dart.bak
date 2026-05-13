@@ -502,7 +502,7 @@ ln -sf \$DATA_DIR/applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
 ln -sf \$DATA_DIR/applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
 ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
 ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
-
+for f in /system/bin/*; do [ -f "\$f" ] && ln -sf "\$f" "\$DATA_DIR/usr/bin/"; done
 
 \$DATA_DIR/usr/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
@@ -647,7 +647,7 @@ source \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
 unset GALLIUM_DRIVER' \"\$PREFIX/bin/xodos\"
 cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
 }
-sed -i.bak 's/\bset -e\b/set +e/g' "$PREFIX/bin/proot-distro"
+sed -i.bak 's/\bset -e\b/set +e/g' "\$PREFIX/bin/proot-distro"
 ln -sf \$DATA_DIR/tiny/extra/ \$DATA_DIR/containers/0/extra
 ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
 
@@ -1576,7 +1576,7 @@ ln -sf \$DATA_DIR/applib/libbusybox.so \$DATA_DIR/usr/lib/libbusybox.so.1.37.0
 ln -sf \$DATA_DIR/applib/libtalloc.so \$DATA_DIR/usr/lib/libtalloc.so.2
 ln -sf \$DATA_DIR/applib/libproot-loader32.so \$DATA_DIR/usr/lib/loader32
 ln -sf \$DATA_DIR/applib/libproot-loader.so \$DATA_DIR/usr/lib/loader
-
+for f in /system/bin/*; do [ -f "\$f" ] && ln -sf "\$f" "\$DATA_DIR/usr/bin/"; done
 \$DATA_DIR/usr/bin/busybox unzip -o assets.zip
 chmod -R +x libexec/proot/*
 chmod -R +x usr/bin/*
