@@ -57,7 +57,7 @@ jobs:
 
       # 👀 Show downloaded files (corrected path)
       - name: Show downloaded files
-        run: ls -lh ../mega-files/
+        run: ls -lh mega-files/ || true
 
       # 🔐 Generate MD5 and SHA-256 checksums for all downloaded files
       - name: Generate Checksums (MD5 & SHA256)
