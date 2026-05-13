@@ -1617,6 +1617,8 @@ else
   \$DATA_DIR/usr/bin/gzip -dc '$_archivePath' | \$DATA_DIR/usr/bin/pv -n -s $totalSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR"
 fi
 \$DATA_DIR/usr/bin/busybox rm -rf assets.zip
+mkdir -p \$DATA_DIR/containers/0/
+ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
 exit \$?
 ''';
     _extractPty = Pty.start('/system/bin/sh');
@@ -1674,6 +1676,8 @@ cat tmp3 | while read -r group_name group_id; do
 	fi
 done
 \$DATA_DIR/usr/bin/busybox rm -rf proot.tar* tmp1 tmp2 tmp3 assets.zip
+mkdir -p \$DATA_DIR/containers/0/
+ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
 sleep 1
 exit \$?
 ''';
