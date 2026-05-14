@@ -1669,11 +1669,11 @@ export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 cd \$DATA_DIR
 
 
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "pv -n -s $prootSize < '$prootPath' | tar x -J \
-  --delay-directory-restore \
-  --preserve-permissions \
-   -v -C  /data/data/com.xodos/files/containers/0 "
-
+$DATA_DIR/usr/bin/proot --link2symlink sh -c "
+$DATA_DIR/usr/bin/xz -dc '$prootPath' | \
+$DATA_DIR/usr/bin/pv -n -s $prootSize | \
+$DATA_DIR/usr/bin/tar -xf - -C '$DATA_DIR/containers/0'
+"
 
 #  \$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
   # Fix permissions and user/group
