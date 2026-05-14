@@ -1567,7 +1567,8 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 cd \$DATA_DIR
 rm -rf \$DATA_DIR/containers/0
-
+rm -rf \$DATA_DIR/home/xodos
+rm -rf \$DATA_DIR/usr/share
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
 if [ ! -f "/system/bin/sh" ]; then
 ln -sf /system/bin/sh \$DATA_DIR/usr/bin/sh
@@ -1665,18 +1666,13 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 cd \$DATA_DIR
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "
-pv -n -s \$prootSize < '\$prootPath' | \$DATA_DIR/usr/bin/tar x -J \
-  --delay-directory-restore \
-  --preserve-permissions \
-   -C /data/data/com.xodos/files/containers/0
-"
+
 
 \$DATA_DIR/usr/bin/proot --link2symlink sh -c "pv -n -s $prootSize < '$prootPath' | tar x -J \
   --delay-directory-restore \
   --preserve-permissions \
-   -C /data/data/com.xodos/files/containers/0
-"
+   -v -C  /data/data/com.xodos/files/containers/0 "
+
 
 #  \$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
   # Fix permissions and user/group
