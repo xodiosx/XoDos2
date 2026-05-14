@@ -1663,8 +1663,13 @@ export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 cd \$DATA_DIR
-
-  \$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "
+pv -n -s \$prootSize < '\$prootPath' | \$DATA_DIR/usr/bin/tar x -J \
+  --delay-directory-restore \
+  --preserve-permissions \
+   -C /data/data/com.xodos/files/containers/0
+"
+#  \$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
   # Fix permissions and user/group
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"

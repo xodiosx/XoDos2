@@ -152,9 +152,24 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       # -------------------------
-      # GitHub Release
+      # Check if release already exists
+      # -------------------------
+      - name: Check if release exists
+        id: check_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ github.event.inputs.version_tag }}" &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # -------------------------
+      # GitHub Release – new release
       # -------------------------
       - name: Create Release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -173,3 +188,17 @@ jobs:
             ```
             ${{ env.md5_list }}
             ```
+
+      # -------------------------
+      # GitHub Release – existing release (upload APK only, no metadata changes)
+      # -------------------------
+      - name: Update existing release (upload APK)
+        if: steps.check_release.outputs.exists == 'true'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version_tag }}
+          files: |
+            build/app/outputs/flutter-apk/XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk
+          overwrite: true   # replace the previous APK asset with the same name
