@@ -625,10 +625,7 @@ fi
 "
 if [ -f "\$DATA_DIR/xodos.tar.xz" ]; then
 
-\$DATA_DIR/usr/bin/tar -xf \$DATA_DIR/xodos.tar.xz \
-  --delay-directory-restore \
-  --preserve-permissions \
-  -C /data/data/com.xodos/files 
+\$DATA_DIR/usr/bin/tar -xf \$DATA_DIR/xodos.tar.xz  --delay-directory-restore  --preserve-permissions  -C /data/data/com.xodos/files 
   else
 echo " xodos.tar.xz not found, skipping..."
 fi
@@ -1625,6 +1622,25 @@ fi
 \$DATA_DIR/usr/bin/busybox rm -rf assets.zip
 mkdir -p \$DATA_DIR/containers/0/
 ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
+echo "" > /data/data/com.xodos/files/usr/opt/drv
+sed -i 's/xproot//g' /data/data/com.xodos/files/usr/bin/xodos
+
+fixx(){
+sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a \\
+chmod +x \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
+source \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
+unset GALLIUM_DRIVER' \"\$PREFIX/bin/xxx\"
+sed -i '/export PULSE_SERVER=tcp:127.0.0.1:4718/a \\
+chmod +x \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
+source \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \\
+unset GALLIUM_DRIVER' \"\$PREFIX/bin/xodos\"
+cp -f \$PREFIX/var/lib/proot-distro/installed-rootfs/0/lang \$PREFIX/bin/lang
+}
+sed -i.bak 's/\bset -e\b/set +e/g' "\$PREFIX/bin/proot-distro"
+ln -sf \$DATA_DIR/tiny/extra/ \$DATA_DIR/containers/0/extra
+ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
+
+for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DIR/usr/bin/"; done
 exit \$?
 ''';
     _extractPty = Pty.start('/system/bin/sh');
@@ -1666,13 +1682,15 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
+export CONTAINER_DIR=\$DATA_DIR/containers/0
 cd \$DATA_DIR/containers/0
 
-
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C \$DATA_DIR/containers/0"
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "pv -n -s $prootSize < '$prootPath' | \$DATA_DIR/usr/bin/tar x -J  --delay-directory-restore  --preserve-permissions  -C /data/data/com.xodos/files/containers/0"
+#\$DATA_DIR/usr/bin/proot --link2symlink sh -c "\$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C \$DATA_DIR/containers/0"
 cd \$DATA_DIR
 #\$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
   # Fix permissions and user/group
+#Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
 echo "aid_\$(id -un):*:18446:0:99999:7:::" >> "\$CONTAINER_DIR/etc/shadow"
