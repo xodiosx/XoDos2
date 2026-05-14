@@ -1555,7 +1555,7 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       Util.createDirFromString("${G.dataPath}/tmp");
       Util.createDirFromString("${G.dataPath}/proot_tmp");
       Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
-      Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+      
 
       final prepScript = '''
 export DATA_DIR=${G.dataPath}
@@ -1566,6 +1566,7 @@ export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 cd \$DATA_DIR
+rm -rf \$DATA_DIR/containers/0
 
 ln -sf \$DATA_DIR/applib/libexec_busybox.so \$DATA_DIR/usr/bin/busybox
 if [ ! -f "/system/bin/sh" ]; then
@@ -1637,6 +1638,7 @@ exit \$?
       if (percent != null && mounted) {
         setState(() {
           _progress = (percent / 100.0).clamp(0.0, 1.0);
+          Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
           _statusMessage = AppLocalizations.of(context)!.installingProgress(percent.toStringAsFixed(0));
         });
       }
@@ -1669,6 +1671,13 @@ pv -n -s \$prootSize < '\$prootPath' | \$DATA_DIR/usr/bin/tar x -J \
   --preserve-permissions \
    -C /data/data/com.xodos/files/containers/0
 "
+
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "pv -n -s $prootSize < '$prootPath' | tar x -J \
+  --delay-directory-restore \
+  --preserve-permissions \
+   -C /data/data/com.xodos/files/containers/0
+"
+
 #  \$DATA_DIR/usr/bin/xz -dc '$prootPath' | \$DATA_DIR/usr/bin/pv -n -s $prootSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR/containers/0"
   # Fix permissions and user/group
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
