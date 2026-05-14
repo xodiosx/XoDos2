@@ -24,10 +24,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
      
-      - name: Prepare SDK folders
+      - name: Prepare SDK folders and Install tools
         run: |
           ls $HOME/
-     
+          sudo apt update
+          sudo apt install -y megatools
+
       # -------------------------
       # Cache Flutter SDK
       # -------------------------
@@ -136,6 +138,35 @@ jobs:
           ls -la "$HOME/android-sdk/build-tools" || echo "Build-tools not found"
           flutter doctor -v
 
+      - name: Download files from MEGA
+        run: |
+          mkdir mega-files
+          cd mega-files
+          megatools dl "https://mega.nz/file/h0Y2QKRL#uI8f3t3mMFCHIZVKJnABcoVJDtoCspgz3cBQe1Pkjjc"
+          megatools dl "https://mega.nz/file/Iwp3ASKD#k4DuRPBYbJkevF2vEpZ41r4r3tqzyszCPIlNon7DOi0"
+
+      # 👀 Show downloaded files (corrected path)
+      - name: Show downloaded files
+        run: ls -lh mega-files/ || true
+
+      # 🔐 Generate MD5 and SHA-256 checksums for all downloaded files
+      - name: Generate Checksums (MD5 & SHA256)
+        id: checksums
+        run: |
+          cd mega-files
+          echo "### 📄 File Checksums" > ../checksums.txt
+          echo "" >> ../checksums.txt
+          for f in *; do
+            if [ -f "$f" ]; then
+              md5=$(md5sum "$f" | awk '{print $1}')
+              sha256=$(sha256sum "$f" | awk '{print $1}')
+              echo "- **$f** → MD5: \`$md5\` • SHA256: \`$sha256\`" >> ../checksums.txt
+            fi
+          done
+          echo "checksum_list<<EOF" >> $GITHUB_ENV
+          cat ../checksums.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      
       # -------------------------
       # Flutter dependencies
       # -------------------------
@@ -191,20 +222,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.event.inputs.version_tag }}
-          name: XoDos ${{ github.event.inputs.version_tag }}
+          name: XoDos ${{ github.event.inputs.version_tag }} with system archives
           files: |
-            build/app/outputs/flutter-apk/XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk      
+            build/app/outputs/flutter-apk/XoDos-${{ github.event.inputs.version_tag }}-arm64-v8a.apk 
+            mega-files/*     
           draft: false
           prerelease: true
           fail_on_unmatched_files: false
           body: |
-            📱 **XoDos APK**
+            📱 **XoDos system with APK separately**
 
             Version: **${{ github.event.inputs.version_tag }}**
             
-            Test pre-release of the New XoDos without data,, please wait until Full version release
-            ### 🧾 MD5 Checksum
+            system archives CHECKSUMA
+             ```
+            ${{ env.checksum_list }}
+
             ```
+              
+            APK CHECKSUM
+            ```
+            
             ${{ env.md5_list }}
             ```
 
@@ -214,4 +252,4 @@ jobs:
             Telegram: t.me/xodemulatorr  
             Discord: discord.gg/d2ChVhPfnF  
 
-            _© 2025 XoDos_
+            _© 2024-2026 XoDos_
