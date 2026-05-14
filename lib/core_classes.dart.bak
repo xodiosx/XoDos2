@@ -1555,7 +1555,7 @@ class __LocalArchiveDialogState extends State<_LocalArchiveDialog> {
       Util.createDirFromString("${G.dataPath}/tmp");
       Util.createDirFromString("${G.dataPath}/proot_tmp");
       Util.createDirFromString("${G.dataPath}/pulseaudio_tmp");
-      
+      Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
 
       final prepScript = '''
 export DATA_DIR=${G.dataPath}
@@ -1639,7 +1639,7 @@ exit \$?
       if (percent != null && mounted) {
         setState(() {
           _progress = (percent / 100.0).clamp(0.0, 1.0);
-          Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
+          
           _statusMessage = AppLocalizations.of(context)!.installingProgress(percent.toStringAsFixed(0));
         });
       }
@@ -1652,6 +1652,7 @@ exit \$?
 
   // --- proot.tar.xz extraction ---
   Future<int> _extractProotArchive() async {
+  Util.createDirFromString("${G.dataPath}/containers/0/.l2s");
     const prootPath = '/sdcard/Download/proot.tar.xz';
     final prootSize = await _getTotalUncompressedSize(prootPath, 'xz');
     if (prootSize <= 0) {
