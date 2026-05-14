@@ -122,7 +122,7 @@ class Util {
       case "virgl" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "venus" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
       case "wrapper" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
-      case "defaultVenusCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--no-virgl --venus --socket-path=/data/data/com.xodos/files/containers/0/tmp/.virgl_test");
+      case "defaultVenusCommand" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}("--no-virgl --venus --socket-path=/data/data/com.xodos/files/usr/tmp/.virgl_test");
       case "defaultVenusOpt" : return b ? G.prefs.getString(key)! : (value){G.prefs.setString(key, value); return value;}(" VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/virtio_icd.json VN_DEBUG=vtest ");
       case "androidVenus" : return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(true);
       case "angle": return b ? G.prefs.getBool(key)! : (value){G.prefs.setBool(key, value); return value;}(false);
@@ -1042,7 +1042,7 @@ extraOpt += " MESA_VK_WSI_PRESENT_MODE=mailbox ";
       extraOpt += "LANG=ja_JP.UTF-8 ";
     }
     extraMount += "--mount=\$DATA_DIR/tiny/font:/usr/share/fonts/tiny ";
-    extraMount += "--mount=\$DATA_DIR/tmp:/dev/dri ";
+    extraMount += "--mount=\$DATA_DIR/usr/tmp:/dev/dri ";
     extraMount += "--mount=\$DATA_DIR/tiny/extra/cmatrix:/home/tiny/.local/bin/cmatrix ";
   
   bool guiEnabled = Util.getGlobal("autoLaunchVnc") as bool;
@@ -1262,7 +1262,7 @@ if (Util.getGlobal("getifaddrsBridge")) {
   Util.termWrite("""
 export DATA_DIR=${G.dataPath}
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
-BASHRC="\$CONTAINER_DIR/home/xodos/.bashrc"
+BASHRC="\$DATA_DIR/home/.bashrc"
 
 LD_LINE='export LD_PRELOAD=/home/tiny/.local/share/tiny/extra/getifaddrs_bridge_client_lib.so'
 
@@ -1277,8 +1277,8 @@ echo "\$LD_LINE" >> "\$BASHRC"
 
 # Start server
 pkill -f getifaddrs_* 2>/dev/null || true
-rm -f "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" 2>/dev/null || true
-\$DATA_DIR/bin/getifaddrs_bridge_server "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" &
+rm -f "\$DATA_DIR/usr/tmp/.getifaddrs-bridge" 2>/dev/null || true
+\$DATA_DIR/bin/getifaddrs_bridge_server "\$DATA_DIR/usr/tmp/.getifaddrs-bridge" &
 
 echo "getifaddrs bridge enabled"
 """);
@@ -1296,7 +1296,7 @@ sed -i '\\|^export LD_PRELOAD=.*/getifaddrs_bridge_client_lib.so\$|d' "\$BASHRC"
 
 # Stop server
 pkill -f getifaddrs_bridge_server 2>/dev/null || true
-rm -f "\$CONTAINER_DIR/tmp/.getifaddrs-bridge" 2>/dev/null || true
+rm -f "\$DATA_DIR/usr/tmp/.getifaddrs-bridge" 2>/dev/null || true
 
 echo "getifaddrs bridge disabled"
 """);
@@ -1319,7 +1319,7 @@ unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'virgl_*'  2>/dev/null || true
-rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
+rm -f \$DATA_DIR/usr/tmp/.virgl_test 2>/dev/null || true
 . /data/data/com.xodos/files/usr/opt/drv
 VK_ICD_FILENAMES=\$DATA_DIR/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json $androidVenusEnv virgl_test_server $venusCommand > \${CONTAINER_DIR}/venus.log 2>&1 &
 
@@ -1341,7 +1341,7 @@ unset LD_LIBRARY_PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 
 pkill -f 'virgl_*' 2>/dev/null || true
-rm -f \${CONTAINER_DIR}/tmp/.virgl_test 2>/dev/null || true
+rm -f \$DATA_DIR/usr/tmp/.virgl_test 2>/dev/null || true
 unset LD_LIBRARY_PATH
 unset VK_ICD_FILENAMES
 unset MESA_LOADER_DRIVER_OVERRIDE  TU_DEBUG GALLIUM_DRIVER LIBGL_DRIVERS_PATH
@@ -1617,6 +1617,8 @@ else
   \$DATA_DIR/usr/bin/gzip -dc '$_archivePath' | \$DATA_DIR/usr/bin/pv -n -s $totalSize | \$DATA_DIR/usr/bin/tar -xf - -C "\$DATA_DIR"
 fi
 \$DATA_DIR/usr/bin/busybox rm -rf assets.zip
+mkdir -p \$DATA_DIR/containers/0/
+ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
 exit \$?
 ''';
     _extractPty = Pty.start('/system/bin/sh');
@@ -1674,6 +1676,8 @@ cat tmp3 | while read -r group_name group_id; do
 	fi
 done
 \$DATA_DIR/usr/bin/busybox rm -rf proot.tar* tmp1 tmp2 tmp3 assets.zip
+mkdir -p \$DATA_DIR/containers/0/
+ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
 sleep 1
 exit \$?
 ''';

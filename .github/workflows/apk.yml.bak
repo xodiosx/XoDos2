@@ -142,7 +142,8 @@ jobs:
         run: |
           mkdir mega-files
           cd mega-files
-          megatools dl "https://mega.nz/file/bI"
+          megatools dl "https://mega.nz/file/h0Y2QKRL#uI8f3t3mMFCHIZVKJnABcoVJDtoCspgz3cBQe1Pkjjc"
+          megatools dl "https://mega.nz/file/Iwp3ASKD#k4DuRPBYbJkevF2vEpZ41r4r3tqzyszCPIlNon7DOi0"
 
       # 👀 Show downloaded files (corrected path)
       - name: Show downloaded files
