@@ -6,7 +6,7 @@ on:
       version_tag:
         description: 'Version tag (1.0.3)'
         required: true
-        default: '1.0.8'
+        default: '1.0.9'
 
 permissions:
   contents: write
