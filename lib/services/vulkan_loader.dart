@@ -1,4 +1,6 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+
 
 class VulkanLoader {
   static const MethodChannel _channel = MethodChannel('com.xodos/vulkan_loader');
