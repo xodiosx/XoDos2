@@ -66,6 +66,7 @@ android {
         cmake {
             path "CMakeLists.txt"
         }
+        }
     signingConfigs {
         release {
             keyAlias keystoreProperties['keyAlias']
