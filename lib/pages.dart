@@ -1347,7 +1347,7 @@ ExpansionPanel(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AdrenotoolsSettingsPage()),
+            MaterialPageRoute(builder: (_) =>  AdrenotoolsSettingsPage()),
           );
         },
       ),

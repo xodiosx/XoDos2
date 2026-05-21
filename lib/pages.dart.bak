@@ -23,8 +23,7 @@ import 'spirited_mini_games.dart';
 import 'main.dart'; // For RTLWrapper, etc.
 import 'dialogs.dart';
 import 'debug.dart';
-//import 'app_colors.dart'; // Add this
-
+import 'adrenotools_settings_page.dart';
 import 'package:xodos/l10n/app_localizations.dart';
 
 // Add the missing MyHomePage class at the TOP of the file:
@@ -993,11 +992,9 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
 ),
 
         // Panel 3: Graphics Acceleration
-
 // ============================================
-// The complete ExpansionPanel body (index 3)
+// Panel 3: Graphics Acceleration (with Adrenotools button)
 // ============================================
-// Panel 3: Graphics Acceleration (with wrapper switch and helper integration)
 ExpansionPanel(
   isExpanded: _expandState[3],
   headerBuilder: (context, isExpanded) {
@@ -1009,7 +1006,7 @@ ExpansionPanel(
   body: Padding(
     padding: const EdgeInsets.all(12),
     child: Column(children: [
-      // Active driver indicator
+      // --- Active driver indicator ---
       Card(
         color: Colors.blue[50],
         child: Padding(
@@ -1042,7 +1039,7 @@ ExpansionPanel(
       Text(AppLocalizations.of(context)!.graphicsAccelerationHint),
       const SizedBox.square(dimension: 16),
 
-      // Virgl section
+      // --- Virgl section (unchanged) ---
       Text(AppLocalizations.of(context)!.virglServerParams,
           style: const TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox.square(dimension: 8),
@@ -1076,7 +1073,6 @@ ExpansionPanel(
         value: Util.getGlobal("virgl") as bool,
         onChanged: (value) async {
           if (value) {
-            // If enabling virgl, disable all others
             await G.prefs.setBool("venus", false);
             await G.prefs.setBool("turnip", false);
             await G.prefs.setBool("angle", false);
@@ -1093,7 +1089,7 @@ ExpansionPanel(
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
 
-      // Venus section
+      // --- Venus section (unchanged) ---
       Text(AppLocalizations.of(context)!.venusAdvantages,
           style: const TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox.square(dimension: 8),
@@ -1129,7 +1125,6 @@ ExpansionPanel(
         value: Util.getGlobal("venus") as bool,
         onChanged: (value) async {
           if (value) {
-            // If enabling venus, disable others
             await G.prefs.setBool("virgl", false);
             await G.prefs.setBool("turnip", false);
             await G.prefs.setBool("angle", false);
@@ -1156,7 +1151,7 @@ ExpansionPanel(
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
 
-      // Turnip section
+      // --- Turnip section (unchanged) ---
       Text(AppLocalizations.of(context)!.turnipAdvantages,
           style: const TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox.square(dimension: 8),
@@ -1178,7 +1173,6 @@ ExpansionPanel(
         value: Util.getGlobal("turnip") as bool,
         onChanged: (value) async {
           if (value) {
-            // If enabling turnip, disable others
             await G.prefs.setBool("virgl", false);
             await G.prefs.setBool("venus", false);
             await G.prefs.setBool("angle", false);
@@ -1216,7 +1210,7 @@ ExpansionPanel(
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
 
-      // ANGLE section
+      // --- ANGLE section (unchanged) ---
       Text(
         'ANGLE (OpenGL ES to Vulkan)',
         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -1258,7 +1252,6 @@ ExpansionPanel(
         value: Util.getGlobal("angle") as bool,
         onChanged: (value) async {
           if (value) {
-            // If enabling ANGLE, disable others
             await G.prefs.setBool("virgl", false);
             await G.prefs.setBool("venus", false);
             await G.prefs.setBool("turnip", false);
@@ -1275,47 +1268,45 @@ ExpansionPanel(
       const Divider(height: 2, indent: 8, endIndent: 8),
       const SizedBox.square(dimension: 16),
 
-    // Wrapper section
-Text(
-  'Wrapper Driver',
-  style: const TextStyle(fontWeight: FontWeight.bold),
-),
-const SizedBox.square(dimension: 8),
-Text(
-  'Wrapper driver provides compatibility layer for specific GPU architectures.',
-),
-const SizedBox.square(dimension: 8),
-SwitchListTile(
-  title: const Text('Enable Wrapper'),
-  subtitle: const Text('Use wrapper driver (disables all other acceleration)'),
-  value: Util.getGlobal("wrapper") as bool,
-  onChanged: (value) async {
-    if (value) {
-      // Enable wrapper, disable others
-      await G.prefs.setBool("virgl", false);
-      await G.prefs.setBool("venus", false);
-      await G.prefs.setBool("turnip", false);
-      await G.prefs.setBool("angle", false);
-      await G.prefs.setBool("wrapper", true);
-    } else {
-      // Disable wrapper (CPU)
-      await G.prefs.setBool("wrapper", false);
-    }
-    await GpuDriverHelper.applySettingsDirectly();
-    setState(() {});
-  },
-),
+      // --- Wrapper section (unchanged) ---
+      Text(
+        'Wrapper Driver',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      const SizedBox.square(dimension: 8),
+      Text(
+        'Wrapper driver provides compatibility layer for specific GPU architectures.',
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: const Text('Enable Wrapper'),
+        subtitle: const Text('Use wrapper driver (disables all other acceleration)'),
+        value: Util.getGlobal("wrapper") as bool,
+        onChanged: (value) async {
+          if (value) {
+            await G.prefs.setBool("virgl", false);
+            await G.prefs.setBool("venus", false);
+            await G.prefs.setBool("turnip", false);
+            await G.prefs.setBool("angle", false);
+            await G.prefs.setBool("wrapper", true);
+          } else {
+            await G.prefs.setBool("wrapper", false);
+          }
+          await GpuDriverHelper.applySettingsDirectly();
+          setState(() {});
+        },
+      ),
 
       const SizedBox.square(dimension: 16),
 
-      // gl4es switch
+      // --- gl4es switch (unchanged) ---
       SwitchListTile(
         title: const Text('Enable gl4es'),
         subtitle: const Text('Use gl4es OpenGL wrapper (requires X11)'),
         value: Util.getGlobal("gl4es") as bool,
         onChanged: (value) async {
           final bool useX11 = Util.getGlobal("useX11") == true;
-         /* if (value && !useX11) {
+          if (value && !useX11) {
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1323,7 +1314,6 @@ SwitchListTile(
             );
             return;
           }
-          */
           await G.prefs.setBool("gl4es", value);
           setState(() {});
         },
@@ -1331,27 +1321,41 @@ SwitchListTile(
 
       const SizedBox.square(dimension: 16),
 
-      // mesa control buttons (optional)
+      // --- Install mesa buttons (unchanged) ---
       Wrap(
-  spacing: 8,
-  children: [
-    ElevatedButton.icon(
-      icon: const Icon(Icons.build),
-      label: const Text('Install mesa'),
-      onPressed: () => _installMesa(zink: false),
-    ),
-    ElevatedButton.icon(
-      icon: const Icon(Icons.build),
-      label: const Text('Install mesa-zink'),
-      onPressed: () => _installMesa(zink: true),
-    ),
-  ],
-),
+        spacing: 8,
+        children: [
+          ElevatedButton.icon(
+            icon: const Icon(Icons.build),
+            label: const Text('Install mesa'),
+            onPressed: () => _installMesa(zink: false),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.build),
+            label: const Text('Install mesa-zink'),
+            onPressed: () => _installMesa(zink: true),
+          ),
+        ],
+      ),
 
       const SizedBox.square(dimension: 16),
+
+      // --- NEW: Manage GPU Drivers button ---
+      ElevatedButton.icon(
+        icon: const Icon(Icons.memory),
+        label: const Text('Manage GPU Drivers (Adrenotools)'),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AdrenotoolsSettingsPage()),
+          );
+        },
+      ),
     ]),
   ),
 ),
+
+
 
         // Panel 4: Windows App Support (with backup/restore button added)
         ExpansionPanel(
