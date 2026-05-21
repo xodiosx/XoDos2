@@ -1,22 +1,23 @@
 cmake_minimum_required(VERSION 3.22.1)
 project("adrenotoolstest2")
 
+# Add the adrenotools static library (contains all hook code)
 add_subdirectory(adrenotools)
-add_subdirectory(sds_library)
 
+# Uncomment the next line only if you still use sds_library helpers
+# add_subdirectory(sds_library)
+
+# Build our main native library
 add_library(adrenotoolstest2 SHARED
-        main.cpp          # ← this now contains the JNI functions
+        main.cpp
 )
 
-find_package(game-activity REQUIRED CONFIG)
-
+# Link against the necessary Android and adrenotools libraries
 target_link_libraries(adrenotoolstest2
-        game-activity::game-activity
-        sds_library
-        EGL
-        GLESv3
-        jnigraphics
+        adrenotools
         android
         log
-        adrenotools
+        dl
+        # sds_library          # uncomment if you keep it
+        # EGL GLESv3 jnigraphics  # not needed unless you render natively
 )
