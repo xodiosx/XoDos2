@@ -218,7 +218,7 @@ class Util {
 
   static Future<void> waitForXServer({int timeoutSeconds = 10}) async {
   // Read the Fix_x11 preference – if it's not enabled, skip immediately.
-  final bool fixX11 = G.prefs.getBool("Fix_x11") ?? false;
+  final bool fixX11 = G.prefs.getBool("Fix_x11") ?? true;
   if (!fixX11) {
     // Make sure the flag is definitely false (just in case)
     await G.prefs.setBool("Fix_x11", false);
@@ -1116,7 +1116,7 @@ static Future<void> launchGUIBackend() async {
   if (Util.getGlobal("autoLaunchVnc") as bool) {
     if (Util.getGlobal("useX11") as bool) {
       // X11 already redirects to log file, keep as is
-            final bool fixX11 = G.prefs.getBool("Fix_x11") ?? false;
+            final bool fixX11 = G.prefs.getBool("Fix_x11") ?? true;
 
       if (fixX11) {
         // X11 is already being managed by the Flutter plugin.
@@ -1192,7 +1192,7 @@ static Future<void> launchGUIBackend() async {
 
   static Future<void> launchXServer() async {
   // 1. Respect the user's toggle
-  final bool fixX11 = G.prefs.getBool("Fix_x11") ?? false;
+  final bool fixX11 = G.prefs.getBool("Fix_x11") ?? true;
   if (!fixX11) {
     debugPrint('⏩ Fix_x11 is off – skipping X11 launch');
     return;
