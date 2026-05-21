@@ -26,6 +26,7 @@ import 'debug.dart';
 import 'adrenotools_settings_page.dart';
 import 'package:xodos/l10n/app_localizations.dart';
 import 'services/vulkan_loader.dart'; 
+
 // Add the missing MyHomePage class at the TOP of the file:
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -51,29 +52,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _initializeWorkflow() async {
     await Workflow.workflow();
-    await _refreshLiveDriverInfo();  
     if (mounted) {
       setState(() {
         isLoadingComplete = true;
       });
     }
   }
-String _liveDriverInfo = '';
-
-Future<void> _refreshLiveDriverInfo() async {
-  try {
-    final jsonStr = await VulkanLoader.getDriverInfo();   // make sure you have the import
-    if (jsonStr.isEmpty || jsonStr == '{}') {
-      _liveDriverInfo = 'No custom driver active';
-      return;
-    }
-    final map = jsonDecode(jsonStr);
-    _liveDriverInfo = '${map['deviceName']}  -  v${map['driverVersion']}';
-  } catch (e) {
-    _liveDriverInfo = 'Unable to read driver info';
-  }
-  setState(() {});
-}
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +161,22 @@ class _SettingPageState extends State<SettingPage> {
       builder: (context) => const BackupRestoreDialog(),
     );
   }
+String _liveDriverInfo = '';
 
+Future<void> _refreshLiveDriverInfo() async {
+  try {
+    final jsonStr = await VulkanLoader.getDriverInfo();
+    if (jsonStr.isEmpty || jsonStr == '{}') {
+      _liveDriverInfo = 'No custom driver active';
+      return;
+    }
+    final map = jsonDecode(jsonStr);
+    _liveDriverInfo = '${map['deviceName']}  -  v${map['driverVersion']}';
+  } catch (e) {
+    _liveDriverInfo = 'Unable to read driver info';
+  }
+  setState(() {});
+}
 
 String _getCurrentDriverName() {
   if (Util.getGlobal("wrapper")) return "Wrapper";
