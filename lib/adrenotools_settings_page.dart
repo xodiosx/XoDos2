@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'adrenotools_manager.dart';
-import 'services/vulkan_loader.dart';   // we'll put vulkan_loader in services/
+import 'services/vulkan_loader.dart';   // 
+import 'package:flutter/foundation.dart';
 
 class AdrenotoolsSettingsPage extends StatefulWidget {
   @override
