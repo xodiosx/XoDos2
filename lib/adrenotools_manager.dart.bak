@@ -126,13 +126,20 @@ class AdrenotoolsDriverManager {
 
   /// Save the active driver name to preferences.
   Future<void> setActiveDriver(DriverMeta meta) async {
-    await _prefs.setString(_prefsActiveDriverKey, meta.name);
-  }
+  await _prefs.setString(_prefsActiveDriverKey, meta.name);
+
+  // Write the file that JNI_OnLoad reads
+  final file = File('/data/data/com.xodos/files/active_driver.txt');
+  await file.parent.create(recursive: true);
+  await file.writeAsString('${meta.path}\n${meta.libraryName}');
+}
 
   /// Clear the active driver (system driver).
   Future<void> setSystemDriver() async {
-    await _prefs.remove(_prefsActiveDriverKey);
-  }
+  await _prefs.remove(_prefsActiveDriverKey);
+  final file = File('/data/data/com.xodos/files/active_driver.txt');
+  if (await file.exists()) await file.delete();
+}
 
   // --------------------------------------------------- install / uninstall
 
