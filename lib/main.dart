@@ -22,12 +22,35 @@ import 'constants.dart';
 import 'default_values.dart';
 import 'core_classes.dart';
 import 'spirited_mini_games.dart';
-import 'pages.dart';  // ← ADD THIS IMPORT
-import 'dialogs.dart'; // ← ADD THIS IMPORT
+import 'pages.dart';  // 
+import 'dialogs.dart'; //
 import 'package:xodos/l10n/app_localizations.dart';
 import 'backup_restore_dialog.dart';
+import 'adrenotools_manager.dart';
+import 'services/vulkan_loader.dart';
+import 'adrenotools_settings_page.dart';  
 
-void main() {
+// main.dart (corrected main function)
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Initialize your driver manager (extracts hooks, lists drivers)
+  final driverManager = await AdrenotoolsDriverManager.initialize();
+
+  // 2. If the user has previously selected a custom driver, load it
+  final activeDriverMeta = driverManager.getActiveDriverMeta();
+  if (activeDriverMeta != null) {
+    final success = await VulkanLoader.loadCustomDriver(
+      driverDir: activeDriverMeta.path,
+      driverName: activeDriverMeta.libraryName,
+      hooksDir: driverManager.hooksDir,
+    );
+    if (!success) {
+      // Fallback to system driver
+      await VulkanLoader.loadSystemDriver();
+    }
+  }
+
   runApp(const MyApp());
 }
 

@@ -16,7 +16,6 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'backup_restore_dialog.dart';
 import 'package:file_picker/file_picker.dart';
-import 'adrenotools_manager.dart'; 
 import 'constants.dart';
 import 'default_values.dart';
 import 'core_classes.dart';
@@ -46,7 +45,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     Future.delayed(Duration.zero,() {
-    _initDriverManager();
       _initializeWorkflow();
     });
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky, overlays: []);
@@ -60,100 +58,6 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     }
   }
-
-/// Reads the current active driver from the opt/drv file or returns "System".
-String _getCurrentDriverName() {
-  final file = File('/data/data/com.xodos/files/usr/opt/drv');
-  if (!file.existsSync()) return 'System';
-  final content = file.readAsStringSync();
-  // Look for the comment line that marks our custom driver block
-  if (content.contains('# Adrenotools custom driver')) {
-    // Extract the driver name from ADRENOTOOLS_DRIVER_PATH if possible,
-    // but simpler: check which driver folder is referenced.
-    final match = RegExp(r'export ADRENOTOOLS_DRIVER_PATH="(.+?)"').firstMatch(content);
-    if (match != null) {
-      final path = match.group(1)!;
-      // The path is something like .../adrenotools/drivers/DriverName/
-      final parts = path.split('/');
-      if (parts.length >= 2 && parts[parts.length-2] == 'drivers') {
-        return parts.last.replaceAll('/', ''); // the driver folder name
-      }
-    }
-    return 'Custom Driver';
-  }
-  return 'System';
-}
-
-Future<void> _activateDriver(DriverMeta meta) async {
-  await _driverManager.setActiveDriver(meta);
-  // Disable all other acceleration options (they are now overridden)
-  await G.prefs.setBool("virgl", false);
-  await G.prefs.setBool("venus", false);
-  await G.prefs.setBool("turnip", false);
-  await G.prefs.setBool("angle", false);
-  await G.prefs.setBool("wrapper", false);
-  // Optionally call your existing apply method to update terminal etc.
-  await GpuDriverHelper.applySettingsDirectly();
-  setState(() {}); // refresh the panel
-}
-
-Future<void> _activateSystemDriver() async {
-  await _driverManager.setSystemDriver();
-  // No need to change other toggles – they remain as user configured.
-  await GpuDriverHelper.applySettingsDirectly();
-  setState(() {});
-}
-
-Future<void> _installDriver() async {
-  // Use file_picker to select a ZIP
-  FilePickerResult? result = await FilePicker.platform.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: ['zip'],
-  );
-  if (result == null || result.files.isEmpty) return;
-
-  setState(() => _driversLoading = true);
-  try {
-    final bytes = await File(result.files.single.path!).readAsBytes();
-    await _driverManager.installDriver(bytes);
-    await _refreshDriverList();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Driver installed successfully')),
-      );
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Installation failed: $e')),
-      );
-    }
-  } finally {
-    setState(() => _driversLoading = false);
-  }
-}
-
-Future<void> _uninstallDriver(DriverMeta meta) async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('Uninstall ${meta.name}?'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
-        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Uninstall')),
-      ],
-    ),
-  );
-  if (confirm != true) return;
-
-  await _driverManager.uninstallDriver(meta.name);
-  // If the active driver was this one, fall back to system
-  if (_getCurrentDriverName() == meta.name) {
-    await _driverManager.setSystemDriver();
-  }
-  await _refreshDriverList();
-  setState(() {});
-}
 
   @override
   Widget build(BuildContext context) {
@@ -1094,116 +998,360 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
 // The complete ExpansionPanel body (index 3)
 // ============================================
 // Panel 3: Graphics Acceleration (with wrapper switch and helper integration)
+ExpansionPanel(
+  isExpanded: _expandState[3],
+  headerBuilder: (context, isExpanded) {
+    return ListTile(
+      title: Text(AppLocalizations.of(context)!.graphicsAcceleration),
+      subtitle: Text(AppLocalizations.of(context)!.experimentalFeature),
+    );
+  },
+  body: Padding(
+    padding: const EdgeInsets.all(12),
+    child: Column(children: [
+      // Active driver indicator
+      Card(
+        color: Colors.blue[50],
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              Icon(Icons.settings_applications, color: Colors.blue[800]),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Active GPU Driver',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      _getCurrentDriverName(),
+                      style: TextStyle(fontSize: 18, color: Colors.blue[900]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
 
-// Adrenotools manager instance
-late AdrenotoolsDriverManager _driverManager;
-List<DriverMeta>? _installedDrivers;
-bool _driversLoading = false;
+      const SizedBox.square(dimension: 16),
+      Text(AppLocalizations.of(context)!.graphicsAccelerationHint),
+      const SizedBox.square(dimension: 16),
 
-@override
-void initState() {
-  super.initState();
-  _initDriverManager();
-  // ... your existing init code ...
-}
+      // Virgl section
+      Text(AppLocalizations.of(context)!.virglServerParams,
+          style: const TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultVirglCommand") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.virglServerParams,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultVirglCommand", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultVirglOpt") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.virglEnvVar,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultVirglOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableVirgl),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("virgl") as bool,
+        onChanged: (value) async {
+          if (value) {
+            // If enabling virgl, disable all others
+            await G.prefs.setBool("venus", false);
+            await G.prefs.setBool("turnip", false);
+            await G.prefs.setBool("angle", false);
+            await G.prefs.setBool("virgl", true);
+          } else {
+            await G.prefs.setBool("virgl", false);
+          }
+          await GpuDriverHelper.applySettingsDirectly();
+          setState(() {});
+        },
+      ),
 
-Future<void> _initDriverManager() async {
-  _driverManager = await AdrenotoolsDriverManager.initialize();
-  _refreshDriverList();
-}
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
 
-Future<void> _refreshDriverList() async {
-  setState(() {
-    _installedDrivers = _driverManager.getInstalledDrivers();
-  });
-}
+      // Venus section
+      Text(AppLocalizations.of(context)!.venusAdvantages,
+          style: const TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox.square(dimension: 8),
+      Text(AppLocalizations.of(context)!.venusAdvantages),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultVenusCommand") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.venusServerParams,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultVenusCommand", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultVenusOpt") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.venusEnvVar,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultVenusOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableVenus),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("venus") as bool,
+        onChanged: (value) async {
+          if (value) {
+            // If enabling venus, disable others
+            await G.prefs.setBool("virgl", false);
+            await G.prefs.setBool("turnip", false);
+            await G.prefs.setBool("angle", false);
+            await G.prefs.setBool("venus", true);
+          } else {
+            await G.prefs.setBool("venus", false);
+          }
+          await GpuDriverHelper.applySettingsDirectly();
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableAndroidVenus),
+        subtitle: Text(AppLocalizations.of(context)!.venusAdvantages),
+        value: Util.getGlobal("androidVenus") as bool,
+        onChanged: (value) async {
+          await G.prefs.setBool("androidVenus", value);
+          setState(() {});
+        },
+      ),
 
-String _getCurrentDriverName() {
-  final file = File('/data/data/com.xodos/files/usr/opt/drv');
-  if (!file.existsSync()) return 'System';
-  final content = file.readAsStringSync();
-  if (content.contains('# Adrenotools custom driver')) {
-    final match = RegExp(r'export ADRENOTOOLS_DRIVER_PATH="(.+?)"').firstMatch(content);
-    if (match != null) {
-      final path = match.group(1)!;
-      final parts = path.split('/');
-      if (parts.length >= 2 && parts[parts.length-2] == 'drivers') {
-        return parts.last.replaceAll('/', '');
-      }
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+
+      // Turnip section
+      Text(AppLocalizations.of(context)!.turnipAdvantages,
+          style: const TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultTurnipOpt") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.turnipEnvVar,
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultTurnipOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableTurnipZink),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("turnip") as bool,
+        onChanged: (value) async {
+          if (value) {
+            // If enabling turnip, disable others
+            await G.prefs.setBool("virgl", false);
+            await G.prefs.setBool("venus", false);
+            await G.prefs.setBool("angle", false);
+            await G.prefs.setBool("turnip", true);
+          } else {
+            await G.prefs.setBool("turnip", false);
+          }
+          await GpuDriverHelper.applySettingsDirectly();
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.enableDRI3),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("dri3") as bool,
+        onChanged: (value) async {
+          final bool useX11 = Util.getGlobal("useX11") == true;
+          final bool turnip = Util.getGlobal("turnip") == true;
+          final bool venus  = Util.getGlobal("venus") == true;
+          if (value && !(useX11 && (turnip || venus))) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppLocalizations.of(context)!.dri3Requirement)),
+            );
+            return;
+          }
+          await G.prefs.setBool("dri3", value);
+          setState(() {});
+        },
+      ),
+
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+
+      // ANGLE section
+      Text(
+        'ANGLE (OpenGL ES to Vulkan)',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      const SizedBox.square(dimension: 8),
+      Text(
+        'ANGLE translates OpenGL ES calls to Vulkan for better compatibility and performance.',
+      ),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultAngleCommand") as String,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          labelText: 'ANGLE Server Parameters',
+          hintText: 'Example: --angle-gl',
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultAngleCommand", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultAngleOpt") as String,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          labelText: 'ANGLE Environment Variables',
+          hintText: 'Example: ANGLE_DEFAULT_PLATFORM=vulkan',
+        ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultAngleOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: const Text('Enable ANGLE'),
+        subtitle: const Text('Use ANGLE hardware acceleration (requires restart)'),
+        value: Util.getGlobal("angle") as bool,
+        onChanged: (value) async {
+          if (value) {
+            // If enabling ANGLE, disable others
+            await G.prefs.setBool("virgl", false);
+            await G.prefs.setBool("venus", false);
+            await G.prefs.setBool("turnip", false);
+            await G.prefs.setBool("angle", true);
+          } else {
+            await G.prefs.setBool("angle", false);
+          }
+          await GpuDriverHelper.applySettingsDirectly();
+          setState(() {});
+        },
+      ),
+
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+
+    // Wrapper section
+Text(
+  'Wrapper Driver',
+  style: const TextStyle(fontWeight: FontWeight.bold),
+),
+const SizedBox.square(dimension: 8),
+Text(
+  'Wrapper driver provides compatibility layer for specific GPU architectures.',
+),
+const SizedBox.square(dimension: 8),
+SwitchListTile(
+  title: const Text('Enable Wrapper'),
+  subtitle: const Text('Use wrapper driver (disables all other acceleration)'),
+  value: Util.getGlobal("wrapper") as bool,
+  onChanged: (value) async {
+    if (value) {
+      // Enable wrapper, disable others
+      await G.prefs.setBool("virgl", false);
+      await G.prefs.setBool("venus", false);
+      await G.prefs.setBool("turnip", false);
+      await G.prefs.setBool("angle", false);
+      await G.prefs.setBool("wrapper", true);
+    } else {
+      // Disable wrapper (CPU)
+      await G.prefs.setBool("wrapper", false);
     }
-    return 'Custom Driver';
-  }
-  return 'System';
-}
+    await GpuDriverHelper.applySettingsDirectly();
+    setState(() {});
+  },
+),
 
-Future<void> _activateDriver(DriverMeta meta) async {
-  await _driverManager.setActiveDriver(meta);
-  // Turn off all other acceleration options
-  await G.prefs.setBool("virgl", false);
-  await G.prefs.setBool("venus", false);
-  await G.prefs.setBool("turnip", false);
-  await G.prefs.setBool("angle", false);
-  await G.prefs.setBool("wrapper", false);
-  await GpuDriverHelper.applySettingsDirectly();
-  setState(() {});
-}
+      const SizedBox.square(dimension: 16),
 
-Future<void> _activateSystemDriver() async {
-  await _driverManager.setSystemDriver();
-  // No need to force other toggles off – they work with system driver
-  await GpuDriverHelper.applySettingsDirectly();
-  setState(() {});
-}
+      // gl4es switch
+      SwitchListTile(
+        title: const Text('Enable gl4es'),
+        subtitle: const Text('Use gl4es OpenGL wrapper (requires X11)'),
+        value: Util.getGlobal("gl4es") as bool,
+        onChanged: (value) async {
+          final bool useX11 = Util.getGlobal("useX11") == true;
+         /* if (value && !useX11) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('gl4es requires X11 to be enabled')),
+            );
+            return;
+          }
+          */
+          await G.prefs.setBool("gl4es", value);
+          setState(() {});
+        },
+      ),
 
-Future<void> _installDriver() async {
-  FilePickerResult? result = await FilePicker.platform.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: ['zip'],
-  );
-  if (result == null || result.files.isEmpty) return;
+      const SizedBox.square(dimension: 16),
 
-  setState(() => _driversLoading = true);
-  try {
-    final bytes = await File(result.files.single.path!).readAsBytes();
-    await _driverManager.installDriver(bytes);
-    await _refreshDriverList();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Driver installed successfully')),
-      );
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Installation failed: $e')),
-      );
-    }
-  } finally {
-    setState(() => _driversLoading = false);
-  }
-}
-
-Future<void> _uninstallDriver(DriverMeta meta) async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('Uninstall ${meta.name}?'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
-        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Uninstall')),
-      ],
+      // mesa control buttons (optional)
+      Wrap(
+  spacing: 8,
+  children: [
+    ElevatedButton.icon(
+      icon: const Icon(Icons.build),
+      label: const Text('Install mesa'),
+      onPressed: () => _installMesa(zink: false),
     ),
-  );
-  if (confirm != true) return;
+    ElevatedButton.icon(
+      icon: const Icon(Icons.build),
+      label: const Text('Install mesa-zink'),
+      onPressed: () => _installMesa(zink: true),
+    ),
+  ],
+),
 
-  await _driverManager.uninstallDriver(meta.name);
-  if (_getCurrentDriverName() == meta.name) {
-    await _driverManager.setSystemDriver();
-  }
-  await _refreshDriverList();
-  setState(() {});
-}
-
+      const SizedBox.square(dimension: 16),
+    ]),
+  ),
+),
 
         // Panel 4: Windows App Support (with backup/restore button added)
         ExpansionPanel(
