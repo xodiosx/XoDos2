@@ -11,6 +11,6 @@ object VulkanLoader {
     external fun nativeLoadSystemDriver(): Boolean
 
     init {
-        System.loadLibrary("vulkan_loader")   // same name as your shared library
+        System.loadLibrary("adrenotoolstest2")   // same name as your shared library
     }
 }
