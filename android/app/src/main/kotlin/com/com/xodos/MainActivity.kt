@@ -43,8 +43,18 @@ class MainActivity : FlutterActivity() {
                 "loadSystemDriver" -> {
                     result.success(VulkanLoader.nativeLoadSystemDriver())
                 }
+                "getDriverInfo" -> {
+    result.success(VulkanLoader.nativeGetDriverInfo())
+}
                 else -> result.notImplemented()
             }
         }
+        
+        
+        
+        
+        
+        
+        
     }
 }

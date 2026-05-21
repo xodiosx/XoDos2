@@ -15,18 +15,19 @@ static void *g_vulkan_lib_handle = nullptr;
 // Path to the active‑driver indicator file (written by Dart manager)
 static const char *kActiveDriverFilePath = "/data/data/com.xodos/files/active_driver.txt";
 
-// Try to load the custom driver specified in the active‑driver file.
 // Called from JNI_OnLoad BEFORE any Vulkan usage.
-static void loadSavedCustomDriver(const char *hooksDir) {
+static void loadSavedCustomDriver() {
     std::ifstream file(kActiveDriverFilePath);
     if (!file.is_open()) {
         LOGI("No active driver file – using system driver");
         return;
     }
 
-    std::string driverDir, driverName;
-    if (!std::getline(file, driverDir) || !std::getline(file, driverName)) {
-        LOGE("Active driver file is malformed");
+    std::string driverDir, driverName, hooksDir;
+    if (!std::getline(file, driverDir) ||
+        !std::getline(file, driverName) ||
+        !std::getline(file, hooksDir)) {
+        LOGE("Active driver file is malformed (expecting 3 lines)");
         return;
     }
     file.close();
@@ -34,18 +35,18 @@ static void loadSavedCustomDriver(const char *hooksDir) {
     LOGI("Loading custom driver from file:");
     LOGI("  dir: %s", driverDir.c_str());
     LOGI("  name: %s", driverName.c_str());
-    LOGI("  hooks: %s", hooksDir);
+    LOGI("  hooks: %s", hooksDir.c_str());
 
     mkdir((driverDir + "temp").c_str(), S_IRWXU | S_IRWXG);
+
     void *handle = adrenotools_open_libvulkan(
         RTLD_NOW | RTLD_LOCAL,
         ADRENOTOOLS_DRIVER_CUSTOM,
         (driverDir + "temp").c_str(),
-        hooksDir,
+        hooksDir.c_str(),   // now a valid string from the file
         driverDir.c_str(),
         driverName.c_str(),
-        nullptr, nullptr
-    );
+        nullptr, nullptr);
 
     if (!handle) {
         LOGE("Failed to load custom driver: %s", dlerror());
@@ -56,9 +57,7 @@ static void loadSavedCustomDriver(const char *hooksDir) {
     LOGI("Custom driver loaded successfully at startup!");
 }
 
-// --------------------------------------------------------------------------
-// JNI methods (still callable from Dart, but normally not needed after startup)
-// --------------------------------------------------------------------------
+// JNI methods (still callable from Dart for runtime switching)
 static jboolean loadCustomDriver(JNIEnv *env, jclass clazz, jstring driverDir, jstring driverName, jstring hooksDir) {
     const char *driver_dir = env->GetStringUTFChars(driverDir, nullptr);
     const char *driver_name = env->GetStringUTFChars(driverName, nullptr);
@@ -114,21 +113,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
 
-    // 1. Immediately try to load a previously saved custom driver
-    const char *hooksDir = nullptr;
-    // Obtain the native library directory (same as in Dart manager)
-    jclass contextClass = env->FindClass("android/content/Context");
-    if (contextClass && !env->ExceptionCheck()) {
-        // We don't have a Context reference yet, so we'll hardcode the path
-        // for now. The real path is /data/app/.../lib/arm64 but we need the
-        // actual installed lib dir. We'll use a fallback: the same path we
-        // get from Dart. To avoid complexity, we'll skip hooksDir for now
-        // and pass nullptr – adrenotools will use its own logic.
-        // But we need hooksDir for the hook libraries. We'll fetch it later
-        // from Dart and write it into the active driver file as a third line.
-    }
-    // For now, pass nullptr – the hook libs are already in the process
-    loadSavedCustomDriver(nullptr);
+    // 1. Immediately load a previously saved custom driver (if any)
+    loadSavedCustomDriver();
 
     // 2. Register JNI methods for the VulkanLoader class
     const char *classNames[] = {

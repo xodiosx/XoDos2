@@ -51,12 +51,29 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _initializeWorkflow() async {
     await Workflow.workflow();
+    await _refreshLiveDriverInfo();  
     if (mounted) {
       setState(() {
         isLoadingComplete = true;
       });
     }
   }
+String _liveDriverInfo = '';
+
+Future<void> _refreshLiveDriverInfo() async {
+  try {
+    final jsonStr = await VulkanLoader.getDriverInfo();   // make sure you have the import
+    if (jsonStr.isEmpty || jsonStr == '{}') {
+      _liveDriverInfo = 'No custom driver active';
+      return;
+    }
+    final map = jsonDecode(jsonStr);
+    _liveDriverInfo = '${map['deviceName']}  -  v${map['driverVersion']}';
+  } catch (e) {
+    _liveDriverInfo = 'Unable to read driver info';
+  }
+  setState(() {});
+}
 
   @override
   Widget build(BuildContext context) {
@@ -1006,7 +1023,7 @@ ExpansionPanel(
   body: Padding(
     padding: const EdgeInsets.all(12),
     child: Column(children: [
-      // --- Active driver indicator ---
+      // Existing active driver card
       Card(
         color: Colors.blue[50],
         child: Padding(
@@ -1024,7 +1041,7 @@ ExpansionPanel(
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      _getCurrentDriverName(),
+                      _getCurrentDriverName(),   // keep your existing method
                       style: TextStyle(fontSize: 18, color: Colors.blue[900]),
                     ),
                   ],
@@ -1035,6 +1052,23 @@ ExpansionPanel(
         ),
       ),
 
+      const SizedBox(height: 8),
+
+      // New live driver info card
+      Card(
+        child: ListTile(
+          title: const Text('Live Vulkan Driver'),
+          subtitle: Text(
+            _liveDriverInfo.isEmpty ? 'Loading...' : _liveDriverInfo,
+            style: const TextStyle(fontSize: 16),
+          ),
+          leading: const Icon(Icons.memory),
+        ),
+      ),
+
+     // const SizedBox(height: 16),
+
+   
       const SizedBox.square(dimension: 16),
       Text(AppLocalizations.of(context)!.graphicsAccelerationHint),
       const SizedBox.square(dimension: 16),

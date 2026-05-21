@@ -4,6 +4,18 @@ import 'package:flutter/foundation.dart';
 
 class VulkanLoader {
   static const MethodChannel _channel = MethodChannel('com.xodos/vulkan_loader');
+/// Returns a JSON string with live driver info (deviceName, driverVersion)
+/// from the loaded custom driver, or an empty JSON object if none loaded.
+static Future<String> getDriverInfo() async {
+  try {
+    final result = await _channel.invokeMethod('getDriverInfo');
+    return result ?? '{}';
+  } catch (e) {
+    debugPrint('VulkanLoader.getDriverInfo error: $e');
+    return '{}';
+  }
+}
+
 
   /// Load a custom Vulkan driver via adrenotools.
   static Future<bool> loadCustomDriver({
