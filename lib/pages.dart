@@ -25,7 +25,7 @@ import 'dialogs.dart';
 import 'debug.dart';
 import 'adrenotools_settings_page.dart';
 import 'package:xodos/l10n/app_localizations.dart';
-
+import 'services/vulkan_loader.dart'; 
 // Add the missing MyHomePage class at the TOP of the file:
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
