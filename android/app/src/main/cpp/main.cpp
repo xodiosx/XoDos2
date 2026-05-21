@@ -11,26 +11,17 @@
 
 static void *g_vulkan_lib_handle = nullptr;
 
-extern "C" {
-
-JNIEXPORT jboolean JNICALL
-Java_com_xodos_VulkanLoader_nativeLoadCustomDriver(
-    JNIEnv *env,
-    jclass /* clazz */,
-    jstring j_driver_dir,
-    jstring j_driver_name,
-    jstring j_hooks_dir) {
-
-    const char *driver_dir = env->GetStringUTFChars(j_driver_dir, nullptr);
-    const char *driver_name = env->GetStringUTFChars(j_driver_name, nullptr);
-    const char *hooks_dir = env->GetStringUTFChars(j_hooks_dir, nullptr);
+// Native implementations
+static jboolean loadCustomDriver(JNIEnv *env, jclass clazz, jstring driverDir, jstring driverName, jstring hooksDir) {
+    const char *driver_dir = env->GetStringUTFChars(driverDir, nullptr);
+    const char *driver_name = env->GetStringUTFChars(driverName, nullptr);
+    const char *hooks_dir = env->GetStringUTFChars(hooksDir, nullptr);
 
     LOGI("Loading custom driver:");
     LOGI("  dir: %s", driver_dir);
     LOGI("  name: %s", driver_name);
     LOGI("  hooks: %s", hooks_dir);
 
-    // Ensure a temp folder exists (for API < 29)
     mkdir((std::string(driver_dir) + "temp").c_str(), S_IRWXU | S_IRWXG);
 
     void *handle = adrenotools_open_libvulkan(
@@ -40,12 +31,11 @@ Java_com_xodos_VulkanLoader_nativeLoadCustomDriver(
         hooks_dir,
         driver_dir,
         driver_name,
-        nullptr,   // fileRedirectDir
-        nullptr);  // userMappingHandle
+        nullptr, nullptr);
 
-    env->ReleaseStringUTFChars(j_driver_dir, driver_dir);
-    env->ReleaseStringUTFChars(j_driver_name, driver_name);
-    env->ReleaseStringUTFChars(j_hooks_dir, hooks_dir);
+    env->ReleaseStringUTFChars(driverDir, driver_dir);
+    env->ReleaseStringUTFChars(driverName, driver_name);
+    env->ReleaseStringUTFChars(hooksDir, hooks_dir);
 
     if (!handle) {
         LOGE("Failed to load custom driver via adrenotools");
@@ -57,8 +47,7 @@ Java_com_xodos_VulkanLoader_nativeLoadCustomDriver(
     return JNI_TRUE;
 }
 
-JNIEXPORT jboolean JNICALL
-Java_com_xodos_VulkanLoader_nativeLoadSystemDriver(JNIEnv *env, jclass clazz) {
+static jboolean loadSystemDriver(JNIEnv *env, jclass clazz) {
     if (g_vulkan_lib_handle) {
         dlclose(g_vulkan_lib_handle);
         g_vulkan_lib_handle = nullptr;
@@ -67,4 +56,33 @@ Java_com_xodos_VulkanLoader_nativeLoadSystemDriver(JNIEnv *env, jclass clazz) {
     return JNI_TRUE;
 }
 
-} // extern "C"
+// Method table for dynamic registration
+static const JNINativeMethod methods[] = {
+    {"nativeLoadCustomDriver", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z", (void *)loadCustomDriver},
+    {"nativeLoadSystemDriver", "()Z", (void *)loadSystemDriver},
+};
+
+JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    JNIEnv *env;
+    if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) != JNI_OK) {
+        return JNI_ERR;
+    }
+
+    // Find the VulkanLoader class. Replace with the exact class name if needed.
+    jclass cls = env->FindClass("com/xodos/VulkanLoader");
+    if (cls == nullptr) {
+        // Fallback: try the double-com version seen in the log
+        cls = env->FindClass("com/com/xodos/VulkanLoader");
+        if (cls == nullptr) {
+            LOGE("Failed to find VulkanLoader class");
+            return JNI_ERR;
+        }
+    }
+
+    if (env->RegisterNatives(cls, methods, sizeof(methods) / sizeof(methods[0])) < 0) {
+        LOGE("Failed to register native methods");
+        return JNI_ERR;
+    }
+
+    return JNI_VERSION_1_6;
+}
