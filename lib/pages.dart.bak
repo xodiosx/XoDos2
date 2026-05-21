@@ -751,232 +751,246 @@ ExpansionPanel(
     ]),
   ),
 ),
-        // Panel 2: Display Settings
-        ExpansionPanel(
-          isExpanded: _expandState[2],
-          headerBuilder: (context, isExpanded) {
-            return ListTile(
-              title: Text(AppLocalizations.of(context)!.displaySettings),
-            );
-          },
-          body: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(children: [
-              const SizedBox.square(dimension: 16),
-              Text(AppLocalizations.of(context)!.hidpiAdvantages),
-              const SizedBox.square(dimension: 16),
-              TextFormField(
-                maxLines: null,
-                initialValue: Util.getGlobal("defaultHidpiOpt") as String,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  labelText: AppLocalizations.of(context)!.hidpiEnvVar,
-                ),
-                onChanged: (value) async {
-                  await G.prefs.setString("defaultHidpiOpt", value);
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.hidpiSupport),
-                subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
-                value: Util.getGlobal("isHidpiEnabled") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("isHidpiEnabled", value);
-                  _avncScaleFactor += value ? 0.5 : -0.5;
-                  _avncScaleFactor = _avncScaleFactor.clamp(-1, 1);
-                  G.prefs.setDouble("avncScaleFactor", _avncScaleFactor);
-                  X11Flutter.setX11ScaleFactor(value ? 0.5 : 2.0);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 16),
-              const Divider(height: 2, indent: 8, endIndent: 8),
-              const SizedBox.square(dimension: 16),
-              Text(AppLocalizations.of(context)!.avncAdvantages),
-              const SizedBox.square(dimension: 16),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 4.0,
-                runSpacing: 4.0,
-                children: [
-                  OutlinedButton(
-                    style: D.commandButtonStyle,
-                    child: Text(AppLocalizations.of(context)!.avncSettings),
-                    onPressed: () async {
-                      await AvncFlutter.launchPrefsPage();
-                    },
-                  ),
-                  OutlinedButton(
-                    style: D.commandButtonStyle,
-                    child: Text(AppLocalizations.of(context)!.aboutAVNC),
-                    onPressed: () async {
-                      await AvncFlutter.launchAboutPage();
-                    },
-                  ),
-                  OutlinedButton(
-                    style: D.commandButtonStyle,
-                    onPressed: Util.getGlobal("avncResizeDesktop") as bool
-                        ? null
-                        : () async {
-                            final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
-                            final w0 = max(s.width, s.height);
-                            final h0 = min(s.width, s.height);
-                            String w = (w0 * 0.75).round().toString();
-                            String h = (h0 * 0.75).round().toString();
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: Text(AppLocalizations.of(context)!.resolutionSettings),
-                                  content: SingleChildScrollView(
-                                    child: Column(children: [
-                                      Text("${AppLocalizations.of(context)!.deviceScreenResolution} ${w0.round()}x${h0.round()}"),
-                                      const SizedBox.square(dimension: 8),
-                                      TextFormField(
-                                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                                        initialValue: w,
-                                        decoration: InputDecoration(
-                                          border: const OutlineInputBorder(),
-                                          labelText: AppLocalizations.of(context)!.width,
-                                        ),
-                                        keyboardType: TextInputType.number,
-                                        validator: (value) {
-                                          return Util.validateBetween(value, 200, 7680, () {
-                                            w = value!;
-                                          });
-                                        },
-                                      ),
-                                      const SizedBox.square(dimension: 8),
-                                      TextFormField(
-                                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                                        initialValue: h,
-                                        decoration: InputDecoration(
-                                          border: const OutlineInputBorder(),
-                                          labelText: AppLocalizations.of(context)!.height,
-                                        ),
-                                        keyboardType: TextInputType.number,
-                                        validator: (value) {
-                                          return Util.validateBetween(value, 200, 7680, () {
-                                            h = value!;
-                                          });
-                                        },
-                                      ),
-                                    ]),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                      child: Text(AppLocalizations.of(context)!.cancel),
-                                    ),
-                                    TextButton(
-                                      onPressed: () async {
-                                        Util.termWrite("""sed -i -E "s@(geometry)=.*@\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
-sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
-                                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                              content: Text("${w}x${h}. ${AppLocalizations.of(context)!.applyOnNextLaunch}")),
-                                        );
-                                        if (!context.mounted) return;
-                                        Navigator.of(context).pop();
-                                      },
-                                      child: Text(AppLocalizations.of(context)!.save),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                    child: Text(AppLocalizations.of(context)!.avncResolution),
-                  ),
-                ],
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.useAVNCByDefault),
-                subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
-                value: Util.getGlobal("useAvnc") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("useAvnc", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.avncScreenResize),
-                value: Util.getGlobal("avncResizeDesktop") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("avncResizeDesktop", value);
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 8),
-              ListTile(
-                title: Text(AppLocalizations.of(context)!.avncResizeFactor),
-                onTap: () {},
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    Text('${AppLocalizations.of(context)!.avncResizeFactorValue} ${pow(4, _avncScaleFactor).toStringAsFixed(2)}x'),
-                    const SizedBox(height: 12),
-                    Slider(
-                      value: _avncScaleFactor,
-                      min: -1,
-                      max: 1,
-                      divisions: 96,
-                      onChangeEnd: (double value) {
-                        G.prefs.setDouble("avncScaleFactor", value);
-                      },
-                      onChanged: Util.getGlobal("avncResizeDesktop") as bool
-                          ? (double value) {
-                              _avncScaleFactor = value;
-                              setState(() {});
-                            }
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox.square(dimension: 16),
-              const Divider(height: 2, indent: 8, endIndent: 8),
-              const SizedBox.square(dimension: 16),
-              Text(AppLocalizations.of(context)!.termuxX11Advantages),
-              const SizedBox.square(dimension: 16),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 4.0,
-                runSpacing: 4.0,
-                children: [
-                  OutlinedButton(
-                    style: D.commandButtonStyle,
-                    child: Text(AppLocalizations.of(context)!.termuxX11Preferences),
-                    onPressed: () async {
-                      await X11Flutter.launchX11PrefsPage();
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox.square(dimension: 8),
-              SwitchListTile(
-                title: Text(AppLocalizations.of(context)!.useTermuxX11ByDefault),
-                subtitle: Text(AppLocalizations.of(context)!.disableVNC),
-                value: Util.getGlobal("useX11") as bool,
-                onChanged: (value) {
-                  G.prefs.setBool("useX11", value);
-                  if (!value && Util.getGlobal("dri3")) {
-                    G.prefs.setBool("dri3", false);
-                  }
-                  setState(() {});
-                },
-              ),
-              const SizedBox.square(dimension: 16),
-            ]),
-          ),
+   
+// Panel 2: Display Settings
+ExpansionPanel(
+  isExpanded: _expandState[2],
+  headerBuilder: (context, isExpanded) {
+    return ListTile(
+      title: Text(AppLocalizations.of(context)!.displaySettings),
+    );
+  },
+  body: Padding(
+    padding: const EdgeInsets.all(12),
+    child: Column(children: [
+      const SizedBox.square(dimension: 16),
+      Text(AppLocalizations.of(context)!.hidpiAdvantages),
+      const SizedBox.square(dimension: 16),
+      TextFormField(
+        maxLines: null,
+        initialValue: Util.getGlobal("defaultHidpiOpt") as String,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: AppLocalizations.of(context)!.hidpiEnvVar,
         ),
+        onChanged: (value) async {
+          await G.prefs.setString("defaultHidpiOpt", value);
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.hidpiSupport),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("isHidpiEnabled") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("isHidpiEnabled", value);
+          _avncScaleFactor += value ? 0.5 : -0.5;
+          _avncScaleFactor = _avncScaleFactor.clamp(-1, 1);
+          G.prefs.setDouble("avncScaleFactor", _avncScaleFactor);
+          X11Flutter.setX11ScaleFactor(value ? 0.5 : 2.0);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+      Text(AppLocalizations.of(context)!.avncAdvantages),
+      const SizedBox.square(dimension: 16),
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 4.0,
+        runSpacing: 4.0,
+        children: [
+          OutlinedButton(
+            style: D.commandButtonStyle,
+            child: Text(AppLocalizations.of(context)!.avncSettings),
+            onPressed: () async {
+              await AvncFlutter.launchPrefsPage();
+            },
+          ),
+          OutlinedButton(
+            style: D.commandButtonStyle,
+            child: Text(AppLocalizations.of(context)!.aboutAVNC),
+            onPressed: () async {
+              await AvncFlutter.launchAboutPage();
+            },
+          ),
+          OutlinedButton(
+            style: D.commandButtonStyle,
+            onPressed: Util.getGlobal("avncResizeDesktop") as bool
+                ? null
+                : () async {
+                    final s = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize;
+                    final w0 = max(s.width, s.height);
+                    final h0 = min(s.width, s.height);
+                    String w = (w0 * 0.75).round().toString();
+                    String h = (h0 * 0.75).round().toString();
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text(AppLocalizations.of(context)!.resolutionSettings),
+                          content: SingleChildScrollView(
+                            child: Column(children: [
+                              Text("${AppLocalizations.of(context)!.deviceScreenResolution} ${w0.round()}x${h0.round()}"),
+                              const SizedBox.square(dimension: 8),
+                              TextFormField(
+                                autovalidateMode: AutovalidateMode.onUserInteraction,
+                                initialValue: w,
+                                decoration: InputDecoration(
+                                  border: const OutlineInputBorder(),
+                                  labelText: AppLocalizations.of(context)!.width,
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  return Util.validateBetween(value, 200, 7680, () {
+                                    w = value!;
+                                  });
+                                },
+                              ),
+                              const SizedBox.square(dimension: 8),
+                              TextFormField(
+                                autovalidateMode: AutovalidateMode.onUserInteraction,
+                                initialValue: h,
+                                decoration: InputDecoration(
+                                  border: const OutlineInputBorder(),
+                                  labelText: AppLocalizations.of(context)!.height,
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  return Util.validateBetween(value, 200, 7680, () {
+                                    h = value!;
+                                  });
+                                },
+                              ),
+                            ]),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(AppLocalizations.of(context)!.cancel),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Util.termWrite("""sed -i -E "s@(geometry)=.*@\\1=${w}x${h}@" /etc/tigervnc/vncserver-config-tmoe
+sed -i -E "s@^(VNC_RESOLUTION)=.*@\\1=${w}x${h}@" \$(command -v startvnc)""");
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text("${w}x${h}. ${AppLocalizations.of(context)!.applyOnNextLaunch}")),
+                                );
+                                if (!context.mounted) return;
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(AppLocalizations.of(context)!.save),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+            child: Text(AppLocalizations.of(context)!.avncResolution),
+          ),
+        ],
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.useAVNCByDefault),
+        subtitle: Text(AppLocalizations.of(context)!.applyOnNextLaunch),
+        value: Util.getGlobal("useAvnc") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("useAvnc", value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.avncScreenResize),
+        value: Util.getGlobal("avncResizeDesktop") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("avncResizeDesktop", value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+      ListTile(
+        title: Text(AppLocalizations.of(context)!.avncResizeFactor),
+        onTap: () {},
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            Text('${AppLocalizations.of(context)!.avncResizeFactorValue} ${pow(4, _avncScaleFactor).toStringAsFixed(2)}x'),
+            const SizedBox(height: 12),
+            Slider(
+              value: _avncScaleFactor,
+              min: -1,
+              max: 1,
+              divisions: 96,
+              onChangeEnd: (double value) {
+                G.prefs.setDouble("avncScaleFactor", value);
+              },
+              onChanged: Util.getGlobal("avncResizeDesktop") as bool
+                  ? (double value) {
+                      _avncScaleFactor = value;
+                      setState(() {});
+                    }
+                  : null,
+            ),
+          ],
+        ),
+      ),
+      const SizedBox.square(dimension: 16),
+      const Divider(height: 2, indent: 8, endIndent: 8),
+      const SizedBox.square(dimension: 16),
+      Text(AppLocalizations.of(context)!.termuxX11Advantages),
+      const SizedBox.square(dimension: 16),
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 4.0,
+        runSpacing: 4.0,
+        children: [
+          OutlinedButton(
+            style: D.commandButtonStyle,
+            child: Text(AppLocalizations.of(context)!.termuxX11Preferences),
+            onPressed: () async {
+              await X11Flutter.launchX11PrefsPage();
+            },
+          ),
+        ],
+      ),
+      const SizedBox.square(dimension: 8),
+
+      // ---------- NEW: X11 Fix toggle ----------
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.fixX11),     // No subtitle
+        value: G.prefs.getBool("Fix_x11") ?? false,
+        onChanged: (value) {
+          G.prefs.setBool("Fix_x11", value);
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 8),
+
+      // Existing Termux:X11 default toggle
+      SwitchListTile(
+        title: Text(AppLocalizations.of(context)!.useTermuxX11ByDefault),
+        subtitle: Text(AppLocalizations.of(context)!.disableVNC),
+        value: Util.getGlobal("useX11") as bool,
+        onChanged: (value) {
+          G.prefs.setBool("useX11", value);
+          if (!value && Util.getGlobal("dri3")) {
+            G.prefs.setBool("dri3", false);
+          }
+          setState(() {});
+        },
+      ),
+      const SizedBox.square(dimension: 16),
+    ]),
+  ),
+),
 
         // Panel 3: Graphics Acceleration
 
