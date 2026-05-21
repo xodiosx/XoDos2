@@ -56,7 +56,6 @@ static jboolean loadSystemDriver(JNIEnv *env, jclass clazz) {
     return JNI_TRUE;
 }
 
-// Method table for dynamic registration
 static const JNINativeMethod methods[] = {
     {"nativeLoadCustomDriver", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z", (void *)loadCustomDriver},
     {"nativeLoadSystemDriver", "()Z", (void *)loadSystemDriver},
@@ -68,15 +67,24 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
 
-    // Find the VulkanLoader class. Replace with the exact class name if needed.
-    jclass cls = env->FindClass("com/xodos/VulkanLoader");
-    if (cls == nullptr) {
-        // Fallback: try the double-com version seen in the log
-        cls = env->FindClass("com/com/xodos/VulkanLoader");
-        if (cls == nullptr) {
-            LOGE("Failed to find VulkanLoader class");
-            return JNI_ERR;
+    // Try the known correct name first, then a common fallback.
+    const char *classNames[] = {
+        "com/com/xodos/VulkanLoader",   // matches your actual package
+        "com/xodos/VulkanLoader"        // fallback if you ever change it
+    };
+
+    jclass cls = nullptr;
+    for (const char *name : classNames) {
+        cls = env->FindClass(name);
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();   // <-- THIS FIXES THE CRASH
         }
+        if (cls != nullptr) break;
+    }
+
+    if (cls == nullptr) {
+        LOGE("Failed to find VulkanLoader class");
+        return JNI_ERR;
     }
 
     if (env->RegisterNatives(cls, methods, sizeof(methods) / sizeof(methods[0])) < 0) {

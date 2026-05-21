@@ -33,24 +33,7 @@ import 'adrenotools_settings_page.dart';
 // main.dart (corrected main function)
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 1. Initialize your driver manager (extracts hooks, lists drivers)
-  final driverManager = await AdrenotoolsDriverManager.initialize();
-
-  // 2. If the user has previously selected a custom driver, load it
-  final activeDriverMeta = driverManager.getActiveDriverMeta();
-  if (activeDriverMeta != null) {
-    final success = await VulkanLoader.loadCustomDriver(
-      driverDir: activeDriverMeta.path,
-      driverName: activeDriverMeta.libraryName,
-      hooksDir: driverManager.hooksDir,
-    );
-    if (!success) {
-      // Fallback to system driver
-      await VulkanLoader.loadSystemDriver();
-    }
-  }
-
+  // Driver is already loaded by JNI_OnLoad – no need to call VulkanLoader here
   runApp(const MyApp());
 }
 
