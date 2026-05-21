@@ -1,9 +1,14 @@
 #include <jni.h>
 #include <string>
+#include <vector>
 #include <dlfcn.h>
 #include <sys/stat.h>
 #include <android/log.h>
 #include <adrenotools/driver.h>
+
+// Vulkan header – needed for the info query. No prototypes to avoid linker conflicts.
+#define VK_NO_PROTOTYPES
+#include <vulkan/vulkan.h>
 
 #define LOG_TAG "VulkanLoader"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -65,13 +70,14 @@ static std::string getDriverInfoJson() {
         return "{}";
     }
 
-    // Load necessary Vulkan functions from the custom driver handle
-    auto vkCreateInstance = (PFN_vkCreateInstance)dlsym(g_vulkan_lib_handle, "vkCreateInstance");
-    auto vkDestroyInstance = (PFN_vkDestroyInstance)dlsym(g_vulkan_lib_handle, "vkDestroyInstance");
-    auto vkEnumeratePhysicalDevices = (PFN_vkEnumeratePhysicalDevices)dlsym(g_vulkan_lib_handle, "vkEnumeratePhysicalDevices");
-    auto vkGetPhysicalDeviceProperties = (PFN_vkGetPhysicalDeviceProperties)dlsym(g_vulkan_lib_handle, "vkGetPhysicalDeviceProperties");
+    // Load Vulkan function pointers from the custom driver handle.
+    // Use different local variable names to avoid self‑initialization errors.
+    auto pfn_vkCreateInstance = (PFN_vkCreateInstance)dlsym(g_vulkan_lib_handle, "vkCreateInstance");
+    auto pfn_vkDestroyInstance = (PFN_vkDestroyInstance)dlsym(g_vulkan_lib_handle, "vkDestroyInstance");
+    auto pfn_vkEnumeratePhysicalDevices = (PFN_vkEnumeratePhysicalDevices)dlsym(g_vulkan_lib_handle, "vkEnumeratePhysicalDevices");
+    auto pfn_vkGetPhysicalDeviceProperties = (PFN_vkGetPhysicalDeviceProperties)dlsym(g_vulkan_lib_handle, "vkGetPhysicalDeviceProperties");
 
-    if (!vkCreateInstance || !vkDestroyInstance || !vkEnumeratePhysicalDevices || !vkGetPhysicalDeviceProperties) {
+    if (!pfn_vkCreateInstance || !pfn_vkDestroyInstance || !pfn_vkEnumeratePhysicalDevices || !pfn_vkGetPhysicalDeviceProperties) {
         LOGE("Failed to load Vulkan functions from custom driver");
         return "{}";
     }
@@ -86,27 +92,26 @@ static std::string getDriverInfoJson() {
     createInfo.pApplicationInfo = &appInfo;
 
     VkInstance instance;
-    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+    if (pfn_vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         LOGE("Failed to create Vulkan instance for info query");
         return "{}";
     }
 
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+    pfn_vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
     if (deviceCount == 0) {
-        vkDestroyInstance(instance, nullptr);
+        pfn_vkDestroyInstance(instance, nullptr);
         return "{}";
     }
 
     VkPhysicalDevice physicalDevice;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, &physicalDevice);
+    pfn_vkEnumeratePhysicalDevices(instance, &deviceCount, &physicalDevice);
 
     VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(physicalDevice, &props);
+    pfn_vkGetPhysicalDeviceProperties(physicalDevice, &props);
 
-    vkDestroyInstance(instance, nullptr);
+    pfn_vkDestroyInstance(instance, nullptr);
 
-    // Build JSON string
     char json[512];
     snprintf(json, sizeof(json),
              R"({"deviceName":"%s","driverVersion":"%d.%d.%d"})",
