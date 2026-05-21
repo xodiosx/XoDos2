@@ -14,7 +14,8 @@ class DriverMeta {
   final String driverVersion;
   final int minApi;
   final String description;
-  final String libraryName;   // soname to load with dlopen (e.g., libvulkan.so)
+  final String libraryName;
+  String path;   // mutable, set by manager after discovery
 
   DriverMeta({
     required this.name,
@@ -25,6 +26,7 @@ class DriverMeta {
     required this.minApi,
     required this.description,
     required this.libraryName,
+    this.path = '',
   });
 
   factory DriverMeta.fromJson(Map<String, dynamic> json) {
@@ -39,9 +41,6 @@ class DriverMeta {
       libraryName: json['libraryName'] as String,
     );
   }
-
-  /// Full path to the driver folder.
-  String get path => '';   // will be set by the manager when listing
 }
 
 // -----------------------------------------------------------------------------
