@@ -177,11 +177,12 @@ sdrvFile.writeAsStringSync(sblock);
   Future<void> uninstallDriver(String driverName) async {
     final dir = Directory('${_driversDir.path}/$driverName');
     if (dir.existsSync()) await dir.delete(recursive: true);
-
+_clearEnvFile();
     final activeName = _prefs.getString(_prefsActiveDriverKey);
     if (activeName == driverName) {
       await _prefs.remove(_prefsActiveDriverKey);
-      _clearEnvFile();
+      
+      await setSystemDriver();
        
     }
   }
