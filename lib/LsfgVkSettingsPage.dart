@@ -40,7 +40,7 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
   static final File _drvFile = File('$_prefix/opt/drv');
   static final File _libFile = File('$_prefix/lib/liblsfg-vk-layer.so');
   static final File _libOffFile = File('$_prefix/lib/liblsfg-vk-layer.so.off');
-  static final File _configFile = File('$_prefix/home/.config/lsfg-vk/conf.toml');
+  static final File _configFile = File('/data/data/com.xodos/files/home/.config/lsfg-vk/conf.toml');
 
   bool _lsfgEnabled = false;
   bool _loading = true;
