@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  archive: ^3.6.0
   file_picker: ^8.1.2
   xterm: ^4.0.0
   audioplayers: ^5.2.0

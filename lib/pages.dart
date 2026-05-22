@@ -20,9 +20,10 @@ import 'constants.dart';
 import 'default_values.dart';
 import 'core_classes.dart';
 import 'spirited_mini_games.dart';
-import 'main.dart'; // For RTLWrapper, etc.
+import 'main.dart'; 
 import 'dialogs.dart';
 import 'debug.dart';
+import 'LsfgVkSettingsPage.dart';
 import 'adrenotools_settings_page.dart';
 import 'package:xodos/l10n/app_localizations.dart';
 
@@ -1351,7 +1352,20 @@ ExpansionPanel(
           );
         },
       ),
-      
+      import 'path_to_your_page/lsfg_vk_settings_page.dart';   // adjust path
+
+// ...
+
+ElevatedButton.icon(
+  icon: const Icon(Icons.build),
+  label: const Text('LSFG-VK (A.I frame generation)'),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LsfgVkSettingsPage()),
+    );
+  },
+),
     ]),
   ),
 ),

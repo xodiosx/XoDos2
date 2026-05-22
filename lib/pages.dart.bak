@@ -1343,7 +1343,7 @@ ExpansionPanel(
       // --- NEW: Manage GPU Drivers button ---
       ElevatedButton.icon(
         icon: const Icon(Icons.memory),
-        label: const Text('Manage GPU Drivers (Adrenotools)'),
+        label: const Text('Adrenotools'),
         onPressed: () {
           Navigator.push(
             context,
@@ -1351,6 +1351,20 @@ ExpansionPanel(
           );
         },
       ),
+      import 'path_to_your_page/lsfg_vk_settings_page.dart';   // adjust path
+
+// ...
+
+ElevatedButton.icon(
+  icon: const Icon(Icons.build),
+  label: const Text('LSFG-VK (A.I frame generation)'),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LsfgVkSettingsPage()),
+    );
+  },
+),
     ]),
   ),
 ),
