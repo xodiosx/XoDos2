@@ -218,7 +218,7 @@ export vblank_mode=0
       RegExp(r'^# Adrenotools custom driver.*?(?:\n\n|\n?$)', multiLine: true),
       '',
     );
-    await drvFile.writeAsStringSync(existing);
+     drvFile.writeAsStringSync(existing);
 //  await Util.termWrite("echo '# Adrenotools custom' > /data/data/com.xodos/files/usr/opt/drv");
   }
   drvFile.writeAsStringSync(block);
