@@ -34,6 +34,8 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
       _drivers = list;
       _loading = false;
     });
+   // Util.termWrite("sleep 1");
+    Util.termWrite("source /data/data/com.xodos/files/usr/opt/drv");
   }
 
   Future<void> _installDriver() async {
@@ -91,7 +93,7 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
     await _manager.setActiveDriver(meta);
 
     // 3. Source the new environment inside the terminal (after a short delay)
-    Util.termWrite("sleep 2");
+    Util.termWrite("sleep 1");
     Util.termWrite("source /data/data/com.xodos/files/usr/opt/drv");
 
     if (mounted) {
@@ -109,7 +111,7 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
     await G.prefs.setBool("angle", false);
     await G.prefs.setBool("wrapper", true);
     await _manager.setSystemDriver();
-    Util.termWrite("sleep 2");
+    Util.termWrite("sleep 1");
     Util.termWrite("source /data/data/com.xodos/files/usr/opt/drv");
 
     if (mounted) {
@@ -138,7 +140,7 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
                     if (idx == 0) {
                       return ListTile(
                         title: Text('System Driver'),
-                        subtitle: Text('Built-in Qualcomm driver'),
+                        subtitle: Text('Built-in GPU driver'),
                         leading: Icon(Icons.phone_android),
                         trailing: OutlinedButton(
                           onPressed: _activateSystemDriver,
@@ -155,7 +157,7 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: Icon(Icons.power_settings_new),
+                            icon: Icon(Icons.play_arrow),
                             tooltip: 'Activate',
                             onPressed: () => _activateDriver(meta),
                           ),

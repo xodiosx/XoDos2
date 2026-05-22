@@ -116,6 +116,24 @@ class AdrenotoolsDriverManager {
   Future<void> setSystemDriver() async {
     await _prefs.remove(_prefsActiveDriverKey);
     _clearEnvFile();
+    final sblock = '''
+# system driver env
+unset ADRENOTOOLS_DRIVER_PATH
+unset ADRENOTOOLS_DRIVER_NAME
+unset ADRENOTOOLS_HOOKS_PATH
+
+export VK_ICD_FILENAMES=/data/data/com.xodos/files/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
+
+# Performance / compatibility tweaks
+export MESA_LOADER_DRIVER_OVERRIDE="zink"
+export VKD3D_FEATURE_LEVEL="12_0"
+export TU_DEBUG="noconform"
+export GALLIUM_DRIVER="zink"
+export MESA_VK_WSI_PRESENT_MODE="mailbox"
+export vblank_mode=0
+''';
+drvFile.writeAsStringSync(sblock);
+
   }
 
   // --------------------------------------------------- install / uninstall
@@ -163,6 +181,7 @@ class AdrenotoolsDriverManager {
     if (activeName == driverName) {
       await _prefs.remove(_prefsActiveDriverKey);
       _clearEnvFile();
+       
     }
   }
 
@@ -198,9 +217,10 @@ export vblank_mode=0
       RegExp(r'^# Adrenotools custom driver.*?(?:\n\n|\n?$)', multiLine: true),
       '',
     );
-    Util.termWrite("echo '# Adrenotools custom' > /data/data/com.xodos/files/usr/opt/drv");
+    await drvFile.writeAsStringSync(existing);
+//  await Util.termWrite("echo '# Adrenotools custom' > /data/data/com.xodos/files/usr/opt/drv");
   }
-  drvFile.writeAsStringSync(existing + block);
+  drvFile.writeAsStringSync(block);
 }
 
   void _clearEnvFile() {
