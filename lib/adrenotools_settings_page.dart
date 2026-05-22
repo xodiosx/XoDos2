@@ -103,7 +103,7 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
 
   Future<void> _activateSystemDriver() async {
     // wrapper, but do not enable any other mode automatically
-    aawait G.prefs.setBool("virgl", false);
+    await G.prefs.setBool("virgl", false);
     await G.prefs.setBool("venus", false);
     await G.prefs.setBool("turnip", false);
     await G.prefs.setBool("angle", false);

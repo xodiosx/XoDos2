@@ -59,41 +59,7 @@ class AdrenotoolsDriverManager {
 
   AdrenotoolsDriverManager._();
 
-Future<void> _installAdrenotoolsFiles() async {
-    // Create target directories inside the prefix
-    final libDir = '$_prefixPath/lib';
-    final icdDir = '$_prefixPath/share/vulkan/icd.d';
-    Directory(libDir).createSync(recursive: true);
-    Directory(icdDir).createSync(recursive: true);
-
-    // List of hook libraries to copy from assets/adrenotools/ to $PREFIX/lib
-    final files = [
-      'libadrenotools.so',
-      'libhook_impl.so',
-      'libmain_hook.so',
-      'libfile_redirect_hook.so',
-      'libgsl_alloc_hook.so',
-    ];
-
-    for (final file in files) {
-      final dest = '$libDir/$file';
-      if (!File(dest).existsSync()) {
-        await Util.copyAsset('assets/adrenotools/$file', dest);
-      }
-    }
-
-    // Copy the wrapper ICD JSON
- //   const icdAsset = 'assets/adrenotools/wrapper_icd.aarch64.json';
-  //  final icdDest = '$icdDir/wrapper_icd.aarch64.json';
-  //  if (!File(icdDest).existsSync()) {
-   //   await Util.copyAsset(icdAsset, icdDest);
-   // }
-   
-  }
-
-
   static Future<AdrenotoolsDriverManager> initialize() async {
-  await instance._installAdrenotoolsFiles(); 
     final instance = AdrenotoolsDriverManager._();
     final appDir = await getApplicationSupportDirectory();
     instance._baseDir = Directory('${appDir.path}/adrenotools');
