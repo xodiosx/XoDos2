@@ -173,8 +173,8 @@ void _writeEnvFile(DriverMeta meta) {
 # Adrenotools custom driver
 export ADRENOTOOLS_DRIVER_PATH="${meta.path}"
 export ADRENOTOOLS_DRIVER_NAME="${meta.libraryName}"
-export ADRENOTOOLS_HOOKS_PATH="${meta.path}"
-export ADRENOTOOLS_FILE_REDIRECT_DIR="${meta.path}files"
+export ADRENOTOOLS_HOOKS_PATH="${_prefixPath}/lib/"
+
 export VK_ICD_FILENAMES=/data/data/com.xodos/files/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
 
 # Performance / compatibility tweaks
@@ -198,6 +198,7 @@ export vblank_mode=0
       RegExp(r'^# Adrenotools custom driver.*?(?:\n\n|\n?$)', multiLine: true),
       '',
     );
+    Util.termWrite("echo '# Adrenotools custom' > /data/data/com.xodos/files/usr/opt/drv");
   }
   drvFile.writeAsStringSync(existing + block);
 }
