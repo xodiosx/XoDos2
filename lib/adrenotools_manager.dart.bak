@@ -215,11 +215,11 @@ export vblank_mode=0
     existing = drvFile.readAsStringSync();
     // Remove any previous adrenotools block
     existing = existing.replaceAll(
-      RegExp(r'^# Adrenotools custom driver.*?(?:\n\n|\n?$)', multiLine: true),
+      RegExp(r'^# custom driver.*?(?:\n\n|\n?$)', multiLine: true),
       '',
     );
      drvFile.writeAsStringSync(existing);
-//  await Util.termWrite("echo '# Adrenotools custom' > /data/data/com.xodos/files/usr/opt/drv");
+//  
   }
   drvFile.writeAsStringSync(block);
 }
@@ -229,7 +229,7 @@ export vblank_mode=0
     if (!drvFile.existsSync()) return;
     String content = drvFile.readAsStringSync();
     content = content.replaceAll(
-      RegExp(r'^# Adrenotools custom driver.*?(?:\n\n|\n?$)', multiLine: true),
+      RegExp(r'^#  custom driver.*?(?:\n\n|\n?$)', multiLine: true),
       '',
     );
     drvFile.writeAsStringSync(content);

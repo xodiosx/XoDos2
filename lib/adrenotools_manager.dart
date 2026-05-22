@@ -226,12 +226,15 @@ export vblank_mode=0
 
   void _clearEnvFile() {
     final drvFile = File(_optDrvFile);
-    if (!drvFile.existsSync()) return;
-    String content = drvFile.readAsStringSync();
-    content = content.replaceAll(
-      RegExp(r'^#  custom driver.*?(?:\n\n|\n?$)', multiLine: true),
+    String existing = '';
+existing = drvFile.readAsStringSync();
+    // Remove any previous adrenotools block
+    existing = existing.replaceAll(
+      RegExp(r'^# custom driver.*?(?:\n\n|\n?$)', multiLine: true),
       '',
     );
-    drvFile.writeAsStringSync(content);
+     drvFile.writeAsStringSync(existing);
+//  
+    
   }
 }
