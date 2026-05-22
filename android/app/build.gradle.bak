@@ -62,14 +62,12 @@ android {
 
     }
     
- /*   externalNativeBuild {
+    externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
             version "3.22.1"
         }
         }
-        */
-        
     signingConfigs {
         release {
             keyAlias keystoreProperties['keyAlias']

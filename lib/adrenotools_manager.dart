@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/services.dart';
-import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
+import 'package:archive/archive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core_classes.dart';  // so we can use Util.copyAsset
+
 
 
 class DriverMeta {
@@ -45,53 +46,68 @@ class DriverMeta {
 }
 
 class AdrenotoolsDriverManager {
-  static const String _hooksDirName = 'drivers';   // for custom driver folders
   static const String _prefsActiveDriverKey = 'active_driver_name';
-  static const MethodChannel _androidChannel = MethodChannel('android');
 
-  late final Directory _baseDir;
-  late final Directory _driversDir;          // where driver packages are stored
-  late final String _hooksDir;               // nativeLibraryDir
+  // Path inside the proot prefix (the rootfs)
+  static const String _prefixPath = '/data/data/com.xodos/files/usr';
+  static const String _driversDirName = 'drivers';   // relative to prefix
+  static const String _optDrvFile = '/data/data/com.xodos/files/usr/opt/drv';
+
+  late final Directory _baseDir;      // Android external dir, not used much
+  late final Directory _driversDir;   // full path: prefix/drivers/
   late final SharedPreferences _prefs;
 
   AdrenotoolsDriverManager._();
 
+Future<void> _installAdrenotoolsFiles() async {
+    // Create target directories inside the prefix
+    final libDir = '$_prefixPath/lib';
+    final icdDir = '$_prefixPath/share/vulkan/icd.d';
+    Directory(libDir).createSync(recursive: true);
+    Directory(icdDir).createSync(recursive: true);
+
+    // List of hook libraries to copy from assets/adrenotools/ to $PREFIX/lib
+    final files = [
+      'libadrenotools.so',
+      'libhook_impl.so',
+      'libmain_hook.so',
+      'libfile_redirect_hook.so',
+      'libgsl_alloc_hook.so',
+    ];
+
+    for (final file in files) {
+      final dest = '$libDir/$file';
+      if (!File(dest).existsSync()) {
+        await Util.copyAsset('assets/adrenotools/$file', dest);
+      }
+    }
+
+    // Copy the wrapper ICD JSON
+ //   const icdAsset = 'assets/adrenotools/wrapper_icd.aarch64.json';
+  //  final icdDest = '$icdDir/wrapper_icd.aarch64.json';
+  //  if (!File(icdDest).existsSync()) {
+   //   await Util.copyAsset(icdAsset, icdDest);
+   // }
+   
+  }
+
+
   static Future<AdrenotoolsDriverManager> initialize() async {
+  await instance._installAdrenotoolsFiles(); 
     final instance = AdrenotoolsDriverManager._();
     final appDir = await getApplicationSupportDirectory();
     instance._baseDir = Directory('${appDir.path}/adrenotools');
-    instance._driversDir = Directory('${instance._baseDir.path}/${_hooksDirName}');
-    await instance._driversDir.create(recursive: true);
-    instance._prefs = await SharedPreferences.getInstance();
+    await instance._baseDir.create(recursive: true);
 
-    // Get the native library directory where hook .so files are installed
-    final nativeLibDir = await instance._getNativeLibraryDir();
-    instance._hooksDir = nativeLibDir;
+    // The actual drivers folder inside the proot rootfs
+    instance._driversDir = Directory('$_prefixPath/$_driversDirName');
+    await instance._driversDir.create(recursive: true);
+
+    instance._prefs = await SharedPreferences.getInstance();
     return instance;
   }
 
-  /// Queries the Android system for the native library directory
-  Future<String> _getNativeLibraryDir() async {
-    try {
-      final result = await _androidChannel.invokeMethod('getNativeLibraryPath');
-      if (result is String && result.isNotEmpty) return result;
-    } catch (e) {
-      debugPrint('Failed to get native library dir: $e');
-    }
-    // Fallback – unlikely to work but safe
-    return '/data/app/${await getPackageName()}/lib/arm64';
-  }
-
-  Future<String> getPackageName() async {
-    // Simple approach: read from /data/data/... or use a package_info plugin
-    // For now we can just return the known package name
-    return 'com.xodos';
-  }
-
-  /// Directory where hook libraries are installed (pass this to the loader).
-  String get hooksDir => _hooksDir;
-
-  /// Returns a list of installed custom drivers.
+  /// List installed custom drivers.
   List<DriverMeta> getInstalledDrivers() {
     if (!_driversDir.existsSync()) return [];
     final drivers = <DriverMeta>[];
@@ -108,7 +124,7 @@ class AdrenotoolsDriverManager {
     return drivers;
   }
 
-  /// Returns the metadata of the currently active driver.
+  /// Get the currently active driver metadata.
   DriverMeta? getActiveDriverMeta() {
     final activeName = _prefs.getString(_prefsActiveDriverKey);
     if (activeName == null) return null;
@@ -124,27 +140,20 @@ class AdrenotoolsDriverManager {
     }
   }
 
-  /// Save the active driver name to preferences.
+  /// Save the active driver name.
   Future<void> setActiveDriver(DriverMeta meta) async {
-  await _prefs.setString(_prefsActiveDriverKey, meta.name);
+    await _prefs.setString(_prefsActiveDriverKey, meta.name);
+    _writeEnvFile(meta);
+  }
 
-  // Write the active driver file that JNI_OnLoad will read at process startup
-  final file = File('/data/data/com.xodos/files/active_driver.txt');
-  await file.parent.create(recursive: true);
-  // Three lines: driverDir, libraryName, hooksDir
-  await file.writeAsString('${meta.path}\n${meta.libraryName}\n$hooksDir');
-}
-
-  /// Clear the active driver (system driver).
+  /// Clear the active driver and write system defaults.
   Future<void> setSystemDriver() async {
-  await _prefs.remove(_prefsActiveDriverKey);
-  final file = File('/data/data/com.xodos/files/active_driver.txt');
-  if (await file.exists()) await file.delete();
-}
+    await _prefs.remove(_prefsActiveDriverKey);
+    _clearEnvFile();
+  }
 
   // --------------------------------------------------- install / uninstall
 
-  /// Extract a driver ZIP (bytes) and return metadata.
   Future<DriverMeta> installDriver(Uint8List zipBytes) async {
     final tmpDir = Directory('${_baseDir.path}/tmp_${DateTime.now().millisecondsSinceEpoch}');
     await tmpDir.create(recursive: true);
@@ -163,9 +172,11 @@ class AdrenotoolsDriverManager {
       if (!metaFile.existsSync()) throw Exception('Missing meta.json');
       final meta = DriverMeta.fromJson(jsonDecode(metaFile.readAsStringSync()));
 
+      // Ensure the driver library exists
       final driverFile = File('${tmpDir.path}/${meta.libraryName}');
       if (!driverFile.existsSync()) throw Exception('Driver file ${meta.libraryName} not found');
 
+      // Move to the final location inside the prefix
       final driverDir = Directory('${_driversDir.path}/${meta.name}');
       if (driverDir.existsSync()) await driverDir.delete(recursive: true);
       await tmpDir.rename(driverDir.path);
@@ -178,7 +189,6 @@ class AdrenotoolsDriverManager {
     }
   }
 
-  /// Remove a driver by its folder name.
   Future<void> uninstallDriver(String driverName) async {
     final dir = Directory('${_driversDir.path}/$driverName');
     if (dir.existsSync()) await dir.delete(recursive: true);
@@ -186,6 +196,54 @@ class AdrenotoolsDriverManager {
     final activeName = _prefs.getString(_prefsActiveDriverKey);
     if (activeName == driverName) {
       await _prefs.remove(_prefsActiveDriverKey);
+      _clearEnvFile();
     }
+  }
+
+  // --------------------------------------------------- env file helpers
+
+void _writeEnvFile(DriverMeta meta) {
+  final block = '''
+# Adrenotools custom driver
+export ADRENOTOOLS_DRIVER_PATH="${meta.path}"
+export ADRENOTOOLS_DRIVER_NAME="${meta.libraryName}"
+export ADRENOTOOLS_HOOKS_PATH="${meta.path}"
+export ADRENOTOOLS_FILE_REDIRECT_DIR="${meta.path}files"
+export VK_ICD_FILENAMES=/data/data/com.xodos/files/usr/share/vulkan/icd.d/wrapper_icd.aarch64.json
+
+# Performance / compatibility tweaks
+export MESA_LOADER_DRIVER_OVERRIDE="zink"
+export VKD3D_FEATURE_LEVEL="12_0"
+export TU_DEBUG="noconform"
+export GALLIUM_DRIVER="zink"
+export MESA_VK_WSI_PRESENT_MODE="mailbox"
+export vblank_mode=0
+''';
+
+  // Ensure the file-redirect directory exists
+  Directory('${meta.path}files').createSync(recursive: true);
+
+  final drvFile = File(_optDrvFile);
+  String existing = '';
+  if (drvFile.existsSync()) {
+    existing = drvFile.readAsStringSync();
+    // Remove any previous adrenotools block
+    existing = existing.replaceAll(
+      RegExp(r'^# Adrenotools custom driver.*?(?:\n\n|\n?$)', multiLine: true),
+      '',
+    );
+  }
+  drvFile.writeAsStringSync(existing + block);
+}
+
+  void _clearEnvFile() {
+    final drvFile = File(_optDrvFile);
+    if (!drvFile.existsSync()) return;
+    String content = drvFile.readAsStringSync();
+    content = content.replaceAll(
+      RegExp(r'^# Adrenotools custom driver.*?(?:\n\n|\n?$)', multiLine: true),
+      '',
+    );
+    drvFile.writeAsStringSync(content);
   }
 }

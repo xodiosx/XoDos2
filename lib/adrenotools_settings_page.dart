@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'adrenotools_manager.dart';
-import 'services/vulkan_loader.dart';   // 
+//import 'services/vulkan_loader.dart';   // 
 import 'package:flutter/foundation.dart';
+
+import 'core_classes.dart';   // access to G, Util
 
 class AdrenotoolsSettingsPage extends StatefulWidget {
   @override
@@ -66,12 +68,8 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
       builder: (ctx) => AlertDialog(
         title: Text('Uninstall ${meta.name}?'),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text('Cancel')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Uninstall')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Uninstall')),
         ],
       ),
     );
@@ -82,43 +80,38 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
   }
 
   Future<void> _activateDriver(DriverMeta meta) async {
-    // 1. Save preference
+    // 1. Disable all other GPU modes and enable wrapper
+    await G.prefs.setBool("virgl", false);
+    await G.prefs.setBool("venus", false);
+    await G.prefs.setBool("turnip", false);
+    await G.prefs.setBool("angle", false);
+    await G.prefs.setBool("wrapper", true);
+
+    // 2. Write the adrenotools environment to $PREFIX/opt/drv
     await _manager.setActiveDriver(meta);
 
-    // 2. Immediately load the driver in this app process (if you have a Vulkan renderer)
-    final success = await VulkanLoader.loadCustomDriver(
-      driverDir: meta.path,
-      driverName: meta.libraryName,
-      hooksDir: _manager.hooksDir,
-    );
-    if (!success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to activate driver in this process!')),
-        );
-      }
-      return;
-    }
+    // 3. Source the new environment inside the terminal (after a short delay)
+    Util.termWrite("sleep 2");
+    Util.termWrite("source /data/data/com.xodos/files/usr/opt/drv");
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('${meta.name} activated. Restart graphics if needed.')),
+        SnackBar(content: Text('${meta.name} activated. Restart graphics.')),
       );
     }
   }
 
   Future<void> _activateSystemDriver() async {
+    // wrapper, but do not enable any other mode automatically
+    aawait G.prefs.setBool("virgl", false);
+    await G.prefs.setBool("venus", false);
+    await G.prefs.setBool("turnip", false);
+    await G.prefs.setBool("angle", false);
+    await G.prefs.setBool("wrapper", true);
     await _manager.setSystemDriver();
-    final success = await VulkanLoader.loadSystemDriver();
-    if (!success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to restore system driver')),
-        );
-      }
-      return;
-    }
+    Util.termWrite("sleep 2");
+    Util.termWrite("source /data/data/com.xodos/files/usr/opt/drv");
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('System driver activated')),
@@ -140,7 +133,7 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
           : _drivers == null || _drivers!.isEmpty
               ? Center(child: Text('No custom drivers installed'))
               : ListView.builder(
-                  itemCount: _drivers!.length + 1, // system driver
+                  itemCount: _drivers!.length + 1,
                   itemBuilder: (ctx, idx) {
                     if (idx == 0) {
                       return ListTile(
@@ -156,8 +149,7 @@ class _AdrenotoolsSettingsPageState extends State<AdrenotoolsSettingsPage> {
                     final meta = _drivers![idx - 1];
                     return ListTile(
                       title: Text(meta.name),
-                      subtitle: Text(
-                          '${meta.driverVersion} by ${meta.author}'),
+                      subtitle: Text('${meta.driverVersion} by ${meta.author}'),
                       leading: Icon(Icons.memory),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,

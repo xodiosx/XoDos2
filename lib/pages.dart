@@ -25,7 +25,6 @@ import 'dialogs.dart';
 import 'debug.dart';
 import 'adrenotools_settings_page.dart';
 import 'package:xodos/l10n/app_localizations.dart';
-import 'services/vulkan_loader.dart'; 
 
 // Add the missing MyHomePage class at the TOP of the file:
 class MyHomePage extends StatefulWidget {
@@ -161,22 +160,7 @@ class _SettingPageState extends State<SettingPage> {
       builder: (context) => const BackupRestoreDialog(),
     );
   }
-String _liveDriverInfo = '';
 
-Future<void> _refreshLiveDriverInfo() async {
-  try {
-    final jsonStr = await VulkanLoader.getDriverInfo();
-    if (jsonStr.isEmpty || jsonStr == '{}') {
-      _liveDriverInfo = 'No custom driver active';
-      return;
-    }
-    final map = jsonDecode(jsonStr);
-    _liveDriverInfo = '${map['deviceName']}  -  v${map['driverVersion']}';
-  } catch (e) {
-    _liveDriverInfo = 'Unable to read driver info';
-  }
-  setState(() {});
-}
 
 String _getCurrentDriverName() {
   if (Util.getGlobal("wrapper")) return "Wrapper";
@@ -1022,7 +1006,7 @@ ExpansionPanel(
   body: Padding(
     padding: const EdgeInsets.all(12),
     child: Column(children: [
-      // Existing active driver card
+      // --- Active driver indicator ---
       Card(
         color: Colors.blue[50],
         child: Padding(
@@ -1040,7 +1024,7 @@ ExpansionPanel(
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      _getCurrentDriverName(),   // keep your existing method
+                      _getCurrentDriverName(),
                       style: TextStyle(fontSize: 18, color: Colors.blue[900]),
                     ),
                   ],
@@ -1051,23 +1035,6 @@ ExpansionPanel(
         ),
       ),
 
-      const SizedBox(height: 8),
-
-      // New live driver info card
-      Card(
-        child: ListTile(
-          title: const Text('Live Vulkan Driver'),
-          subtitle: Text(
-            _liveDriverInfo.isEmpty ? 'Loading...' : _liveDriverInfo,
-            style: const TextStyle(fontSize: 16),
-          ),
-          leading: const Icon(Icons.memory),
-        ),
-      ),
-
-     // const SizedBox(height: 16),
-
-   
       const SizedBox.square(dimension: 16),
       Text(AppLocalizations.of(context)!.graphicsAccelerationHint),
       const SizedBox.square(dimension: 16),
@@ -1376,7 +1343,7 @@ ExpansionPanel(
       // --- NEW: Manage GPU Drivers button ---
       ElevatedButton.icon(
         icon: const Icon(Icons.memory),
-        label: const Text('Manage GPU Drivers (Adrenotools)'),
+        label: const Text('Adrenotools'),
         onPressed: () {
           Navigator.push(
             context,
@@ -1384,6 +1351,7 @@ ExpansionPanel(
           );
         },
       ),
+      
     ]),
   ),
 ),
