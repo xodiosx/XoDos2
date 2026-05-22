@@ -42,6 +42,7 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
   static final File _libOffFile = File('$_prefix/lib/liblsfg-vk-layer.so.off');
   static final File _configFile = File('/data/data/com.xodos/files/home/.config/lsfg-vk/conf.toml');
 
+
   bool _lsfgEnabled = false;
   bool _loading = true;
   List<GameProfile> _games = [];
