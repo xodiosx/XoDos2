@@ -1352,17 +1352,16 @@ ExpansionPanel(
           );
         },
       ),
-      import 'path_to_your_page/lsfg_vk_settings_page.dart';   // adjust path
+      
 
-// ...
-
+// lsfg-vk 
 ElevatedButton.icon(
   icon: const Icon(Icons.build),
   label: const Text('LSFG-VK (A.I frame generation)'),
   onPressed: () {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const LsfgVkSettingsPage()),
+      MaterialPageRoute(builder: (_) => LsfgVkSettingsPage()),
     );
   },
 ),
