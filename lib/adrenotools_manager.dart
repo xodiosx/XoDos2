@@ -116,6 +116,7 @@ class AdrenotoolsDriverManager {
   Future<void> setSystemDriver() async {
     await _prefs.remove(_prefsActiveDriverKey);
     _clearEnvFile();
+    final sdrvFile = File(_optDrvFile);
     final sblock = '''
 # system driver env
 unset ADRENOTOOLS_DRIVER_PATH
@@ -132,7 +133,7 @@ export GALLIUM_DRIVER="zink"
 export MESA_VK_WSI_PRESENT_MODE="mailbox"
 export vblank_mode=0
 ''';
-drvFile.writeAsStringSync(sblock);
+sdrvFile.writeAsStringSync(sblock);
 
   }
 
