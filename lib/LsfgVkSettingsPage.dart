@@ -20,7 +20,6 @@ class GameProfile {
     this.experimentalPresentMode,
   });
 
-  // Default values for a new profile
   factory GameProfile.defaults(String exe) => GameProfile(
         exe: exe,
         multiplier: 4,
@@ -30,23 +29,23 @@ class GameProfile {
 
 // ---------- Page ----------
 class LsfgVkSettingsPage extends StatefulWidget {
+  const LsfgVkSettingsPage({Key? key}) : super(key: key);
+
   @override
   _LsfgVkSettingsPageState createState() => _LsfgVkSettingsPageState();
 }
 
 class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
-  // Paths
   static final String _prefix = '/data/data/com.xodos/files/usr';
   static final File _drvFile = File('$_prefix/opt/drv');
   static final File _libFile = File('$_prefix/lib/liblsfg-vk-layer.so');
   static final File _libOffFile = File('$_prefix/lib/liblsfg-vk-layer.so.off');
   static final File _configFile = File('$_prefix/home/.config/lsfg-vk/conf.toml');
 
-  // State
   bool _lsfgEnabled = false;
   bool _loading = true;
   List<GameProfile> _games = [];
-  List<String> _globalLines = []; // everything before the first [[game]]
+  List<String> _globalLines = [];
 
   @override
   void initState() {
@@ -55,9 +54,7 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
   }
 
   Future<void> _init() async {
-    // Read saved state
     _lsfgEnabled = G.prefs.getBool('lsfg_enabled') ?? false;
-    // Parse the config file if it exists
     if (_configFile.existsSync()) {
       _parseConfig();
     }
@@ -69,7 +66,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
     if (value == _lsfgEnabled) return;
 
     if (value) {
-      // Check for custom Adrenotools driver
       if (!_drvFile.existsSync() ||
           !_drvFile.readAsStringSync().contains('# Adrenotools custom driver')) {
         _showAlert(
@@ -79,7 +75,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
         return;
       }
 
-      // Rename .off -> .so
       try {
         if (_libOffFile.existsSync()) {
           _libOffFile.renameSync(_libFile.path);
@@ -93,7 +88,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
       setState(() => _lsfgEnabled = true);
       _showSnack('LSFG-VK enabled');
     } else {
-      // Rename .so -> .off
       try {
         if (_libFile.existsSync()) {
           _libFile.renameSync(_libOffFile.path);
@@ -115,23 +109,20 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
     final lines = content.split('\n');
     _globalLines = [];
     _games = [];
-    int? gameStart; // line index of current [[game]]
+    int? gameStart;
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
 
       if (line.startsWith('[[') && line.contains('game')) {
-        // Finish previous game block
         if (gameStart != null) {
           _games.add(_parseGameBlock(lines.sublist(gameStart, i)));
         }
         gameStart = i;
       } else if (gameStart == null) {
-        // Still in global section
-        _globalLines.add(lines[i]); // keep original line endings etc.
+        _globalLines.add(lines[i]);
       }
     }
-    // Last game block
     if (gameStart != null) {
       _games.add(_parseGameBlock(lines.sublist(gameStart)));
     }
@@ -188,14 +179,11 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
     return s.substring(eq + 1).trim();
   }
 
-  /// Writes the complete config from global lines + current game list
   void _saveConfig() {
     final buf = StringBuffer();
-    // Global lines (includes trailing newlines as they were)
     for (final line in _globalLines) {
       buf.writeln(line);
     }
-    // Make sure there's a blank line before first game block
     if (buf.isNotEmpty && !buf.toString().endsWith('\n\n')) {
       buf.writeln();
     }
@@ -205,7 +193,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
       buf.writeln('exe = "${game.exe}"');
       if (game.multiplier != null) buf.writeln('multiplier = ${game.multiplier}');
       if (game.flowScale != null) {
-        // Use two decimal places to mimic TOML float
         buf.writeln('flow_scale = ${game.flowScale!.toStringAsFixed(2)}');
       }
       if (game.performanceMode != null) {
@@ -217,7 +204,7 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
       if (game.experimentalPresentMode != null) {
         buf.writeln('experimental_present_mode = "${game.experimentalPresentMode}"');
       }
-      buf.writeln(); // blank line between blocks
+      buf.writeln();
     }
     _configFile.writeAsStringSync(buf.toString());
   }
@@ -264,14 +251,12 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
   }
 
   Future<GameProfile?> _showEditDialog(GameProfile game) async {
-    // Working copies
     int? multiplier = game.multiplier;
     double? flowScale = game.flowScale;
     bool? perfMode = game.performanceMode;
     bool? hdrMode = game.hdrMode;
     String? presentMode = game.experimentalPresentMode;
 
-    // Disabled flags
     bool multEnabled = multiplier != null;
     bool flowEnabled = flowScale != null;
     bool perfEnabled = perfMode != null;
@@ -287,7 +272,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // --- Multiplier ---
                 Row(
                   children: [
                     Expanded(child: Text('Multiplier')),
@@ -313,7 +297,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
                     ),
                   ],
                 ),
-                // --- Flow Scale ---
                 Row(
                   children: [
                     Expanded(child: Text('Flow Scale')),
@@ -341,7 +324,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
                     Text(flowScale?.toStringAsFixed(2) ?? 'off'),
                   ],
                 ),
-                // --- Performance Mode ---
                 SwitchListTile(
                   title: Text('Performance Mode'),
                   value: perfMode ?? false,
@@ -358,7 +340,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
                     },
                   ),
                 ),
-                // --- HDR Mode ---
                 SwitchListTile(
                   title: Text('HDR Mode'),
                   value: hdrMode ?? false,
@@ -375,7 +356,6 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
                     },
                   ),
                 ),
-                // --- Present Mode ---
                 Row(
                   children: [
                     Expanded(child: Text('Present Mode')),
@@ -516,7 +496,7 @@ performance_mode = true
 ''';
 
     _configFile.writeAsStringSync(defaultConfig);
-    _parseConfig(); // reload
+    _parseConfig();
     setState(() {});
     _showSnack('LSFG-VK configuration reset');
   }
@@ -558,7 +538,6 @@ performance_mode = true
           ? Center(child: CircularProgressIndicator())
           : ListView(
               children: [
-                // ---- Enable / Disable Switch ----
                 SwitchListTile(
                   title: Text('Enable LSFG-VK'),
                   subtitle: Text('Requires Adrenotools custom driver with AHB'),
@@ -566,7 +545,6 @@ performance_mode = true
                   onChanged: _toggleLsfg,
                 ),
                 Divider(),
-                // ---- Game Profiles (only when enabled) ----
                 if (_lsfgEnabled) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -609,4 +587,22 @@ performance_mode = true
                                   onPressed: () => _editGame(game),
                                 ),
                                 IconButton(
-                              
+                                  icon: Icon(Icons.refresh),
+                                  tooltip: 'Reset to default',
+                                  onPressed: () => _resetGameToDefault(game),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete),
+                                  tooltip: 'Remove',
+                                  onPressed: () => _removeGame(game),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )),
+                ],
+              ],
+            ),
+    );
+  }
+}
