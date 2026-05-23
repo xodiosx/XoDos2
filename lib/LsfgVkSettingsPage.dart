@@ -288,7 +288,7 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
                     DropdownButton<int>(
                       value: (multiplier != null && multiplier! >= 1 && multiplier! <= 10)
                           ? multiplier
-                          : 4,
+                          : 3,
                       items: List.generate(10, (i) => i + 1)
                           .map((e) => DropdownMenuItem(value: e, child: Text('$e')))
                           .toList(),
@@ -313,8 +313,8 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
                     Expanded(
                       child: Slider(
                         value: flowScale ?? 0.80,
-                        min: 0.0,
-                        max: 3.0,
+                        min: 0.25,
+                        max: 1.0,
                         divisions: 30,
                         label: (flowScale ?? 0.80).toStringAsFixed(2),
                         onChanged: flowEnabled
@@ -371,11 +371,11 @@ class _LsfgVkSettingsPageState extends State<LsfgVkSettingsPage> {
                     ),
                     DropdownButton<String>(
                       value: (presentMode != null &&
-                              ['fifo', 'immediate', 'mailbox', 'relaxed']
+                              ['fifo', 'immediate', 'mailbox', 'Vsync']
                                   .contains(presentMode))
                           ? presentMode!
                           : 'fifo',
-                      items: ['fifo', 'immediate', 'mailbox', 'relaxed']
+                      items: ['fifo', 'immediate', 'mailbox', 'Vsync']
                           .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                           .toList(),
                       onChanged: presEnabled
