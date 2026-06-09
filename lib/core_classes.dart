@@ -779,7 +779,6 @@ export FONTCONFIG_FILE=\$PREFIX/etc/fonts/fonts.conf
 mkdir -p \$TMPDIR
 mkdir -p \$HOME
 #pkill -f virgl-*
-#pkill -f pulse*
 pkill -f logcat*
 unset TERMUX_X11_DEBUG
 #mkdir -p /data/data/com.xodos/files/usr/tmp/.virgl_test
@@ -854,8 +853,7 @@ fi
   }
 }
 
-
-  static Future<void> setupAudio() async {
+static Future<void> setupAudio() async {
     G.audioPty?.kill();
     G.audioPty = Pty.start(
       "/system/bin/sh"
@@ -898,6 +896,7 @@ fi
 """));
   //await G.audioPty?.exitCode;
   }
+  
   static Future<void> launchCurrentContainer() async {
     String extraMount = ""; //mount options and other proot options
     String extraOpt = "";

@@ -1,5 +1,4 @@
 // core_classes.dart
-
 // Keep ALL the original imports from the combined file
 import 'dart:io';
 import 'dart:async';
@@ -76,33 +75,7 @@ class Util {
   }
 
   // All keys
-  // int defaultContainer = 0: Default start the 0th container
-  // int defaultAudioPort = 4718: Default pulseaudio port (changed to 4718 to avoid conflicts with other software, original default was 4713)
-  // bool autoLaunchVnc = true: Whether to automatically start the graphical interface and jump (previously only supported VNC, hence the name)
-  // String lastDate: Last startup date of the software, yyyy-MM-dd
-  // bool isTerminalWriteEnabled = false
-  // bool isTerminalCommandsEnabled = false 
-  // int termMaxLines = 4095 Terminal maximum lines
-  // double termFontScale = 1 Terminal font size
-  // bool isStickyKey = true Whether terminal ctrl, shift, alt keys are sticky
-  // String defaultFFmpegCommand Default streaming command
-  // String defaultVirglCommand Default virgl parameters
-  // String defaultVirglOpt Default virgl environment variables
-  // bool reinstallBootstrap = false Whether to reinstall the bootstrap package on next startup
-  // bool getifaddrsBridge = false Whether to bridge getifaddrs on next startup
-  // bool uos = false Whether to disguise as UOS on next startup
-  // bool virgl = false Whether to enable virgl on next startup
-  // bool wakelock = false Keep screen on
-  // bool isHidpiEnabled = false Whether to enable high DPI
-  // bool isJpEnabled = false Whether to switch system to Japanese
-  // bool useAvnc = false Whether to use AVNC by default
-  // bool avncResizeDesktop = true Whether AVNC adjusts resolution based on current screen size by default
-  // double avncScaleFactor = -0.5 AVNC: Adjust scaling factor based on current screen size. Range -1~1, corresponding to ratio 4^-1~4^1
-  // String defaultHidpiOpt Default HiDPI environment variables
-  // ? int bootstrapVersion: Bootstrap package version
-  // String[] containersInfo: All container information (json)
-  // {name, boot:"\$DATA_DIR/bin/proot ...", vnc:"startnovnc", vncUrl:"...", commands:[{name:"Update and upgrade", command:"apt update -y && apt upgrade -y"},
-  // bind:[{name:"USB Drive", src:"/storage/xxxx", dst:"/media/meow"}]...]}
+
   // TODO: Is this way of writing still not right? Try changing to class when have time?
   static dynamic getGlobal(String key) {
     bool b = G.prefs.containsKey(key);
