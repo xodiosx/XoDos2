@@ -826,7 +826,7 @@ export prefixsh="/data/data/com.xodos/files/usr/bin/"
 export XDG_CONFIG_HOME=\$HOME/.config
 export XDG_CACHE_HOME=\$HOME/.cache
 
-rm -rf \$PREFIX/tmp/*
+#rm -rf \$PREFIX/tmp/*
 export PATH=\$DATA_DIR/usr/bin:\$DATA_DIR/bin
 unset LD_LIBRARY_PATH
 unset EGL_PLATFORM
