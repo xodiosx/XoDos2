@@ -17,7 +17,7 @@ body:
       description: |
         **Why is this needed?**  
         Many bugs are device-specific, such as:
-        - Samsung OneUI 7 incompatible with v1.0.23 and below (issue #303)
+        - Samsung OneUI 7 incompatible with v1.0.3 and below
         - HarmonyOS 4 missing wireless debugging option
       placeholder: "Brand + specific model"
     validations:
@@ -43,7 +43,7 @@ body:
         1. Old version issues may have been fixed in newer releases (always use the latest version)  
         2. Different desktop environments (XFCE/LXQT/GXDE) may behave differently  
         **If not using the latest version, be prepared for your issue to be ignored**
-      placeholder: "Version number + desktop environment (e.g., v1.0.23 GXDE)"
+      placeholder: "Version number + desktop environment (e.g., v1.0.8)"
     validations:
       required: true
 
