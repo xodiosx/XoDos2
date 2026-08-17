@@ -106,34 +106,38 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
      * Uses reflection to access the native start() and listenForConnections() methods.
      */
     private fun startXServerDirectly(args: Array<String>) {
-        try {
-            // Load CmdEntryPoint class (triggers static initializer, loading native library)
-            val clazz = Class.forName("com.termux.x11.CmdEntryPoint")
+    try {
+        // Load CmdEntryPoint class (triggers static initializer, loading native library)
+        val clazz = Class.forName("com.termux.x11.CmdEntryPoint")
 
-            // Call the public static native start(String[] args)
-            val startMethod = clazz.getMethod("start", Array<String>::class.java)
-            startMethod.invoke(null, args)
+        // Call the public static native start(String[] args)
+        val startMethod = clazz.getMethod("start", Array<String>::class.java)
+        startMethod.invoke(null, args)
 
-            // Allocate an instance without calling the constructor to avoid broadcast code
-            val unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe")
-            unsafeField.isAccessible = true
-            val unsafe = unsafeField.get(null) as sun.misc.Unsafe
-            val instance = unsafe.allocateInstance(clazz) as com.termux.x11.CmdEntryPoint
+        // Use reflection to get sun.misc.Unsafe and allocate an instance
+        // without calling the constructor (which would trigger the broadcast)
+        val unsafeClass = Class.forName("sun.misc.Unsafe")
+        val unsafeField = unsafeClass.getDeclaredField("theUnsafe")
+        unsafeField.isAccessible = true
+        val unsafe = unsafeField.get(null)
 
-            // Start the native connection listener in a separate thread
-            val listenMethod = clazz.getDeclaredMethod("listenForConnections")
-            listenMethod.isAccessible = true
-            Thread {
-                try {
-                    listenMethod.invoke(instance)
-                } catch (e: Exception) {
-                    android.util.Log.e("X11Flutter", "listenForConnections failed", e)
-                }
-            }.start()
-        } catch (e: Exception) {
-            throw e
-        }
+        val allocateMethod = unsafe.javaClass.getMethod("allocateInstance", Class::class.java)
+        val instance = allocateMethod.invoke(unsafe, clazz) as com.termux.x11.CmdEntryPoint
+
+        // Start the native connection listener in a separate thread
+        val listenMethod = clazz.getDeclaredMethod("listenForConnections")
+        listenMethod.isAccessible = true
+        Thread {
+            try {
+                listenMethod.invoke(instance)
+            } catch (e: Exception) {
+                android.util.Log.e("X11Flutter", "listenForConnections failed", e)
+            }
+        }.start()
+    } catch (e: Exception) {
+        throw e
     }
+}
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
