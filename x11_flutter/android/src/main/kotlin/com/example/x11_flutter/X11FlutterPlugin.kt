@@ -39,10 +39,14 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     setenv("TERMUX_X11_DEBUG", "1", true)
                     setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
 
+                    // Load CmdEntryPoint class on main thread to run static initializer
+                    // (which creates a Handler using the main Looper)
+                    val cmdClass = Class.forName("com.termux.x11.CmdEntryPoint")
+
                     // Start X server on a background thread without launching the viewer Activity
                     Thread {
                         try {
-                            startXServerDirectly(xserverArgs.toTypedArray())
+                            startXServerDirectly(cmdClass, xserverArgs.toTypedArray())
                             result.success(0)
                         } catch (e: Exception) {
                             result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
@@ -101,43 +105,36 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
-    /**
-     * Starts the X server natively without invoking the broadcast/viewer mechanism.
-     * Uses reflection to access the native start() and listenForConnections() methods.
-     */
-    private fun startXServerDirectly(args: Array<String>) {
-    try {
-        // Load CmdEntryPoint class (triggers static initializer, loading native library)
-        val clazz = Class.forName("com.termux.x11.CmdEntryPoint")
+    private fun startXServerDirectly(clazz: Class<*>, args: Array<String>) {
+        try {
+            // Call the public static native start(String[] args)
+            val startMethod = clazz.getMethod("start", Array<String>::class.java)
+            startMethod.invoke(null, args)
 
-        // Call the public static native start(String[] args)
-        val startMethod = clazz.getMethod("start", Array<String>::class.java)
-        startMethod.invoke(null, args)
+            // Use reflection to get sun.misc.Unsafe and allocate an instance
+            // without calling the constructor (which would trigger the broadcast)
+            val unsafeClass = Class.forName("sun.misc.Unsafe")
+            val unsafeField = unsafeClass.getDeclaredField("theUnsafe")
+            unsafeField.isAccessible = true
+            val unsafe = unsafeField.get(null)
 
-        // Use reflection to get sun.misc.Unsafe and allocate an instance
-        // without calling the constructor (which would trigger the broadcast)
-        val unsafeClass = Class.forName("sun.misc.Unsafe")
-        val unsafeField = unsafeClass.getDeclaredField("theUnsafe")
-        unsafeField.isAccessible = true
-        val unsafe = unsafeField.get(null)
+            val allocateMethod = unsafe.javaClass.getMethod("allocateInstance", Class::class.java)
+            val instance = allocateMethod.invoke(unsafe, clazz) as com.termux.x11.CmdEntryPoint
 
-        val allocateMethod = unsafe.javaClass.getMethod("allocateInstance", Class::class.java)
-        val instance = allocateMethod.invoke(unsafe, clazz) as com.termux.x11.CmdEntryPoint
-
-        // Start the native connection listener in a separate thread
-        val listenMethod = clazz.getDeclaredMethod("listenForConnections")
-        listenMethod.isAccessible = true
-        Thread {
-            try {
-                listenMethod.invoke(instance)
-            } catch (e: Exception) {
-                android.util.Log.e("X11Flutter", "listenForConnections failed", e)
-            }
-        }.start()
-    } catch (e: Exception) {
-        throw e
+            // Start the native connection listener in a separate thread
+            val listenMethod = clazz.getDeclaredMethod("listenForConnections")
+            listenMethod.isAccessible = true
+            Thread {
+                try {
+                    listenMethod.invoke(instance)
+                } catch (e: Exception) {
+                    android.util.Log.e("X11Flutter", "listenForConnections failed", e)
+                }
+            }.start()
+        } catch (e: Exception) {
+            throw e
+        }
     }
-}
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
