@@ -1,7 +1,10 @@
 package com.example.x11_flutter
 
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.system.Os.setenv
+import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -40,18 +43,17 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
 
                     // Load CmdEntryPoint class on main thread to run static initializer
-                    // (which creates a Handler using the main Looper)
                     val cmdClass = Class.forName("com.termux.x11.CmdEntryPoint")
 
-                    // Start X server on a background thread without launching the viewer Activity
-                    Thread {
+                    // Run the native start on the main thread to satisfy Choreographer's Looper requirement
+                    Handler(Looper.getMainLooper()).post {
                         try {
-                            startXServerDirectly(cmdClass, xserverArgs.toTypedArray())
+                            startXServer(cmdClass, xserverArgs.toTypedArray())
                             result.success(0)
                         } catch (e: Exception) {
                             result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
                         }
-                    }.start()
+                    }
                 } catch (e: Exception) {
                     result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
                 }
@@ -105,14 +107,13 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
-    private fun startXServerDirectly(clazz: Class<*>, args: Array<String>) {
+    private fun startXServer(clazz: Class<*>, args: Array<String>) {
         try {
-            // Call the public static native start(String[] args)
+            // Call the public static native start(String[] args) on the main thread
             val startMethod = clazz.getMethod("start", Array<String>::class.java)
             startMethod.invoke(null, args)
 
-            // Use reflection to get sun.misc.Unsafe and allocate an instance
-            // without calling the constructor (which would trigger the broadcast)
+            // Allocate an instance without calling the constructor (avoids broadcast)
             val unsafeClass = Class.forName("sun.misc.Unsafe")
             val unsafeField = unsafeClass.getDeclaredField("theUnsafe")
             unsafeField.isAccessible = true
@@ -121,14 +122,14 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             val allocateMethod = unsafe.javaClass.getMethod("allocateInstance", Class::class.java)
             val instance = allocateMethod.invoke(unsafe, clazz) as com.termux.x11.CmdEntryPoint
 
-            // Start the native connection listener in a separate thread
+            // Start the native connection listener on a background thread
             val listenMethod = clazz.getDeclaredMethod("listenForConnections")
             listenMethod.isAccessible = true
             Thread {
                 try {
                     listenMethod.invoke(instance)
                 } catch (e: Exception) {
-                    android.util.Log.e("X11Flutter", "listenForConnections failed", e)
+                    Log.e("X11Flutter", "listenForConnections failed", e)
                 }
             }.start()
         } catch (e: Exception) {
