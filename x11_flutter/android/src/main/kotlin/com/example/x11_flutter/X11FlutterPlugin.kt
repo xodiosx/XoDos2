@@ -1,7 +1,6 @@
 package com.example.x11_flutter
 
 import android.content.Intent
-import android.os.Handler
 import android.os.Looper
 import android.system.Os.setenv
 import android.util.Log
@@ -42,18 +41,33 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     setenv("TERMUX_X11_DEBUG", "1", true)
                     setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
 
-                    // Load CmdEntryPoint class on main thread to run static initializer
-                    val cmdClass = Class.forName("com.termux.x11.CmdEntryPoint")
+                    val appContext = activity!!.applicationContext
 
-                    // Run the native start on the main thread to satisfy Choreographer's Looper requirement
-                    Handler(Looper.getMainLooper()).post {
+                    // Start the X server on a dedicated thread with its own Looper,
+                    // using the original CmdEntryPoint.main() entry point.
+                    Thread {
                         try {
-                            startXServer(cmdClass, xserverArgs.toTypedArray())
-                            result.success(0)
+                            Looper.prepare()
+
+                            // Load the class (static block runs here and creates a Handler with this Looper)
+                            val cmdClass = Class.forName("com.termux.x11.CmdEntryPoint")
+
+                            // Set the static context to the application context (needed by native code)
+                            val ctxField = cmdClass.getDeclaredField("ctx")
+                            ctxField.isAccessible = true
+                            ctxField.set(null, appContext)
+
+                            // Call main(args) – it will start the server and enter its own Looper.loop()
+                            val mainMethod = cmdClass.getMethod("main", Array<String>::class.java)
+                            mainMethod.invoke(null, xserverArgs.toTypedArray())
+
+                            // main() blocks on Looper.loop(), so we never reach here
                         } catch (e: Exception) {
-                            result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
+                            Log.e("X11Flutter", "CmdEntryPoint.main failed", e)
                         }
-                    }
+                    }.start()
+
+                    result.success(0)
                 } catch (e: Exception) {
                     result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
                 }
@@ -104,36 +118,6 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             else -> {
                 result.notImplemented()
             }
-        }
-    }
-
-    private fun startXServer(clazz: Class<*>, args: Array<String>) {
-        try {
-            // Call the public static native start(String[] args) on the main thread
-            val startMethod = clazz.getMethod("start", Array<String>::class.java)
-            startMethod.invoke(null, args)
-
-            // Allocate an instance without calling the constructor (avoids broadcast)
-            val unsafeClass = Class.forName("sun.misc.Unsafe")
-            val unsafeField = unsafeClass.getDeclaredField("theUnsafe")
-            unsafeField.isAccessible = true
-            val unsafe = unsafeField.get(null)
-
-            val allocateMethod = unsafe.javaClass.getMethod("allocateInstance", Class::class.java)
-            val instance = allocateMethod.invoke(unsafe, clazz) as com.termux.x11.CmdEntryPoint
-
-            // Start the native connection listener on a background thread
-            val listenMethod = clazz.getDeclaredMethod("listenForConnections")
-            listenMethod.isAccessible = true
-            Thread {
-                try {
-                    listenMethod.invoke(instance)
-                } catch (e: Exception) {
-                    Log.e("X11Flutter", "listenForConnections failed", e)
-                }
-            }.start()
-        } catch (e: Exception) {
-            throw e
         }
     }
 
