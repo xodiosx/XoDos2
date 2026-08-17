@@ -1,5 +1,6 @@
 package com.example.x11_flutter
 
+import android.content.Intent
 import android.system.Os.setenv
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -10,6 +11,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
 class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
+
     private lateinit var channel: MethodChannel
     private var activity: android.app.Activity? = null
 
@@ -37,12 +39,15 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     setenv("TERMUX_X11_DEBUG", "1", true)
                     setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
 
-                    // Start X server on a background thread
+                    // Start X server on a background thread without launching the viewer Activity
                     Thread {
-                        com.termux.x11.CmdEntryPoint.main(xserverArgs.toTypedArray())
+                        try {
+                            startXServerDirectly(xserverArgs.toTypedArray())
+                            result.success(0)
+                        } catch (e: Exception) {
+                            result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
+                        }
                     }.start()
-
-                    result.success(0)
                 } catch (e: Exception) {
                     result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
                 }
@@ -50,7 +55,7 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "launchX11PrefsPage" -> {
                 try {
                     activity?.let {
-                        val intent = android.content.Intent(it, com.termux.x11.LoriePreferences::class.java)
+                        val intent = Intent(it, com.termux.x11.LoriePreferences::class.java)
                         it.startActivity(intent)
                         result.success(0)
                     } ?: run {
@@ -61,11 +66,9 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 }
             }
             "launchX11Page" -> {
-                // Since we removed the separate viewer, this might not be needed.
-                // Kept for compatibility but now starts MainActivity if you still have it.
                 try {
                     activity?.let {
-                        val intent = android.content.Intent(it, com.termux.x11.MainActivity::class.java)
+                        val intent = Intent(it, com.termux.x11.MainActivity::class.java)
                         it.startActivity(intent)
                         result.success(0)
                     } ?: run {
@@ -82,7 +85,7 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                         result.error("INVALID_ARGUMENTS", "scale argument is required", null)
                         return
                     }
-                    val intent = android.content.Intent("com.termux.x11.CHANGE_PREFERENCE").apply {
+                    val intent = Intent("com.termux.x11.CHANGE_PREFERENCE").apply {
                         putExtra("tc_displayScale", scale.toString())
                         setPackage(activity!!.packageName)
                     }
@@ -92,7 +95,43 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     result.error("SET_SCALE_FAILED", "Failed to set scale: ${e.message}", e.stackTraceToString())
                 }
             }
-            else -> result.notImplemented()
+            else -> {
+                result.notImplemented()
+            }
+        }
+    }
+
+    /**
+     * Starts the X server natively without invoking the broadcast/viewer mechanism.
+     * Uses reflection to access the native start() and listenForConnections() methods.
+     */
+    private fun startXServerDirectly(args: Array<String>) {
+        try {
+            // Load CmdEntryPoint class (triggers static initializer, loading native library)
+            val clazz = Class.forName("com.termux.x11.CmdEntryPoint")
+
+            // Call the public static native start(String[] args)
+            val startMethod = clazz.getMethod("start", Array<String>::class.java)
+            startMethod.invoke(null, args)
+
+            // Allocate an instance without calling the constructor to avoid broadcast code
+            val unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe")
+            unsafeField.isAccessible = true
+            val unsafe = unsafeField.get(null) as sun.misc.Unsafe
+            val instance = unsafe.allocateInstance(clazz) as com.termux.x11.CmdEntryPoint
+
+            // Start the native connection listener in a separate thread
+            val listenMethod = clazz.getDeclaredMethod("listenForConnections")
+            listenMethod.isAccessible = true
+            Thread {
+                try {
+                    listenMethod.invoke(instance)
+                } catch (e: Exception) {
+                    android.util.Log.e("X11Flutter", "listenForConnections failed", e)
+                }
+            }.start()
+        } catch (e: Exception) {
+            throw e
         }
     }
 
