@@ -23,35 +23,31 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-           "launchXServer" -> {
+          "launchXServer" -> {
     try {
         val context = activity?.applicationContext
             ?: throw IllegalStateException("No activity context available")
 
-        // Get optional arguments from Flutter (if provided)
         val tmpdir = call.argument<String>("tmpdir")
         val xkb = call.argument<String>("xkb")
+        val serverArgs = call.argument<List<String>>("serverArgs")
 
-        // Create service intent
         val intent = Intent(context, com.termux.x11.X11ServerService::class.java)
-        if (tmpdir != null) {
-            intent.putExtra("tmpdir", tmpdir)
-        }
-        if (xkb != null) {
-            intent.putExtra("xkb", xkb)
+        if (tmpdir != null) intent.putExtra("tmpdir", tmpdir)
+        if (xkb != null) intent.putExtra("xkb", xkb)
+        if (serverArgs != null) {
+            intent.putExtra("serverArgs", serverArgs.toTypedArray())
         }
 
-        // Start the service
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
         } else {
             context.startService(intent)
         }
 
-        Log.i("X11Flutter", "X11ServerService started with extras")
+        Log.i("X11Flutter", "X11ServerService started with args")
         result.success(0)
     } catch (e: Exception) {
-        Log.e("X11Flutter", "Failed to start X11 server", e)
         result.error("LAUNCH_XSERVER_FAILED", "Failed to start X server: ${e.message}", e.stackTraceToString())
     }
 }
