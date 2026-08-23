@@ -1,8 +1,7 @@
 package com.example.x11_flutter
 
 import android.content.Intent
-import android.os.Looper
-import android.system.Os.setenv
+import android.os.Build
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -26,50 +25,23 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         when (call.method) {
             "launchXServer" -> {
                 try {
-                    val tmpdir = call.argument<String>("tmpdir")
-                    val xkb = call.argument<String>("xkb")
-                    val xserverArgs = call.argument<List<String>>("xserverArgs")
+                    val context = activity?.applicationContext
+                        ?: throw IllegalStateException("No activity context available")
 
-                    if (tmpdir == null || xkb == null || xserverArgs == null) {
-                        result.error("INVALID_ARGUMENTS", "tmpdir, xkb and xserverArgs arguments are required", null)
-                        return
+                    // Start the X11 server in a separate process via the service.
+                    // The service handles environment setup, Looper, and CmdEntryPoint.main().
+                    val intent = Intent(context, com.termux.x11.X11ServerService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent)
+                    } else {
+                        context.startService(intent)
                     }
 
-                    // Set environment variables
-                    setenv("TMPDIR", tmpdir, true)
-                    setenv("XKB_CONFIG_ROOT", xkb, true)
-                    setenv("TERMUX_X11_DEBUG", "1", true)
-                    setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
-
-                    val appContext = activity!!.applicationContext
-
-                    // Start the X server on a dedicated thread with its own Looper,
-                    // using the original CmdEntryPoint.main() entry point.
-                    Thread {
-                        try {
-                            Looper.prepare()
-
-                            // Load the class (static block runs here and creates a Handler with this Looper)
-                            val cmdClass = Class.forName("com.termux.x11.CmdEntryPoint")
-
-                            // Set the static context to the application context (needed by native code)
-                            val ctxField = cmdClass.getDeclaredField("ctx")
-                            ctxField.isAccessible = true
-                            ctxField.set(null, appContext)
-
-                            // Call main(args) – it will start the server and enter its own Looper.loop()
-                            val mainMethod = cmdClass.getMethod("main", Array<String>::class.java)
-                            mainMethod.invoke(null, xserverArgs.toTypedArray())
-
-                            // main() blocks on Looper.loop(), so we never reach here
-                        } catch (e: Exception) {
-                            Log.e("X11Flutter", "CmdEntryPoint.main failed", e)
-                        }
-                    }.start()
-
+                    Log.i("X11Flutter", "X11ServerService started")
                     result.success(0)
                 } catch (e: Exception) {
-                    result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
+                    Log.e("X11Flutter", "Failed to start X11 server", e)
+                    result.error("LAUNCH_XSERVER_FAILED", "Failed to start X server: ${e.message}", e.stackTraceToString())
                 }
             }
             "launchX11PrefsPage" -> {
