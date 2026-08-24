@@ -139,12 +139,6 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
             android:process=":x11"
             android:exported="false"/>
 
-<service
-    android:name="com.termux.x11.X11ServerService"
-    android:exported="false"
-    android:process=":x11"
-    android:foregroundServiceType="dataSync" />
-
         <!-- ================= KEY INTERCEPTOR ================= -->
 
         <service
