@@ -1,8 +1,8 @@
 package com.example.x11_flutter
 
+import android.system.Os.setenv
+
 import android.content.Intent
-import android.os.Build
-import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -11,8 +11,8 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
-class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
-
+/** X11FlutterPlugin */
+class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var channel: MethodChannel
     private var activity: android.app.Activity? = null
 
@@ -23,34 +23,30 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-          "launchXServer" -> {
-    try {
-        val context = activity?.applicationContext
-            ?: throw IllegalStateException("No activity context available")
+            "launchXServer" -> {
+                try {
+                    val tmpdir = call.argument<String>("tmpdir")
+                    val xkb = call.argument<String>("xkb")
+                    val xserverArgs = call.argument<List<String>>("xserverArgs")
+                    
+                    if (tmpdir == null || xkb == null || xserverArgs == null) {
+                        result.error("INVALID_ARGUMENTS", "tmpdir, xkb and xserverArgs arguments are required", null)
+                        return
+                    }
 
-        val tmpdir = call.argument<String>("tmpdir")
-        val xkb = call.argument<String>("xkb")
-        val serverArgs = call.argument<List<String>>("serverArgs")
-
-        val intent = Intent(context, com.termux.x11.X11ServerService::class.java)
-        if (tmpdir != null) intent.putExtra("tmpdir", tmpdir)
-        if (xkb != null) intent.putExtra("xkb", xkb)
-        if (serverArgs != null) {
-            intent.putExtra("serverArgs", serverArgs.toTypedArray())
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        } else {
-            context.startService(intent)
-        }
-
-        Log.i("X11Flutter", "X11ServerService started with args")
-        result.success(0)
-    } catch (e: Exception) {
-        result.error("LAUNCH_XSERVER_FAILED", "Failed to start X server: ${e.message}", e.stackTraceToString())
-    }
-}
+                    // 设置环境变量
+                    setenv("TMPDIR", tmpdir, true)
+                    setenv("XKB_CONFIG_ROOT", xkb, true)
+                    setenv("TERMUX_X11_DEBUG", "1", true)
+                    setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
+                    
+                    // 启动X服务器，使用传入的参数
+                    com.termux.x11.CmdEntryPoint.main(xserverArgs.toTypedArray())
+                    result.success(0)
+                } catch (e: Exception) {
+                    result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
+                }
+            }
             "launchX11PrefsPage" -> {
                 try {
                     activity?.let {
@@ -119,4 +115,5 @@ class X11FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     override fun onDetachedFromActivity() {
         activity = null
     }
+
 }
