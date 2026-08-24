@@ -1,8 +1,9 @@
 package com.example.x11_flutter
 
-import android.system.Os.setenv
-
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
+import android.system.Os.setenv
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -10,6 +11,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import kotlin.concurrent.thread
 
 /** X11FlutterPlugin */
 class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
@@ -24,6 +26,12 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "launchXServer" -> {
+                val act = activity
+                if (act == null) {
+                    result.error("NO_ACTIVITY", "Activity context missing", null)
+                    return
+                }
+
                 try {
                     val tmpdir = call.argument<String>("tmpdir")
                     val xkb = call.argument<String>("xkb")
@@ -34,14 +42,24 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                         return
                     }
 
-                    // 设置环境变量
+                    // Set Environment Variables
                     setenv("TMPDIR", tmpdir, true)
                     setenv("XKB_CONFIG_ROOT", xkb, true)
                     setenv("TERMUX_X11_DEBUG", "1", true)
-                    setenv("TERMUX_X11_OVERRIDE_PACKAGE", activity!!.packageName, true)
+                    setenv("TERMUX_X11_OVERRIDE_PACKAGE", act.packageName, true)
                     
-                    // 启动X服务器，使用传入的参数
-                    com.termux.x11.CmdEntryPoint.main(xserverArgs.toTypedArray())
+                    // Assign valid context to CmdEntryPoint before invocation
+                    com.termux.x11.CmdEntryPoint.ctx = act.applicationContext
+
+                    // Execute CmdEntryPoint on a background thread to prevent blocking Main UI thread
+                    thread(start = true, name = "XServerThread") {
+                        try {
+                            com.termux.x11.CmdEntryPoint.main(xserverArgs.toTypedArray())
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+
                     result.success(0)
                 } catch (e: Exception) {
                     result.error("LAUNCH_XSERVER_FAILED", "Failed to launch X server: ${e.message}", e.stackTraceToString())
@@ -63,7 +81,10 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             "launchX11Page" -> {
                 try {
                     activity?.let {
-                        val intent = Intent(it, com.termux.x11.MainActivity::class.java)
+                        val intent = Intent(it, com.termux.x11.MainActivity::class.java).apply {
+                            // Ensure MainActivity is brought to top or launched freshly
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        }
                         it.startActivity(intent)
                         result.success(0)
                     } ?: run {
@@ -80,11 +101,15 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                         result.error("INVALID_ARGUMENTS", "scale argument is required", null)
                         return
                     }
+                    val act = activity ?: run {
+                        result.error("NO_ACTIVITY", "No activity context available", null)
+                        return
+                    }
                     val intent = Intent("com.termux.x11.CHANGE_PREFERENCE").apply {
                         putExtra("tc_displayScale", scale.toString())
-                        setPackage(activity!!.packageName)
+                        setPackage(act.packageName)
                     }
-                    activity!!.sendBroadcast(intent)
+                    act.sendBroadcast(intent)
                     result.success(0)
                 } catch (e: Exception) {
                     result.error("SET_SCALE_FAILED", "Failed to set scale: ${e.message}", e.stackTraceToString())
@@ -115,5 +140,4 @@ class X11FlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     override fun onDetachedFromActivity() {
         activity = null
     }
-
 }

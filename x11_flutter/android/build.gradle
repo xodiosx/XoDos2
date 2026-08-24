@@ -76,7 +76,7 @@ android {
 dependencies {
       //  
      //   
-          implementation 'com.github.xodiosx:termux-x11:c419f36'
+          implementation 'com.github.xodiosx:termux-x11:c1eeb66'
 }
 
 
