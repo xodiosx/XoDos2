@@ -3,9 +3,6 @@ package com.com.xodos
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
-import android.os.Process
 import android.util.Log
 import com.google.android.material.color.DynamicColors
 import me.weishu.reflection.Reflection
@@ -37,13 +34,8 @@ class MainApplication : Application() {
             }
             startActivity(intent)
 
-            // Kill the process after a short delay so the activity can be displayed
-            Handler(Looper.getMainLooper()).postDelayed({
-                Process.killProcess(Process.myPid())
-                System.exit(10)
-            }, 1000)
-
             // Do NOT call defaultHandler to avoid the system crash dialog
+            // Do NOT kill the process here – let the user close the crash screen manually
         }
     }
 
