@@ -18,14 +18,14 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
-android:requestLegacyExternalStorage="true"
-        android:label="@string/tc_app_name"
-        android:name=".MainApplication"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true"
-        android:launchMode="singleInstance"
-        android:theme="@style/App.Theme"
-        android:extractNativeLibs="true">
+    android:requestLegacyExternalStorage="true"
+    android:label="@string/tc_app_name"
+    android:name=".MainApplication"
+    android:icon="@mipmap/ic_launcher"
+    android:usesCleartextTraffic="true"
+    android:launchMode="singleInstance"
+    android:theme="@style/App.Theme"
+    android:extractNativeLibs="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -77,6 +77,11 @@ android:name="android.content.action.DOCUMENTS_PROVIDER"/>
             android:windowSoftInputMode="stateHidden"
             android:configChanges="fontScale|orientation|screenSize|keyboard|keyboardHidden|layoutDirection|locale|navigation|screenLayout|touchscreen|uiMode|smallestScreenSize|density"
             android:theme="@style/AppTheme" />
+        
+                <activity
+                android:name=".CrashActivity"
+                android:exported="false"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <!-- ================= CONTROLLER ACTIVITIES ================= -->
 

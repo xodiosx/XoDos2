@@ -1,0 +1,257 @@
+plugins {
+	id 'com.gladed.androidgitversion' version '0.4.14'
+}
+apply plugin: 'com.android.application'
+
+androidGitVersion {
+	codeFormat = "MNNPPBBBB"
+	format = "%tag%%-count%%-branch%%-dirty%"
+	prefix = "v"  // Only tags beginning with v are considered.
+	untrackedIsDirty = false
+}
+
+dependencies {
+	// 1.2.0 is the newest version we can use that won't complain about minSdk version.
+	def appcompat_version = "1.2.0"
+
+	implementation "androidx.appcompat:appcompat:$appcompat_version"
+
+	// Convenient wrapper around DocumentContract. Might look into writing our own
+	// to see if there's some performance to squeeze at some point, but doubt it.
+	implementation "androidx.documentfile:documentfile:1.1.0"
+}
+
+android {
+	flavorDimensions += "variant"
+	namespace 'org.ppsspp.ppsspp'
+	signingConfigs {
+		debug {
+			storeFile file("debug.keystore")
+		}
+		optimized {
+			storeFile file("debug.keystore")
+		}
+
+		// Set these in a system global (or project local, but not checked in) gradle.properties .
+		if (project.hasProperty("RELEASE_STORE_FILE")) {
+			release {
+				storeFile file(RELEASE_STORE_FILE)
+				storePassword RELEASE_STORE_PASSWORD
+				keyAlias RELEASE_KEY_ALIAS
+				keyPassword RELEASE_KEY_PASSWORD
+			}
+		} else {
+			release {
+			}
+		}
+	}
+
+	compileSdk 35
+
+	ndkVersion "27.2.12479018"
+
+	compileOptions {
+		sourceCompatibility JavaVersion.VERSION_11
+		targetCompatibility JavaVersion.VERSION_11
+	}
+
+	defaultConfig {
+		/*
+		configurations.all {
+			resolutionStrategy {
+				// Newer versions are not compatible with our minsdk. Should find a way to exclude it entirely
+				// since we have no use for this transitive dependency.
+				force 'androidx.emoji2:emoji2-views-helper:1.0.0'
+			}
+		}
+		*/
+
+		applicationId 'org.ppsspp.ppsspp'
+		if (androidGitVersion.name() != "unknown" && androidGitVersion.code() >= 14000000) {
+			// Start using automatic Android version numbers from version 1.4.
+			println "Overriding Android Version Name, Code: " + androidGitVersion.name() + " " + androidGitVersion.code()
+			versionName androidGitVersion.name()
+			versionCode androidGitVersion.code()
+		} else {
+			println "(not using these:) Android Version Name, Code: " + androidGitVersion.name() + " " + androidGitVersion.code()
+		}
+		file("versionname.txt").text = androidGitVersion.name()
+		file("versioncode.txt").text = androidGitVersion.code().toString()
+
+		minSdk 21
+		targetSdk 35
+		if (project.hasProperty("ANDROID_VERSION_CODE") && project.hasProperty("ANDROID_VERSION_NAME")) {
+			versionCode ANDROID_VERSION_CODE
+			versionName ANDROID_VERSION_NAME
+		}
+		signingConfig signingConfigs.debug
+	}
+	buildTypes {
+		debug {
+			minifyEnabled = false
+			jniDebuggable true
+			signingConfig signingConfigs.debug
+		}
+		optimized {
+			// Debug signed but optimized.
+			minifyEnabled = false
+			jniDebuggable true
+			signingConfig android.buildTypes.debug.signingConfig
+		}
+		release {
+			minifyEnabled = false
+			signingConfig signingConfigs.release
+		}
+	}
+	externalNativeBuild {
+		cmake {
+			path '../CMakeLists.txt'
+		}
+	}
+	packagingOptions {
+		jniLibs.useLegacyPackaging = true
+	}
+	sourceSets {
+		main {
+			manifest.srcFile 'AndroidManifest.xml'
+			res.srcDirs = ['res']
+			java.srcDirs = ['src']
+			aidl.srcDirs = ['src']
+			resources.srcDirs = ['src']
+			assets.srcDirs = [
+					'../assets',
+			]
+		}
+		normal {
+			res.srcDirs = ['normal/res']
+		}
+		gold {
+			res.srcDirs = ['gold/res']
+		}
+		vr {
+			res.srcDirs = ['normal/res']
+			manifest.srcFile 'VRManifest.xml'
+		}
+		legacy {
+			res.srcDirs = ['legacy/res']
+		}
+	}
+	productFlavors {
+		normal {
+			applicationId 'org.ppsspp.ppsspp'
+			dimension "variant"
+			externalNativeBuild {
+				cmake {
+					// Available arguments listed at https://developer.android.com/ndk/guides/cmake.html
+					arguments '-DANDROID=true',
+							'-DANDROID_PLATFORM=android-21',
+							'-DANDROID_TOOLCHAIN=clang',
+							'-DANDROID_CPP_FEATURES=',
+							'-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON',
+							'-DANDROID_STL=c++_static'
+				}
+			}
+			ndk {
+				abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+			}
+		}
+		gold {
+			applicationId 'org.ppsspp.ppssppgold'
+			dimension "variant"
+			externalNativeBuild {
+				cmake {
+					// Available arguments listed at https://developer.android.com/ndk/guides/cmake.html
+					arguments '-DANDROID=true',
+							'-DANDROID_PLATFORM=android-21',
+							'-DANDROID_TOOLCHAIN=clang',
+							'-DANDROID_CPP_FEATURES=',
+							'-DANDROID_STL=c++_static',
+							'-DANDROID_ARM_NEON=TRUE',
+							'-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON',
+							'-DGOLD=TRUE'
+				}
+			}
+			ndk {
+				abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+			}
+		}
+		legacy {
+			applicationId 'org.ppsspp.ppsspplegacy'
+			dimension "variant"
+			minSdkVersion 17  // To be compatible as far back as possible. This does cause build warnings.
+			targetSdkVersion 29  // This is the point of legacy.
+			externalNativeBuild {
+				cmake {
+					// Available arguments listed at https://developer.android.com/ndk/guides/cmake.html
+					arguments '-DANDROID=true',
+						'-DANDROID_PLATFORM=android-21',
+						'-DANDROID_TOOLCHAIN=clang',
+						'-DANDROID_CPP_FEATURES=',
+						'-DANDROID_STL=c++_static',
+						'-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON',
+						'-DANDROID_LEGACY=TRUE'
+				}
+			}
+			ndk {
+				abiFilters 'armeabi-v7a', 'arm64-v8a'
+			}
+		}
+		vr {
+			applicationId 'org.ppsspp.ppssppvr'
+			dimension "variant"
+			targetSdkVersion 29  // Do not upgrade this, we depend on not requiring scoped storage on Oculus.
+			externalNativeBuild {
+				cmake {
+					// Available arguments listed at https://developer.android.com/ndk/guides/cmake.html
+					arguments '-DANDROID=true',
+							'-DANDROID_PLATFORM=android-21',
+							'-DANDROID_TOOLCHAIN=clang',
+							'-DANDROID_CPP_FEATURES=',
+							'-DANDROID_STL=c++_static',
+							'-DANDROID_ARM_NEON=TRUE',
+							'-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON',
+							'-DOPENXR=TRUE',
+							'-DANDROID_LEGACY=TRUE',
+							'-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+				}
+			}
+			ndk {
+				abiFilters 'arm64-v8a'
+			}
+		}
+	}
+	// TODO: This is deprecated and needs a replacement. See https://stackoverflow.com/questions/67330818/android-gradle-plugin7-0-0-alpha15-removed-variantfilter-property-how-to-rest
+	// Though, not really that important.
+	variantFilter { variant ->
+		def needed = variant.name in [
+			'normalDebug',      // for debugging
+			'normalOptimized',  // for testing/user build
+			'normalRelease',    // for Google Play releases
+			'goldDebug',
+			'goldRelease',      // for Google Play releases
+			'vrDebug',          // for VR debugging
+			'vrOptimized',      // for VR testing
+			'vrRelease',        // for VR releases
+			'legacyDebug',      // for legacy debugging
+			'legacyOptimized',  // for legacy testing/user build
+			'legacyRelease',    // for buildbot releases
+		]
+		variant.setIgnore(!needed)
+	}
+	buildFeatures {
+		aidl true
+		buildConfig true
+	}
+}
+afterEvaluate {
+	android.sourceSets.main.assets.getSrcDirs().each { println it }
+}
+
+// F-Droid lite version can be created with : ./gradlew assembleOptimized -Pf_droid
+if (project.hasProperty("f_droid")) {
+	project.android.sourceSets.main.java.srcDirs += 'libs/MogaStubs'
+} else {
+	project.dependencies {
+		implementation files('libs/com.bda.controller.jar')
+	}
+}

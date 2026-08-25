@@ -17,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
-
+import 'package:flutter/foundation.dart';
 import 'constants.dart';
 import 'default_values.dart';
 import 'core_classes.dart';
@@ -28,7 +28,25 @@ import 'package:xodos/l10n/app_localizations.dart';
 import 'backup_restore_dialog.dart';
 
 void main() {
+  // Set up error handling for Flutter framework errors
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details); // still print to console
+    _reportErrorToNative(details.exceptionAsString());
+  };
+
+  // Set up error handling for platform/async errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    _reportErrorToNative('$error\n$stack');
+    return true;
+  };
+
   runApp(const MyApp());
+}
+
+// Helper function to send error details to native Android
+void _reportErrorToNative(String error) {
+  const channel = MethodChannel('android');
+  channel.invokeMethod('showCrashScreen', {'stackTrace': error});
 }
 
 class MyApp extends StatelessWidget {
