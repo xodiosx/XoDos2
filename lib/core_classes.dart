@@ -714,7 +714,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
       G.prefs.setBool("reinstallBootstrap", false);
        if (G.onExtractionComplete != null) {
       G.onExtractionComplete!();
-          
+          Workflow.firstTimeInstallSucceeded = true;
     }
     
      
@@ -749,7 +749,7 @@ await G.prefs.remove('extractionProgressT');
         await initForFirstTime(); // normal APK asset extraction
       } catch (e) {
         debugPrint('First-time setup failed: $e');
-      SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+    //  SystemChannels.platform.invokeMethod("SystemNavigator.pop");
           return; // stop further initialisation
       }
           // Installation cancelled or failed – exit the app
@@ -797,7 +797,7 @@ G.prefs.setBool("reinstallBootstrap", false);
         await initForFirstTime(); // normal APK asset extraction
       } catch (e) {
         debugPrint('First-time setup failed: $e');
-      SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+   //   SystemChannels.platform.invokeMethod("SystemNavigator.pop");
           return; // stop further initialisation
       }
           // Installation cancelled or failed – exit the app         
@@ -1452,6 +1452,12 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 
     G.prefs.setBool("reinstallBootstrap", false);
     await G.prefs.remove('extractionProgressT');
+      if (Workflow.firstTimeInstallSucceeded) {
+    // Optional: small delay to ensure all writes are done
+    await Future.delayed(const Duration(milliseconds: 500));
+    SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+    return; // stop further init
+  }
   }
 }
 
