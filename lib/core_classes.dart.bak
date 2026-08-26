@@ -269,6 +269,15 @@ static Future<int> execute(
 class InstallLogDialog extends StatelessWidget {
   const InstallLogDialog({Key? key}) : super(key: key);
 
+  Future<void> _copyLog(BuildContext context, List<String> lines) async {
+    final String logText = lines.join('\n');
+    await Clipboard.setData(ClipboardData(text: logText));
+    // Optional: show a snackbar to confirm copy
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Log copied to clipboard')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -290,6 +299,15 @@ class InstallLogDialog extends StatelessWidget {
         ),
       ),
       actions: [
+        // New copy button
+        TextButton(
+          onPressed: () {
+            final lines = G.installLog.value;
+            _copyLog(context, lines);
+          },
+          child: const Text('Copy Output'),
+        ),
+        // Existing close button
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Close'),
@@ -714,9 +732,9 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
       G.prefs.setBool("reinstallBootstrap", false);
        if (G.onExtractionComplete != null) {
       G.onExtractionComplete!();
-          Workflow.firstTimeInstallSucceeded = true;
+          
     }
-    
+    SystemChannels.platform.invokeMethod("SystemNavigator.pop");
      
   }
 
@@ -1452,12 +1470,6 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
 
     G.prefs.setBool("reinstallBootstrap", false);
     await G.prefs.remove('extractionProgressT');
-      if (Workflow.firstTimeInstallSucceeded) {
-    // Optional: small delay to ensure all writes are done
-    await Future.delayed(const Duration(milliseconds: 500));
-    SystemChannels.platform.invokeMethod("SystemNavigator.pop");
-    return; // stop further init
-  }
   }
 }
 

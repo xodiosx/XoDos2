@@ -269,6 +269,15 @@ static Future<int> execute(
 class InstallLogDialog extends StatelessWidget {
   const InstallLogDialog({Key? key}) : super(key: key);
 
+  Future<void> _copyLog(BuildContext context, List<String> lines) async {
+    final String logText = lines.join('\n');
+    await Clipboard.setData(ClipboardData(text: logText));
+    // Optional: show a snackbar to confirm copy
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Log copied to clipboard')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -290,6 +299,15 @@ class InstallLogDialog extends StatelessWidget {
         ),
       ),
       actions: [
+        // New copy button
+        TextButton(
+          onPressed: () {
+            final lines = G.installLog.value;
+            _copyLog(context, lines);
+          },
+          child: const Text('Copy Output'),
+        ),
+        // Existing close button
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Close'),
@@ -380,7 +398,7 @@ class TermPty{
     pty.exitCode.then((code) {
       terminal.write('the process exited with exit code $code');
       if (code == 0) {
-        SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+     //   SystemChannels.platform.invokeMethod("SystemNavigator.pop");
       }
       //Signal 9 hint
       if (code == -9) {
@@ -716,7 +734,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
       G.onExtractionComplete!();
           
     }
-    
+    SystemChannels.platform.invokeMethod("SystemNavigator.pop");
      
   }
 
