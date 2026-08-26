@@ -1063,7 +1063,7 @@ export CONTAINER_DIR=\$DATA_DIR/containers/${G.currentContainer}
 export EXTRA_MOUNT="$extraMount"
 export EXTRA_OPT="$extraOpt"
 pkill -f com.termux*
-pkill -f com.xodos*
+
 sleep 1
 #export PROOT_L2S_DIR=\$DATA_DIR/containers/0/.l2s
 cd \$DATA_DIR
@@ -1103,7 +1103,7 @@ static Future<void> launchGUIBackend() async {
       
     } else {
     Util.termWrite("""pkill -f com.termux*""");
-    Util.termWrite("""pkill -f com.xodos*""");
+   // Util.termWrite("""pkill -f com.xodos*"""); // it's killing pulseaudio 
       // Redirect VNC command output to /dev/null
       String vncCmd = Util.getCurrentProp("vnc");
       // Remove any existing & and add redirection

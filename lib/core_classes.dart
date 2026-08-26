@@ -62,13 +62,29 @@ class Util {
     Directory.fromRawPath(const Utf8Encoder().convert(dir)).createSync(recursive: true);
   }
 
-  static Future<int> execute(String str) async {
-    Pty pty = Pty.start(
-      "/system/bin/sh"
-    );
-    pty.write(const Utf8Encoder().convert("$str\nexit \$?\n"));
-    return await pty.exitCode;
-  }
+static Future<int> execute(
+  String str, {
+  void Function(String line)? onOutput,
+}) async {
+  final pty = Pty.start("/system/bin/sh");
+  pty.write(const Utf8Encoder().convert("$str\nexit \$?\n"));
+
+  pty.output
+      .cast<List<int>>()
+      .transform(const Utf8Decoder())
+      .transform(const LineSplitter())
+      .listen((line) {
+    // If a custom callback is provided, use it.
+    // Otherwise, append to the global log buffer.
+    if (onOutput != null) {
+      onOutput(line);
+    } else {
+      G.installLog.value = [...G.installLog.value, line];
+    }
+  });
+
+  return await pty.exitCode;
+}
 
   static void termWrite(String str) {
     G.termPtys[G.currentContainer]!.pty.write(const Utf8Encoder().convert("$str\n"));
@@ -250,6 +266,38 @@ class Util {
 
 }
 
+class InstallLogDialog extends StatelessWidget {
+  const InstallLogDialog({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Installation Log'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 400,
+        child: ValueListenableBuilder<List<String>>(
+          valueListenable: G.installLog,
+          builder: (context, lines, _) {
+            return ListView.builder(
+              itemCount: lines.length,
+              itemBuilder: (context, index) => Text(
+                lines[index],
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
 // From xterms example about handling ctrl, shift, alt keys
 // This class should only have one instance G.keyboard
 class VirtualKeyboard extends TerminalInputHandler with ChangeNotifier {
@@ -363,6 +411,7 @@ class TermPty{
 class G {
 
 static VoidCallback? onExtractionComplete;
+static final ValueNotifier<List<String>> installLog = ValueNotifier([]);
   
   static late final String dataPath;
   static Pty? audioPty;
@@ -525,16 +574,27 @@ fi
 
 sleep 1
 
-""");
+"""
+);
 print("patch proot and assets extracted,,,");
-    
+  
   }
 
   // Things to do on first startup
   static Future<void> initForFirstTime() async {
     // First set up bootstrap
-    G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
-    await setupBootstrap();
+    G.installLog.value = [];
+
+  // Show the log dialog (non‑dismissable while installing)
+  showDialog(
+    context: G.homePageStateContext,
+    barrierDismissible: false,
+    builder: (context) => const InstallLogDialog(),
+  );
+
+  // First set up bootstrap
+  G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
+  await setupBootstrap();
     
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.copyingContainerSystem;
     // Folder 0 for storing containers and folder .l2s for storing hard links
@@ -591,7 +651,7 @@ if [  -f "\$DATA_DIR/xaa" ]; then
   cat xa* | \$DATA_DIR/usr/bin/tar x -J \
     --delay-directory-restore \
     --preserve-permissions \
-    -v -C /data/data/com.xodos/files
+    -v -C /data/data/com.xodos/files/
 else
   echo ' No xa archive parts found, skipping...'
 fi
@@ -625,12 +685,14 @@ ln -sf \$DATA_DIR/tiny/extra/ \$DATA_DIR/containers/0/extra
 ln -sf /sdcard \$DATA_DIR/containers/0/sdcard
 
 for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DIR/usr/bin/"; done
-""");
+"""
+
+);
     // Some data initialization
     // $DATA_DIR is the data folder, $CONTAINER_DIR is the container root directory
     // Termux:X11's startup command is not here, it's hardcoded. Now it's a pile of stuff code :P
     print("xodos system is ready");
-    
+
     // Use LanguageManager for proper language support
     final languageCode = Localizations.localeOf(G.homePageStateContext).languageCode;
     final groupedCommands = LanguageManager.getGroupedCommandsForLanguage(languageCode);
