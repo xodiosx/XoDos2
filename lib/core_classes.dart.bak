@@ -398,7 +398,7 @@ class TermPty{
     pty.exitCode.then((code) {
       terminal.write('the process exited with exit code $code');
       if (code == 0) {
-        SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+     //   SystemChannels.platform.invokeMethod("SystemNavigator.pop");
       }
       //Signal 9 hint
       if (code == -9) {
