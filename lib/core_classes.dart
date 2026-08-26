@@ -604,12 +604,12 @@ print("patch proot and assets extracted,,,");
     G.installLog.value = [];
 
   // Show the log dialog (non‑dismissable while installing)
-  showDialog(
+/*  showDialog(
     context: G.homePageStateContext,
     barrierDismissible: false,
     builder: (context) => const InstallLogDialog(),
   );
-
+*/
   // First set up bootstrap
   G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
   await setupBootstrap();

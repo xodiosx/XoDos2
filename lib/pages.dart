@@ -1994,12 +1994,67 @@ class _InfoPageState extends State<InfoPage> {
           ]),
           const SizedBox.square(dimension: 16),
         ],))),
+        
         ExpansionPanel(
-          isExpanded: _expandState[3],
-          headerBuilder: ((context, isExpanded) {
-            return ListTile(title: Text(AppLocalizations.of(context)!.permissionUsage));
-          }), body: Padding(padding: const EdgeInsets.all(8), child: Text(AppLocalizations.of(context)!.privacyStatement))),
-        ExpansionPanel(
+  isExpanded: _expandState[3], 
+  headerBuilder: ((context, isExpanded) {
+    return ListTile(
+      title: Text('Installation Log'),  
+    );
+  }),
+  body: Padding(
+    padding: const EdgeInsets.all(8.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Buttons to copy or clear the log
+        Row(
+          children: [
+            TextButton.icon(
+              icon: Icon(Icons.copy),
+              label: Text('Copy'),
+              onPressed: () {
+                final lines = G.installLog.value;
+                Clipboard.setData(ClipboardData(text: lines.join('\n')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Log copied to clipboard')),
+                );
+              },
+            ),
+            TextButton.icon(
+              icon: Icon(Icons.clear),
+              label: Text('Clear'),
+              onPressed: () {
+                G.installLog.value = [];
+              },
+            ),
+          ],
+        ),
+        // Scrollable log view
+        SizedBox(
+          height: 300,  // or use Expanded inside a fixed-height container
+          child: ValueListenableBuilder<List<String>>(
+            valueListenable: G.installLog,
+            builder: (context, lines, _) {
+              if (lines.isEmpty) {
+                return Center(child: Text('No installation log yet.'));
+              }
+              return ListView.builder(
+                itemCount: lines.length,
+                itemBuilder: (context, index) => Text(
+                  lines[index],
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+       
+         ExpansionPanel(
           isExpanded: _expandState[4],
           headerBuilder: ((context, isExpanded) {
             return ListTile(title: Text(AppLocalizations.of(context)!.supportAuthor));
