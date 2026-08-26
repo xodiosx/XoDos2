@@ -71,7 +71,7 @@ static Future<int> execute(
 
   pty.output
       .cast<List<int>>()
-      .transform(const Utf8Decoder())
+      .transform(const Utf8Decoder(allowMalformed: true))  
       .transform(const LineSplitter())
       .listen((line) {
     // If a custom callback is provided, use it.
@@ -393,7 +393,7 @@ class TermPty{
     );
     pty.output
       .cast<List<int>>()
-      .transform(const Utf8Decoder())
+      .transform(const Utf8Decoder(allowMalformed: true))  
       .listen(terminal.write);
     pty.exitCode.then((code) {
       terminal.write('the process exited with exit code $code');
@@ -1701,7 +1701,7 @@ exit \$?
     final completer = Completer<int>();
     _extractPty!.output
         .cast<List<int>>()
-        .transform(const Utf8Decoder())
+        .transform(const Utf8Decoder(allowMalformed: true))  
         .transform(const LineSplitter())
         .listen((line) {
       final percent = double.tryParse(line.trim());
@@ -1774,7 +1774,7 @@ exit \$?
     final completer = Completer<int>();
     _extractPty!.output
         .cast<List<int>>()
-        .transform(const Utf8Decoder())
+        .transform(const Utf8Decoder(allowMalformed: true))  
         .transform(const LineSplitter())
         .listen((line) {
       final percent = double.tryParse(line.trim());

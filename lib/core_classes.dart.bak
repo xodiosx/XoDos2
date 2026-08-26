@@ -514,7 +514,7 @@ class Workflow {
     await Util.execute(
 """
 export DATA_DIR=${G.dataPath}
-
+export LANG=C.UTF-8
 export LD_LIBRARY_PATH=\$DATA_DIR/lib:\$DATA_DIR/usr/lib
 export PATH=\$DATA_DIR/bin:\$DATA_DIR/usr/bin:\$PATH
 export CONTAINER_DIR=\$DATA_DIR/containers/0
@@ -572,7 +572,7 @@ export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
 #export PROOT_L2S_DIR=\$CONTAINER_DIR/.l2s
 
 if [ -f "\$DATA_DIR/proot.tar.xz" ]; then
-\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat proot.tar* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions -v -C  /data/data/com.xodos/files/containers/0" || true
+\$DATA_DIR/usr/bin/proot --link2symlink sh -c "cat proot.tar* | \$DATA_DIR/usr/bin/tar x -J --delay-directory-restore --preserve-permissions  -C  /data/data/com.xodos/files/containers/0" || true
 #Script from proot-distro
 chmod u+rw "\$CONTAINER_DIR/etc/passwd" "\$CONTAINER_DIR/etc/shadow" "\$CONTAINER_DIR/etc/group" "\$CONTAINER_DIR/etc/gshadow"
 echo "aid_\$(id -un):x:\$(id -u):\$(id -g):Termux:/:/sbin/nologin" >> "\$CONTAINER_DIR/etc/passwd"
@@ -649,6 +649,7 @@ try {
     G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingContainerSystem;
     await Util.execute(
 """
+export LANG=C.UTF-8
 export DATA_DIR=${G.dataPath}
 export PREFIX=\$DATA_DIR/usr
 export HOME=\$DATA_DIR/home
@@ -669,7 +670,7 @@ if [  -f "\$DATA_DIR/xaa" ]; then
   cat xa* | \$DATA_DIR/usr/bin/tar x -J \
     --delay-directory-restore \
     --preserve-permissions \
-    -v -C /data/data/com.xodos/files/
+     -C /data/data/com.xodos/files/
 else
   echo ' No xa archive parts found, skipping...'
 fi
