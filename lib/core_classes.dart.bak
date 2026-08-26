@@ -604,12 +604,12 @@ print("patch proot and assets extracted,,,");
     G.installLog.value = [];
 
   // Show the log dialog (non‑dismissable while installing)
-  showDialog(
+/*  showDialog(
     context: G.homePageStateContext,
     barrierDismissible: false,
     builder: (context) => const InstallLogDialog(),
   );
-
+*/
   // First set up bootstrap
   G.updateText.value = AppLocalizations.of(G.homePageStateContext)!.installingBootPackage;
   await setupBootstrap();
@@ -735,7 +735,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
       G.onExtractionComplete!();
           
     }
-    SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+    
      
   }
 
@@ -762,13 +762,13 @@ await G.prefs.remove('extractionProgressT');
           // User installed from a local archive – finalise the system
           await LocalArchiveInstaller.finalizeSystem();
           // Mark that we are no longer at first startup
-          G.prefs.setInt("defaultContainer", 0); // ← set the missing key
+          G.prefs.setInt("defaultContainer", 0); 
         } else {
         try {
         await initForFirstTime(); // normal APK asset extraction
       } catch (e) {
         debugPrint('First-time setup failed: $e');
-    //  SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+      SystemChannels.platform.invokeMethod("SystemNavigator.pop");
           return; // stop further initialisation
       }
           // Installation cancelled or failed – exit the app
@@ -816,7 +816,7 @@ G.prefs.setBool("reinstallBootstrap", false);
         await initForFirstTime(); // normal APK asset extraction
       } catch (e) {
         debugPrint('First-time setup failed: $e');
-   //   SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+      SystemChannels.platform.invokeMethod("SystemNavigator.pop");
           return; // stop further initialisation
       }
           // Installation cancelled or failed – exit the app         

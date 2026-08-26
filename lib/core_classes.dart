@@ -735,7 +735,7 @@ for f in "\$DATA_DIR/usr/opt/winece/arm64-v8a/bin/"*; do ln -sf "\$f" "\$DATA_DI
       G.onExtractionComplete!();
           
     }
-    SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+    
      
   }
 
@@ -756,19 +756,19 @@ await G.prefs.remove('extractionProgressT');
     // If this key doesn't exist, it means it's the first startup
     if (!G.prefs.containsKey("defaultContainer")) {
       // Show the local archive installer dialog
-// await setupBootstrap();
+
         final installed = await LocalArchiveInstaller.showDialog(G.homePageStateContext);
         if (installed == true) {
           // User installed from a local archive – finalise the system
           await LocalArchiveInstaller.finalizeSystem();
           // Mark that we are no longer at first startup
-          G.prefs.setInt("defaultContainer", 0); // ← set the missing key
+          G.prefs.setInt("defaultContainer", 0); 
         } else {
         try {
         await initForFirstTime(); // normal APK asset extraction
       } catch (e) {
         debugPrint('First-time setup failed: $e');
-    //  SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+      SystemChannels.platform.invokeMethod("SystemNavigator.pop");
           return; // stop further initialisation
       }
           // Installation cancelled or failed – exit the app
@@ -809,14 +809,14 @@ sed -i -E "s@^(VNC_RESOLUTION)=.*@\\\\1=${w}x${h}@" \$(command -v startvnc)
           // User installed from a local archive – finalise the system
           await LocalArchiveInstaller.finalizeSystem();
           // Mark that we are no longer at first startup
-          G.prefs.setInt("defaultContainer", 0); // ← set the missing key
+          G.prefs.setInt("defaultContainer", 0); 
 G.prefs.setBool("reinstallBootstrap", false);
         } else {
         try {
         await initForFirstTime(); // normal APK asset extraction
       } catch (e) {
         debugPrint('First-time setup failed: $e');
-   //   SystemChannels.platform.invokeMethod("SystemNavigator.pop");
+      SystemChannels.platform.invokeMethod("SystemNavigator.pop");
           return; // stop further initialisation
       }
           // Installation cancelled or failed – exit the app         
