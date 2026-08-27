@@ -53,7 +53,7 @@ jobs:
         run: |
           mkdir mega-files
           cd mega-files
-          megatools dl "https://mega.nz/file/bI"
+          megatools dl "https://mega.nz/file/k4wU2apL#WprpXcgWj9E9H3nJuCqsJRtC3ZdmZMuZ2HfBAF15RJI"
 
       # 👀 Show downloaded files (corrected path)
       - name: Show downloaded files
@@ -98,8 +98,8 @@ jobs:
 
             ---
             **👥 Credits**  
-            XoDos team: @xodiosx 🇾🇪, @KarysDeveloper 🇨🇴, @Mondo67244 🇲🇫, @Aurora0y 🇧🇷, @Chest1902 🇧🇩, @JiaxinChen‑max 🇨🇳, @Snap888 🇷🇺 Mateus (@tokokudo) 🇧🇷 
-            Logo: @xl_v6 / ashen 🇮🇶
+            XoDos team: @xodiosx 🇾🇪, @KarysDeveloper 🇨🇴, @Mondo67244 🇲🇫, @Aurora0y 🇧🇷, @Chest1902 🇧🇩, @JiaxinChen‑max 🇨🇳, @Snap888 🇷🇺 @tokokudo 🇧🇷  @harshlalvani157-wq 🇮🇳 @tanmaysoren 🇮🇳 @Smithy1976 🏴󠁧󠁢󠁥󠁮󠁧󠁿
+            
 
             **💬 Support**  
             Telegram: [t.me/xodemulatorr](https://t.me/xodemulatorr)  
