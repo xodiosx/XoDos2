@@ -1123,6 +1123,7 @@ cd \$DATA_DIR
 export PROOT_TMP_DIR=\$DATA_DIR/proot_tmp
 export PROOT_LOADER=\$DATA_DIR/applib/libproot-loader.so
 export PROOT_LOADER_32=\$DATA_DIR/applib/libproot-loader32.so
+sed -i '/name="vblank_mode"/s/value="[^"]*"/value="off"/' ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
 xodos > /sdcard/xodos-desktop.log 2>&1 &
       echo 'opening Linux proot termial,,,'
       echo ' press CTRL + D to logout Linux proot'      
