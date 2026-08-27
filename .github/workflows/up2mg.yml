@@ -53,7 +53,8 @@ jobs:
         run: |
           mkdir mega-files
           cd mega-files
-          megatools dl "https://mega.nz/file/bI"
+          megatools dl "https://mega.nz/file/Fgpk1ArK#LRo1rGdxmYKu4TGX-6YG6OzwrjXD9Ow4ZqfCbiVDx2Y"
+          megatools dl "https://mega.nz/file/48Rh0RbR#TS3TLuddzs8xJDr2NidFjNftax1Xtu7xWKBJD3KqzMo"
 
       # 👀 Show downloaded files (corrected path)
       - name: Show downloaded files
@@ -93,7 +94,7 @@ jobs:
             - 
             -
 
-            ### 🧾 Checksums
+            ###  Checksums
             ${{ env.checksum_list }}
 
             ---
